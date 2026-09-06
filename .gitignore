@@ -1,2 +1,43 @@
-skills/
+# Dependencies
 node_modules/
+
+# Environment variables (NEVER commit secrets)
+.env
+.env.local
+.env.*.local
+
+# Skills (internal tooling, not part of the project)
+skills/
+
+# Tool results & temporary artifacts
+tool-results/
+
+# User uploads (transient)
+upload/
+
+# Build outputs
+.next/
+out/
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
