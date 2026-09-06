@@ -1,0 +1,1041 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nexus AI — An entire software company inside one AI platform</title>
+<meta name="description" content="Describe it → Understand it → Visualize the plan → Approve it → Build it → Test it → Fix it → Preview it → Deploy it. Turn your ideas into real products with Nexus AI." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2300d4ff'/%3E%3Cstop offset='1' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='url(%23g)' stroke-width='6'/%3E%3Ccircle cx='50' cy='50' r='14' fill='url(%23g)'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #05060a;
+    color: #e8eaf2;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+  ::selection { background: rgba(168, 85, 247, 0.4); color: #fff; }
+
+  /* ===== DESIGN TOKENS ===== */
+  :root {
+    --bg: #05060a;
+    --bg-elev: #0a0c14;
+    --bg-card: rgba(255, 255, 255, 0.03);
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.14);
+    --text: #e8eaf2;
+    --text-dim: #9aa0b4;
+    --text-faint: #5e6478;
+
+    /* Capability colors (per spec) */
+    --blue: #00d4ff;      /* AI / Intelligence */
+    --purple: #a855f7;    /* Planning */
+    --cyan: #22d3ee;      /* Development */
+    --green: #34d399;     /* Testing / Success */
+    --orange: #fb923c;    /* Warning / Attention */
+    --red: #f87171;       /* Error */
+    --magenta: #ec4899;   /* Creative / Design */
+    --violet: #8b5cf6;
+  }
+
+  /* ===== BACKGROUND AMBIENCE ===== */
+  .bg-ambient {
+    position: fixed;
+    inset: 0;
+    z-index: -2;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(168, 85, 247, 0.18), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(0, 212, 255, 0.10), transparent 60%),
+      radial-gradient(ellipse 50% 40% at 10% 80%, rgba(236, 72, 153, 0.08), transparent 60%),
+      var(--bg);
+  }
+  .bg-grid {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 64px 64px;
+    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, black 30%, transparent 75%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, black 30%, transparent 75%);
+  }
+
+  /* ===== NAVIGATION ===== */
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    background: rgba(5, 6, 10, 0.7);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 16px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: -0.02em;
+  }
+  .logo-mark {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    background: conic-gradient(from 220deg, var(--blue), var(--purple), var(--magenta), var(--blue));
+    position: relative;
+    box-shadow: 0 0 24px rgba(168, 85, 247, 0.45);
+  }
+  .logo-mark::after {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 5px;
+    background: var(--bg);
+  }
+  .logo-mark::before {
+    content: '';
+    position: absolute;
+    inset: 11px;
+    border-radius: 3px;
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    z-index: 1;
+  }
+  .logo span { background: linear-gradient(135deg, #fff 30%, #b8a4e8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    list-style: none;
+  }
+  .nav-links a {
+    padding: 8px 14px;
+    font-size: 14px;
+    color: var(--text-dim);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+  }
+  .nav-links a:hover { color: #fff; background: rgba(255,255,255,0.05); }
+
+  .nav-cta { display: flex; align-items: center; gap: 10px; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  .btn-ghost { color: var(--text-dim); }
+  .btn-ghost:hover { color: #fff; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--purple), var(--violet));
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 8px 24px -8px rgba(168, 85, 247, 0.6);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255,255,255,0.12), 0 12px 32px -8px rgba(168, 85, 247, 0.8); }
+
+  .menu-toggle { display: none; font-size: 22px; padding: 6px; }
+
+  /* ===== HERO ===== */
+  .hero {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 100px 28px 60px;
+    text-align: center;
+    position: relative;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.25);
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #d8c4f8;
+    margin-bottom: 28px;
+  }
+  .hero-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 10px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .hero h1 {
+    font-size: clamp(38px, 6vw, 68px);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+    margin-bottom: 24px;
+  }
+  .hero h1 .grad {
+    background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 50%, var(--magenta) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero p.sub {
+    font-size: clamp(16px, 2vw, 19px);
+    color: var(--text-dim);
+    max-width: 640px;
+    margin: 0 auto 40px;
+    line-height: 1.55;
+  }
+
+  /* ===== AI INPUT BOX ===== */
+  .ai-input-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    position: relative;
+  }
+  .ai-input-glow {
+    position: absolute;
+    inset: -2px;
+    border-radius: 22px;
+    background: linear-gradient(135deg, var(--blue), var(--purple), var(--magenta));
+    opacity: 0.55;
+    filter: blur(14px);
+    z-index: 0;
+    animation: drift 8s ease-in-out infinite;
+  }
+  @keyframes drift {
+    0%, 100% { opacity: 0.45; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.01); }
+  }
+  .ai-input {
+    position: relative;
+    z-index: 1;
+    background: rgba(13, 15, 24, 0.92);
+    border: 1px solid var(--border-strong);
+    border-radius: 20px;
+    padding: 20px 22px 16px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+  .ai-input-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+  .ai-input-label .spark {
+    width: 14px; height: 14px;
+    background: conic-gradient(from 0deg, var(--blue), var(--purple), var(--magenta), var(--blue));
+    border-radius: 4px;
+    animation: spin 6s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .ai-input textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-family: inherit;
+    font-size: 16px;
+    line-height: 1.5;
+    resize: none;
+    min-height: 56px;
+    max-height: 200px;
+  }
+  .ai-input textarea::placeholder { color: var(--text-faint); }
+  .ai-input-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+  }
+  .ai-input-tools { display: flex; align-items: center; gap: 4px; }
+  .tool-btn {
+    width: 36px; height: 36px;
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 9px;
+    color: var(--text-dim);
+    transition: all 0.18s ease;
+  }
+  .tool-btn:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .tool-btn svg { width: 18px; height: 18px; }
+
+  .ai-send {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--purple), var(--violet));
+    color: #fff;
+    font-size: 13.5px;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 6px 18px -6px rgba(168, 85, 247, 0.6);
+    transition: all 0.2s ease;
+  }
+  .ai-send:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 10px 24px -6px rgba(168, 85, 247, 0.8); }
+  .ai-send svg { width: 14px; height: 14px; }
+
+  .example-prompts {
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+    margin-top: 22px;
+  }
+  .example-prompts button {
+    padding: 7px 14px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 13px;
+    transition: all 0.18s ease;
+  }
+  .example-prompts button:hover { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.3); color: #fff; transform: translateY(-1px); }
+
+  /* ===== SECTION GENERIC ===== */
+  section { position: relative; }
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 100px 28px;
+  }
+  .section-head {
+    text-align: center;
+    max-width: 720px;
+    margin: 0 auto 64px;
+  }
+  .section-eyebrow {
+    display: inline-block;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--purple);
+    margin-bottom: 14px;
+  }
+  .section-head h2 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+  .section-head p {
+    color: var(--text-dim);
+    font-size: 17px;
+    line-height: 1.55;
+  }
+
+  /* ===== WORKFLOW ===== */
+  .workflow {
+    background: linear-gradient(180deg, transparent, rgba(168, 85, 247, 0.03) 50%, transparent);
+  }
+  .workflow-steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .step {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 22px;
+    transition: all 0.25s ease;
+    overflow: hidden;
+  }
+  .step::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--step-color, var(--blue)), transparent);
+    opacity: 0.6;
+  }
+  .step:hover { transform: translateY(-3px); border-color: var(--border-strong); background: rgba(255,255,255,0.05); }
+  .step-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--step-color, var(--blue)) 14%, transparent);
+    color: var(--step-color, var(--blue));
+    font-size: 13px; font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 14px;
+    border: 1px solid color-mix(in srgb, var(--step-color, var(--blue)) 30%, transparent);
+  }
+  .step h3 { font-size: 16px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
+  .step p { font-size: 13.5px; color: var(--text-dim); line-height: 1.55; }
+
+  /* ===== CAPABILITIES ===== */
+  .capabilities-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 18px;
+  }
+  .cap-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px 24px;
+    transition: all 0.3s ease;
+    overflow: hidden;
+  }
+  .cap-card::after {
+    content: '';
+    position: absolute;
+    top: -50%; right: -30%;
+    width: 200px; height: 200px;
+    background: radial-gradient(circle, var(--cap-color, var(--blue)), transparent 70%);
+    opacity: 0.10;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  .cap-card:hover { transform: translateY(-4px); border-color: color-mix(in srgb, var(--cap-color, var(--blue)) 40%, transparent); }
+  .cap-card:hover::after { opacity: 0.22; }
+  .cap-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--cap-color, var(--blue)) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--cap-color, var(--blue)) 28%, transparent);
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 18px;
+    color: var(--cap-color, var(--blue));
+  }
+  .cap-icon svg { width: 22px; height: 22px; }
+  .cap-card h3 { font-size: 17px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.01em; }
+  .cap-card p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+  .cap-tag {
+    display: inline-block;
+    margin-top: 14px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--cap-color, var(--blue));
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ===== IDEA ENGINE / EXTRACTION ===== */
+  .engine {
+    background: linear-gradient(180deg, transparent, rgba(0, 212, 255, 0.025), transparent);
+  }
+  .engine-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 48px;
+    align-items: center;
+  }
+  .engine-left h2 {
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.1;
+    margin-bottom: 18px;
+  }
+  .engine-left p { color: var(--text-dim); font-size: 17px; line-height: 1.6; margin-bottom: 28px; }
+  .engine-list { list-style: none; display: grid; gap: 10px; }
+  .engine-list li {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 14.5px;
+    transition: all 0.2s ease;
+  }
+  .engine-list li:hover { border-color: var(--border-strong); transform: translateX(4px); }
+  .engine-list li .check {
+    width: 20px; height: 20px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--green), #10b981);
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    color: #04221a;
+    font-weight: 800;
+    font-size: 12px;
+  }
+
+  .engine-visual {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .engine-visual::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 20%, rgba(168, 85, 247, 0.12), transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.10), transparent 50%);
+    pointer-events: none;
+  }
+  .ev-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .ev-head .dots { display: flex; gap: 6px; }
+  .ev-head .dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .ev-head .dots span:nth-child(1) { background: #ff5f57; }
+  .ev-head .dots span:nth-child(2) { background: #febc2e; }
+  .ev-head .dots span:nth-child(3) { background: #28c840; }
+  .ev-head .title { font-size: 12.5px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+
+  .ev-node {
+    position: relative;
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13.5px;
+    animation: fadeUp 0.6s ease backwards;
+  }
+  .ev-node .pill {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--node-color, var(--blue));
+    box-shadow: 0 0 8px var(--node-color, var(--blue));
+    flex-shrink: 0;
+  }
+  .ev-node .lbl { color: var(--text-dim); flex: 1; }
+  .ev-node .val { color: #fff; font-weight: 600; font-size: 12.5px; font-family: 'JetBrains Mono', monospace; }
+  .ev-node:nth-child(2) { animation-delay: 0.1s; }
+  .ev-node:nth-child(3) { animation-delay: 0.2s; }
+  .ev-node:nth-child(4) { animation-delay: 0.3s; }
+  .ev-node:nth-child(5) { animation-delay: 0.4s; }
+  .ev-node:nth-child(6) { animation-delay: 0.5s; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ===== STATS ===== */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 24px;
+    padding: 56px 28px;
+    max-width: 1100px;
+    margin: 0 auto;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .stat .num {
+    font-size: clamp(32px, 4vw, 44px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #fff, #b8a4e8);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+  .stat .lbl { margin-top: 8px; font-size: 13.5px; color: var(--text-dim); }
+
+  /* ===== CTA ===== */
+  .cta {
+    text-align: center;
+    padding: 100px 28px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  .cta h2 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+  .cta p { color: var(--text-dim); font-size: 18px; margin-bottom: 32px; }
+  .cta-buttons { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .btn-lg { padding: 14px 26px; font-size: 15px; }
+  .btn-outline {
+    border: 1px solid var(--border-strong);
+    color: #fff;
+  }
+  .btn-outline:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.25); }
+
+  /* ===== FOOTER ===== */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 48px 28px 32px;
+  }
+  .footer-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    gap: 48px;
+    margin-bottom: 32px;
+  }
+  .footer-brand p { color: var(--text-dim); font-size: 14px; max-width: 320px; margin-top: 12px; }
+  .footer-col h4 { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 14px; }
+  .footer-col ul { list-style: none; display: grid; gap: 8px; }
+  .footer-col a { color: var(--text-dim); font-size: 14px; transition: color 0.18s ease; }
+  .footer-col a:hover { color: #fff; }
+  .footer-bottom {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 12px;
+    font-size: 13px; color: var(--text-faint);
+  }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 860px) {
+    .nav-links, .nav-cta .btn-ghost { display: none; }
+    .menu-toggle { display: inline-flex; }
+    .nav-inner { padding: 14px 20px; }
+    .hero { padding: 70px 20px 40px; }
+    .container { padding: 70px 20px; }
+    .engine-grid { grid-template-columns: 1fr; gap: 32px; }
+    .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
+  }
+  @media (max-width: 540px) {
+    .footer-inner { grid-template-columns: 1fr; }
+    .nav-cta .btn-primary { padding: 8px 12px; font-size: 13px; }
+    .ai-input { padding: 16px 16px 12px; }
+    .ai-input textarea { font-size: 15px; }
+  }
+
+  /* ===== SCROLL REVEAL ===== */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+    .reveal { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-ambient"></div>
+<div class="bg-grid"></div>
+
+<!-- ===== NAVIGATION ===== -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="logo">
+      <span class="logo-mark"></span>
+      <span>Nexus AI</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#capabilities">Capabilities</a></li>
+      <li><a href="#workflow">Workflow</a></li>
+      <li><a href="#engine">Idea Engine</a></li>
+      <li><a href="#templates">Templates</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="#docs">Docs</a></li>
+    </ul>
+    <div class="nav-cta">
+      <button class="btn btn-ghost">Sign in</button>
+      <button class="btn btn-primary">Get Started</button>
+      <button class="menu-toggle" aria-label="Menu">☰</button>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="hero-badge">
+    <span class="dot"></span>
+    Powered by multi-agent AI · Now in early access
+  </div>
+  <h1>
+    Turn your ideas into <br>
+    <span class="grad">real products.</span>
+  </h1>
+  <p class="sub">
+    Describe what you want to build. Our AI plans it, visualizes it, builds it,
+    tests it, fixes it, and helps you ship it — an entire software company inside one platform.
+  </p>
+
+  <div class="ai-input-wrap">
+    <div class="ai-input-glow"></div>
+    <div class="ai-input">
+      <div class="ai-input-label">
+        <span class="spark"></span>
+        What do you want to create?
+      </div>
+      <textarea id="prompt" placeholder="I want to build an e-commerce website for selling geothermal equipment..."></textarea>
+      <div class="ai-input-bar">
+        <div class="ai-input-tools">
+          <button class="tool-btn" title="Voice input" aria-label="Voice input">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button class="tool-btn" title="Upload file" aria-label="Upload file">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
+          <button class="tool-btn" title="Attach image" aria-label="Attach image">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </button>
+          <button class="tool-btn" title="Settings" aria-label="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          </button>
+        </div>
+        <button class="ai-send" id="createBtn">
+          Create Project
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="example-prompts" id="examples">
+    <button>Build me an e-commerce website…</button>
+    <button>Create a mobile app for fitness tracking…</button>
+    <button>Build a SaaS dashboard for analytics…</button>
+    <button>Turn my idea into a complete business website…</button>
+  </div>
+</section>
+
+<!-- ===== WORKFLOW ===== -->
+<section class="workflow" id="workflow">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">The Workflow</span>
+      <h2>From idea to deployment — in one continuous flow.</h2>
+      <p>No more juggling tools. Describe what you want, and a coordinated team of AI agents takes it from concept to production.</p>
+    </div>
+
+    <div class="workflow-steps">
+      <div class="step reveal" style="--step-color: var(--blue);">
+        <div class="step-num">01</div>
+        <h3>Describe</h3>
+        <p>Type, paste, speak, or upload a file. However you express your idea, the platform understands it.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--purple);">
+        <div class="step-num">02</div>
+        <h3>Understand</h3>
+        <p>The AI extracts goals, users, roles, features, pages, data models, APIs, and technical requirements.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--purple);">
+        <div class="step-num">03</div>
+        <h3>Visualize</h3>
+        <p>An interactive mind map renders the full project architecture. Edit any node before building begins.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--violet);">
+        <div class="step-num">04</div>
+        <h3>Approve</h3>
+        <p>Review the plan, accept AI assumptions, or request changes. Nothing gets built without your green light.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--cyan);">
+        <div class="step-num">05</div>
+        <h3>Build</h3>
+        <p>Specialized AI agents generate production-ready frontend, backend, database, and infrastructure code.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--green);">
+        <div class="step-num">06</div>
+        <h3>Test</h3>
+        <p>An AI testing engineer writes and runs test suites, then reports any failures with full context.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--orange);">
+        <div class="step-num">07</div>
+        <h3>Fix</h3>
+        <p>Errors are routed straight back to the coding agent, which patches them — and re-runs the tests.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--magenta);">
+        <div class="step-num">08</div>
+        <h3>Preview</h3>
+        <p>A live preview opens instantly. Edit anything in natural language and watch it update in real time.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--blue);">
+        <div class="step-num">09</div>
+        <h3>Deploy</h3>
+        <p>Ship to staging or production with one click. Version control and rollback are built in.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CAPABILITIES ===== -->
+<section id="capabilities">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">Capabilities</span>
+      <h2>One platform. Eight specialized AI agents.</h2>
+      <p>Each capability is a distinct AI role with its own color identity — working together as a coordinated team.</p>
+    </div>
+
+    <div class="capabilities-grid">
+      <div class="cap-card reveal" style="--cap-color: var(--blue);">
+        <div class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4c0 1.95-1.4 3.58-3.25 3.93"/><path d="M8 6a4 4 0 0 1 7.5 1.93"/><circle cx="12" cy="14" r="6"/><path d="M12 8v6"/></svg>
+        </div>
+        <h3>AI Assistant</h3>
+        <p>Natural language interaction for ideation, clarification, and conversation. Understands intent — not just keywords.</p>
+        <span class="cap-tag">Intelligence</span>
+      </div>
+
+      <div class="cap-card reveal" style="--cap-color: var(--purple);">
+        <div class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/><line x1="8" y1="4" x2="8" y2="20"/></svg>
+        </div>
+        <h3>AI Project Manager</h3>
+        <p>Breaks down your idea into tasks, milestones, and deliverables. Tracks progress across every agent.</p>
+        <span class="cap-tag">Planning</span>
+      </div>
+
+      <div class="cap-card reveal" style="--cap-color: var(--cyan);">
+        <div class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <h3>AI Software Engineer</h3>
+        <p>Generates production-ready code across the full stack — frontend, backend, APIs, and infrastructure.</p>
+        <span class="cap-tag">Development</span>
+      </div>
+
+      <div class="cap-card reveal" style="--cap-color: var(--magenta);">
+        <div class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="19" cy="13" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="10" cy="20" r="2.5"/><path d="M12 22a10 10 0 1 1 10-10"/></svg>
+        </div>
+        <h3>AI Designer</h3>
+        <p>Produces UI/UX designs, color systems, typography, and layouts that match international product quality.</p>
+        <span class="cap-tag">Creative</span>
+      </div>
+
+      <div class="cap-card reveal" style="--cap-color: var(--green);">
+        <div class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><path d="M21 12c0 5-3.5 7.5-8.5 9.5C7.5 19.5 4 17 4 12V6l8-3 8 3v6z"/></svg>
+        </div>
+        <h3>AI Testing Engineer</h3>
+        <p>Writes and runs test suites, detects failures, and reports them with exact context for fast fixes.</p>
+        <span class="cap-tag">Quality</span>
+      </div>
+
+      <div class="cap-card reveal" style="--cap-color: var(--violet);">
+        <div class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        </div>
+        <h3>AI Researcher</h3>
+        <p>Gathers context, references, and best practices so every decision is grounded in real-world data.</p>
+        <span class="cap-tag">Discovery</span>
+      </div>
+
+      <div class="cap-card reveal" style="--cap-color: var(--orange);">
+        <div class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+        </div>
+        <h3>AI Document Creator</h3>
+        <p>Generates docs, presentations, and reports — automatically kept in sync with the live project.</p>
+        <span class="cap-tag">Content</span>
+      </div>
+
+      <div class="cap-card reveal" style="--cap-color: var(--blue);">
+        <div class="cap-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+        </div>
+        <h3>AI Deployment Platform</h3>
+        <p>Ships to preview and production with built-in versioning, rollback, and zero-config hosting.</p>
+        <span class="cap-tag">Shipping</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== IDEA ENGINE ===== -->
+<section class="engine" id="engine">
+  <div class="container">
+    <div class="engine-grid">
+      <div class="engine-left reveal">
+        <span class="section-eyebrow">Idea Understanding Engine</span>
+        <h2>It doesn't just write code. It understands your idea first.</h2>
+        <p>
+          Before any code is generated, the platform builds a structured understanding of your project —
+          extracting goals, users, features, data models, and technical constraints. You see the full
+          blueprint before a single file is created.
+        </p>
+        <ul class="engine-list">
+          <li><span class="check">✓</span> Project goal &amp; target users identified automatically</li>
+          <li><span class="check">✓</span> User roles, features, and pages extracted</li>
+          <li><span class="check">✓</span> Database schema &amp; API surface designed</li>
+          <li><span class="check">✓</span> Security, testing, and tech-stack recommendations</li>
+          <li><span class="check">✓</span> Smart clarification only when it matters</li>
+        </ul>
+      </div>
+
+      <div class="engine-visual reveal">
+        <div class="ev-head">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <span class="title">idea-engine · parsing</span>
+        </div>
+        <div class="ev-node" style="--node-color: var(--blue);"><span class="pill"></span><span class="lbl">Project Goal</span><span class="val">e-commerce</span></div>
+        <div class="ev-node" style="--node-color: var(--purple);"><span class="pill"></span><span class="lbl">User Roles</span><span class="val">customer · admin</span></div>
+        <div class="ev-node" style="--node-color: var(--magenta);"><span class="pill"></span><span class="lbl">Pages</span><span class="val">12 identified</span></div>
+        <div class="ev-node" style="--node-color: var(--cyan);"><span class="pill"></span><span class="lbl">Data Models</span><span class="val">7 entities</span></div>
+        <div class="ev-node" style="--node-color: var(--green);"><span class="pill"></span><span class="lbl">Test Cases</span><span class="val">34 planned</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== STATS ===== -->
+<div class="stats">
+  <div class="stat reveal">
+    <div class="num">8</div>
+    <div class="lbl">Specialized AI agents</div>
+  </div>
+  <div class="stat reveal">
+    <div class="num">9</div>
+    <div class="lbl">Steps from idea to deploy</div>
+  </div>
+  <div class="stat reveal">
+    <div class="num">∞</div>
+    <div class="lbl">Project types supported</div>
+  </div>
+  <div class="stat reveal">
+    <div class="num">0</div>
+    <div class="lbl">Lines of code you write</div>
+  </div>
+</div>
+
+<!-- ===== CTA ===== -->
+<section class="cta">
+  <h2 class="reveal">Ready to build something <span class="grad" style="background: linear-gradient(135deg, var(--blue), var(--purple), var(--magenta)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">extraordinary</span>?</h2>
+  <p class="reveal">Join the early access program and turn your next idea into a real product — without writing a single line of code.</p>
+  <div class="cta-buttons reveal">
+    <button class="btn btn-primary btn-lg" onclick="document.getElementById('prompt').focus(); window.scrollTo({top:0, behavior:'smooth'});">Start Building Free</button>
+    <button class="btn btn-outline btn-lg">View Documentation</button>
+  </div>
+</section>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <a href="#" class="logo">
+        <span class="logo-mark"></span>
+        <span>Nexus AI</span>
+      </a>
+      <p>An entire software company inside one AI platform. Describe it, plan it, build it, ship it.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="#capabilities">Capabilities</a></li>
+        <li><a href="#workflow">Workflow</a></li>
+        <li><a href="#engine">Idea Engine</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Resources</h4>
+      <ul>
+        <li><a href="#docs">Documentation</a></li>
+        <li><a href="#templates">Templates</a></li>
+        <li><a href="#">API Reference</a></li>
+        <li><a href="#">Changelog</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Company</h4>
+      <ul>
+        <li><a href="#">About</a></li>
+        <li><a href="#">Blog</a></li>
+        <li><a href="#">Careers</a></li>
+        <li><a href="#">Contact</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span>© 2026 Nexus AI. All rights reserved.</span>
+    <span>Built from a single prompt · Powered by multi-agent AI</span>
+  </div>
+</footer>
+
+<script>
+  // Example prompt click → fill textarea
+  const examples = document.querySelectorAll('#examples button');
+  const prompt = document.getElementById('prompt');
+  examples.forEach(btn => {
+    btn.addEventListener('click', () => {
+      prompt.value = btn.textContent.replace(/…$/, '');
+      prompt.focus();
+      prompt.style.height = 'auto';
+      prompt.style.height = prompt.scrollHeight + 'px';
+    });
+  });
+
+  // Auto-resize textarea
+  prompt.addEventListener('input', () => {
+    prompt.style.height = 'auto';
+    prompt.style.height = Math.min(prompt.scrollHeight, 200) + 'px';
+  });
+
+  // Create button → gentle visual feedback (demo)
+  document.getElementById('createBtn').addEventListener('click', () => {
+    const v = prompt.value.trim();
+    if (!v) { prompt.focus(); return; }
+    const btn = document.getElementById('createBtn');
+    const orig = btn.innerHTML;
+    btn.innerHTML = 'Analyzing idea…';
+    btn.style.opacity = '0.85';
+    setTimeout(() => {
+      btn.innerHTML = '✓ Plan generated';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.opacity = '1'; }, 1800);
+    }, 1400);
+  });
+
+  // Scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Mobile menu (simple toggle for now)
+  document.querySelector('.menu-toggle')?.addEventListener('click', () => {
+    const links = document.querySelector('.nav-links');
+    const show = links.style.display !== 'flex';
+    links.style.display = show ? 'flex' : '';
+    links.style.position = show ? 'absolute' : '';
+    links.style.top = show ? '100%' : '';
+    links.style.left = show ? '0' : '';
+    links.style.right = show ? '0' : '';
+    links.style.flexDirection = show ? 'column' : '';
+    links.style.background = show ? 'rgba(5,6,10,0.98)' : '';
+    links.style.padding = show ? '16px 20px' : '';
+    links.style.borderBottom = show ? '1px solid var(--border)' : '';
+  });
+</script>
+</body>
+</html>
