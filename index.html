@@ -326,7 +326,10 @@
   .example-prompts button:hover { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.3); color: #fff; transform: translateY(-1px); }
 
   /* ===== SECTION GENERIC ===== */
-  section { position: relative; }
+  section {
+    position: relative;
+    scroll-margin-top: 80px; /* offset for sticky nav when jumping to anchors */
+  }
   .container {
     max-width: 1200px;
     margin: 0 auto;
@@ -2748,10 +2751,10 @@
       <span>DARKNESS</span>
     </a>
     <ul class="nav-links">
-      <li><a href="#chat">AI Assistant</a></li>
+      <li><a href="#capabilities">Capabilities</a></li>
       <li><a href="#orchestrator">Multi-AI</a></li>
       <li><a href="#think">Think Modes</a></li>
-      <li><a href="#capabilities">Capabilities</a></li>
+      <li><a href="#chat">AI Assistant</a></li>
       <li><a href="#workflow">Workflow</a></li>
       <li><a href="#github">GitHub Push</a></li>
       <li><a href="#ppt">PPT Studio</a></li>
@@ -2818,255 +2821,25 @@
   </div>
 </section>
 
-<!-- ===== AI ASSISTANT ===== -->
-<section class="feature-section feature-section-chat" id="chat">
-  <div class="container">
-    <div class="section-head reveal">
-      <span class="section-eyebrow" style="color: var(--blue);">Core Interface · ChatGPT-Style AI Assistant</span>
-      <h2>The chat that runs the entire platform.</h2>
-      <p>Not a static UI. A real conversational engine — streaming responses, markdown, code execution, tool use, memory, and deep integration with every studio. Just describe what you want; DARKNESS figures out how to do it.</p>
-    </div>
-
-    <div class="chat-mockup reveal" id="chatMockup">
-      <div class="mockup-head">
-        <div class="dots"><span></span><span></span><span></span></div>
-        <span class="title">darkness · ai assistant</span>
-        <span class="chat-status-pill"><span class="chat-status-dot"></span> Online</span>
-      </div>
-      <div class="chat-body">
-        <!-- Sidebar -->
-        <aside class="chat-sidebar">
-          <button class="chat-new-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            New Chat
-          </button>
-          <div class="chat-search-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-            <input type="text" placeholder="Search chats…" />
-          </div>
-          <div class="chat-sidebar-section">
-            <div class="chat-sidebar-title">Pinned</div>
-            <div class="chat-item active">
-              <span class="chat-item-pin">★</span>
-              <span class="chat-item-name">Build AI Portfolio Website</span>
-            </div>
-            <div class="chat-item">
-              <span class="chat-item-pin">★</span>
-              <span class="chat-item-name">Food Delivery Plan</span>
-            </div>
-          </div>
-          <div class="chat-sidebar-section">
-            <div class="chat-sidebar-title">Recent</div>
-            <div class="chat-item">
-              <span class="chat-item-name">React 19 features</span>
-            </div>
-            <div class="chat-item">
-              <span class="chat-item-name">Payment gateway research</span>
-            </div>
-            <div class="chat-item">
-              <span class="chat-item-name">Logo design ideas</span>
-            </div>
-            <div class="chat-item">
-              <span class="chat-item-name">API auth debugging</span>
-            </div>
-          </div>
-          <div class="chat-sidebar-section">
-            <div class="chat-sidebar-title">Folders</div>
-            <div class="chat-folder">📁 College</div>
-            <div class="chat-folder">📁 Projects</div>
-            <div class="chat-folder">📁 Research</div>
-          </div>
-        </aside>
-
-        <!-- Main chat area -->
-        <div class="chat-main">
-          <!-- Top bar -->
-          <div class="chat-topbar">
-            <div class="chat-model-selector">
-              <span class="chat-model-dot"></span>
-              <span class="chat-model-name">Darkness Reasoning</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-            </div>
-            <div class="chat-toggles">
-              <button class="chat-toggle" id="webSearchToggle" data-on="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-                Web Search
-              </button>
-              <button class="chat-toggle" id="deepResearchToggle" data-on="false">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H3v10h6V11zm12-8h-6v18h6V3z"/></svg>
-                Deep Research
-              </button>
-            </div>
-          </div>
-
-          <!-- Messages -->
-          <div class="chat-messages" id="chatMessages">
-            <div class="chat-welcome" id="chatWelcome">
-              <div class="chat-welcome-orb"></div>
-              <h3>What can I help you build, understand, research or create?</h3>
-              <p class="chat-welcome-sub">Ask anything, or describe what you want to build. The orchestrator routes your request to the right model, tool, and agent.</p>
-              <div class="chat-suggested">
-                <button data-prompt="Build me a modern AI portfolio website with dark mode and purple accents.">Build a Website</button>
-                <button data-prompt="Explain how recursion works, with a code example.">Explain a Topic</button>
-                <button data-prompt="Write a JavaScript function to debounce API calls.">Write Code</button>
-                <button data-prompt="Research the latest AI coding tools in 2026.">Research a Topic</button>
-                <button data-prompt="Create a presentation about this project.">Create a PPT</button>
-                <button data-prompt="Analyze the attached requirements.pdf and summarize key features.">Analyze a File</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Composer -->
-          <div class="chat-composer">
-            <div class="chat-composer-input-wrap">
-              <div class="chat-composer-tools-left">
-                <button class="chat-tool-btn" title="Attach file">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
-                </button>
-                <button class="chat-tool-btn" title="Upload image">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                </button>
-                <button class="chat-tool-btn" title="Voice input">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
-                </button>
-              </div>
-              <textarea id="chatInput" placeholder="Ask anything, or describe what you want to build…" rows="1"></textarea>
-              <button class="chat-send-btn" id="chatSendBtn" title="Send">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
-              </button>
-            </div>
-            <div class="chat-composer-hint">
-              <span><kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</span>
-              <span class="chat-context-pill">Project Context: AI Portfolio Website</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Feature highlights + tool chips -->
-    <div class="chat-features-grid">
-      <div class="chat-feature reveal">
-        <div class="cf-icon" style="--cf-color: var(--blue);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-        </div>
-        <h4>Streaming responses</h4>
-        <p>Token-by-token rendering with live markdown. Meaningful activity status — never just "Loading…".</p>
-      </div>
-      <div class="chat-feature reveal">
-        <div class="cf-icon" style="--cf-color: var(--cyan);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
-        </div>
-        <h4>Code execution &amp; auto-fix</h4>
-        <p>Code blocks run in a sandbox. Errors are auto-routed back to the AI, fixed, and re-run within retry limits.</p>
-      </div>
-      <div class="chat-feature reveal">
-        <div class="cf-icon" style="--cf-color: var(--purple);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
-        </div>
-        <h4>Conversation memory</h4>
-        <p>Remembers project context, decisions, and preferences. Long chats are summarized without losing critical info.</p>
-      </div>
-      <div class="chat-feature reveal">
-        <div class="cf-icon" style="--cf-color: var(--magenta);">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-        </div>
-        <h4>Intelligent routing</h4>
-        <p>Simple questions hit a fast model. Coding hits Z.ai. Research triggers a multi-source workflow. You never pick.</p>
-      </div>
-    </div>
-
-    <!-- Tools the AI can use -->
-    <div class="chat-tools-strip reveal">
-      <div class="cts-label">AI can use <strong>14+ tools</strong> · invoked automatically when needed:</div>
-      <div class="cts-chips">
-        <span class="cts-chip">🔍 Web Search</span>
-        <span class="cts-chip">🌐 Browser</span>
-        <span class="cts-chip">📄 File Reader</span>
-        <span class="cts-chip">✏️ File Writer</span>
-        <span class="cts-chip">💻 Code Editor</span>
-        <span class="cts-chip">▶️ Code Runner</span>
-        <span class="cts-chip">🗄️ Database</span>
-        <span class="cts-chip">🎨 Image Gen</span>
-        <span class="cts-chip">📊 PPT Gen</span>
-        <span class="cts-chip">📝 Doc Gen</span>
-        <span class="cts-chip">🔀 Git</span>
-        <span class="cts-chip">🧪 Testing</span>
-        <span class="cts-chip">🔒 Security Scan</span>
-        <span class="cts-chip">🐙 GitHub</span>
-      </div>
-    </div>
+<!-- ===== STATS ===== -->
+<div class="stats">
+  <div class="stat reveal">
+    <div class="num">8</div>
+    <div class="lbl">Specialized AI agents</div>
   </div>
-</section>
-
-<!-- ===== WORKFLOW ===== -->
-<section class="workflow" id="workflow">
-  <div class="container">
-    <div class="section-head reveal">
-      <span class="section-eyebrow">The Workflow</span>
-      <h2>From idea to deployment — in one continuous flow.</h2>
-      <p>No more juggling tools. Describe what you want, and a coordinated team of AI agents takes it from concept to production.</p>
-    </div>
-
-    <div class="workflow-steps">
-      <div class="step reveal" style="--step-color: var(--blue);">
-        <div class="step-num">01</div>
-        <h3>Describe</h3>
-        <p>Type, paste, speak, or upload a file. However you express your idea, the platform understands it.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--purple);">
-        <div class="step-num">02</div>
-        <h3>Understand</h3>
-        <p>The AI extracts goals, users, roles, features, pages, data models, APIs, and technical requirements.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--purple);">
-        <div class="step-num">03</div>
-        <h3>Visualize</h3>
-        <p>An interactive mind map renders the full project architecture. Edit any node before building begins.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--violet);">
-        <div class="step-num">04</div>
-        <h3>Approve</h3>
-        <p>Review the plan, accept AI assumptions, or request changes. Nothing gets built without your green light.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--cyan);">
-        <div class="step-num">05</div>
-        <h3>Build</h3>
-        <p>Specialized AI agents generate production-ready frontend, backend, database, and infrastructure code.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--green);">
-        <div class="step-num">06</div>
-        <h3>Test</h3>
-        <p>An AI testing engineer writes and runs test suites, then reports any failures with full context.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--orange);">
-        <div class="step-num">07</div>
-        <h3>Fix</h3>
-        <p>Errors are routed straight back to the coding agent, which patches them — and re-runs the tests.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--magenta);">
-        <div class="step-num">08</div>
-        <h3>Preview</h3>
-        <p>A live preview opens instantly. Edit anything in natural language and watch it update in real time.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--blue);">
-        <div class="step-num">09</div>
-        <h3>Deploy</h3>
-        <p>Ship to staging or production with one click. Version control and rollback are built in.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--violet);">
-        <div class="step-num">10</div>
-        <h3>Push to GitHub</h3>
-        <p>After final approval, push the finished project directly to your repository — no Git commands, no ZIP files.</p>
-      </div>
-      <div class="step reveal" style="--step-color: var(--magenta);">
-        <div class="step-num">11</div>
-        <h3>Create PPT</h3>
-        <p>Generate a premium, projector-ready presentation from your project — anytime, permanently available.</p>
-      </div>
-    </div>
+  <div class="stat reveal">
+    <div class="num">11</div>
+    <div class="lbl">Steps from idea to ship</div>
   </div>
-</section>
+  <div class="stat reveal">
+    <div class="num">∞</div>
+    <div class="lbl">Project types supported</div>
+  </div>
+  <div class="stat reveal">
+    <div class="num">0</div>
+    <div class="lbl">Lines of code you write</div>
+  </div>
+</div>
 
 <!-- ===== CAPABILITIES ===== -->
 <section id="capabilities">
@@ -3148,393 +2921,6 @@
         <h3>AI Deployment Platform</h3>
         <p>Ships to preview and production with built-in versioning, rollback, and zero-config hosting.</p>
         <span class="cap-tag">Shipping</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== IDEA ENGINE ===== -->
-<section class="engine" id="engine">
-  <div class="container">
-    <div class="engine-grid">
-      <div class="engine-left reveal">
-        <span class="section-eyebrow">Idea Understanding Engine</span>
-        <h2>It doesn't just write code. It understands your idea first.</h2>
-        <p>
-          Before any code is generated, the platform builds a structured understanding of your project —
-          extracting goals, users, features, data models, and technical constraints. You see the full
-          blueprint before a single file is created.
-        </p>
-        <ul class="engine-list">
-          <li><span class="check">✓</span> Project goal &amp; target users identified automatically</li>
-          <li><span class="check">✓</span> User roles, features, and pages extracted</li>
-          <li><span class="check">✓</span> Database schema &amp; API surface designed</li>
-          <li><span class="check">✓</span> Security, testing, and tech-stack recommendations</li>
-          <li><span class="check">✓</span> Smart clarification only when it matters</li>
-        </ul>
-      </div>
-
-      <div class="engine-visual reveal">
-        <div class="ev-head">
-          <div class="dots"><span></span><span></span><span></span></div>
-          <span class="title">idea-engine · parsing</span>
-        </div>
-        <div class="ev-node" style="--node-color: var(--blue);"><span class="pill"></span><span class="lbl">Project Goal</span><span class="val">e-commerce</span></div>
-        <div class="ev-node" style="--node-color: var(--purple);"><span class="pill"></span><span class="lbl">User Roles</span><span class="val">customer · admin</span></div>
-        <div class="ev-node" style="--node-color: var(--magenta);"><span class="pill"></span><span class="lbl">Pages</span><span class="val">12 identified</span></div>
-        <div class="ev-node" style="--node-color: var(--cyan);"><span class="pill"></span><span class="lbl">Data Models</span><span class="val">7 entities</span></div>
-        <div class="ev-node" style="--node-color: var(--green);"><span class="pill"></span><span class="lbl">Test Cases</span><span class="val">34 planned</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== STATS ===== -->
-<div class="stats">
-  <div class="stat reveal">
-    <div class="num">8</div>
-    <div class="lbl">Specialized AI agents</div>
-  </div>
-  <div class="stat reveal">
-    <div class="num">11</div>
-    <div class="lbl">Steps from idea to ship</div>
-  </div>
-  <div class="stat reveal">
-    <div class="num">∞</div>
-    <div class="lbl">Project types supported</div>
-  </div>
-  <div class="stat reveal">
-    <div class="num">0</div>
-    <div class="lbl">Lines of code you write</div>
-  </div>
-</div>
-
-<!-- ===== GITHUB DIRECT PUSH ===== -->
-<section class="feature-section" id="github">
-  <div class="container">
-    <div class="section-head reveal">
-      <span class="section-eyebrow" style="color: var(--violet);">Final Delivery · Optional</span>
-      <h2>Push to GitHub. No Git, no terminal, no ZIP files.</h2>
-      <p>Once your project is built, tested, and approved — push it straight to your repository. DARKNESS handles validation, security scanning, commits, and verification. You just paste a URL.</p>
-    </div>
-
-    <div class="feature-grid">
-      <!-- LEFT: explanation -->
-      <div class="feature-left reveal">
-        <h3>How it works</h3>
-        <p class="feature-intro">
-          GitHub is a <strong>final optional step</strong> — shown only after the project is complete.
-          It never appears during planning, coding, testing, or debugging.
-        </p>
-
-        <ul class="feature-list">
-          <li>
-            <span class="fl-icon" style="--fl-color: var(--violet);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-            </span>
-            <div>
-              <strong>Smart repository detection</strong>
-              <span>Paste a URL — owner and repo name are auto-extracted and validated before any auth happens.</span>
-            </div>
-          </li>
-          <li>
-            <span class="fl-icon" style="--fl-color: var(--green);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-            </span>
-            <div>
-              <strong>Automatic security scan</strong>
-              <span>API keys, tokens, <code>.env</code> files, and credentials are blocked before push — with one-click auto-fix to environment variables.</span>
-            </div>
-          </li>
-          <li>
-            <span class="fl-icon" style="--fl-color: var(--orange);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
-            </span>
-            <div>
-              <strong>Branch management</strong>
-              <span>Push to <code>main</code>, pick an existing branch, or create a new one like <code>ai-build-v1</code> for safer AI-generated changes.</span>
-            </div>
-          </li>
-          <li>
-            <span class="fl-icon" style="--fl-color: var(--red);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-            </span>
-            <div>
-              <strong>Conflict-safe pushes</strong>
-              <span>Remote changes are never silently overwritten. Conflicts trigger a clear review with Pull, Branch, or Cancel options.</span>
-            </div>
-          </li>
-          <li>
-            <span class="fl-icon" style="--fl-color: var(--blue);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-            </span>
-            <div>
-              <strong>Credentials never exposed</strong>
-              <span>Tokens are handled server-side only. Never logged, never sent to AI models, never committed, never visible in frontend code.</span>
-            </div>
-          </li>
-        </ul>
-
-        <div class="auto-push-toggle">
-          <div class="apt-label">
-            <strong>Automatically push successful builds</strong>
-            <span>OFF by default · only triggers when tests + security pass</span>
-          </div>
-          <div class="apt-switch" aria-label="Auto-push toggle">
-            <div class="apt-knob"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- RIGHT: mockup -->
-      <div class="feature-right reveal">
-        <div class="mockup">
-          <div class="mockup-head">
-            <div class="dots"><span></span><span></span><span></span></div>
-            <span class="title">github · connect &amp; push</span>
-          </div>
-          <div class="mockup-body">
-            <!-- Connection form -->
-            <div class="gh-form">
-              <label class="gh-label">Repository URL</label>
-              <div class="gh-input">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-                <span>https://github.com/username/my-project</span>
-              </div>
-
-              <label class="gh-label">GitHub Access Token</label>
-              <div class="gh-input gh-input-secret">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-                <span>••••••••••••••••••••••••</span>
-                <em>server-side only</em>
-              </div>
-
-              <div class="gh-detected">
-                <span class="gh-det-pill">✓ Provider: GitHub</span>
-                <span class="gh-det-pill">Owner: <code>username</code></span>
-                <span class="gh-det-pill">Repo: <code>my-project</code></span>
-              </div>
-
-              <div class="gh-buttons">
-                <button class="gh-btn gh-btn-primary">Connect &amp; Push</button>
-                <button class="gh-btn gh-btn-ghost">Test Connection</button>
-              </div>
-            </div>
-
-            <div class="mockup-divider"></div>
-
-            <!-- Push progress timeline -->
-            <div class="push-timeline">
-              <div class="pt-title">Push progress</div>
-              <div class="pt-step done">
-                <span class="pt-mark">✓</span>
-                <span class="pt-text">Connected to repository</span>
-              </div>
-              <div class="pt-step done">
-                <span class="pt-mark">✓</span>
-                <span class="pt-text">Repository verified</span>
-              </div>
-              <div class="pt-step done">
-                <span class="pt-mark">✓</span>
-                <span class="pt-text">Project validated</span>
-              </div>
-              <div class="pt-step done">
-                <span class="pt-mark">✓</span>
-                <span class="pt-text">Security scan completed · 0 secrets</span>
-              </div>
-              <div class="pt-step active">
-                <span class="pt-mark pt-spinner"></span>
-                <span class="pt-text">Pushing changes…</span>
-              </div>
-              <div class="pt-step">
-                <span class="pt-mark">○</span>
-                <span class="pt-text">Verifying GitHub</span>
-              </div>
-            </div>
-
-            <div class="mockup-divider"></div>
-
-            <!-- Success card -->
-            <div class="gh-success">
-              <div class="gh-success-head">
-                <span class="gh-success-icon">🎉</span>
-                <strong>Successfully pushed to GitHub</strong>
-              </div>
-              <div class="gh-success-meta">
-                <div><span>Repository</span><code>username/my-project</code></div>
-                <div><span>Branch</span><code>main</code></div>
-                <div><span>Commit</span><code>a8f31c2</code></div>
-                <div><span>Files</span><code>47 changed</code></div>
-              </div>
-              <div class="gh-success-actions">
-                <button class="gh-btn gh-btn-primary">Open GitHub</button>
-                <button class="gh-btn gh-btn-ghost">Copy Link</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- ===== PPT STUDIO ===== -->
-<section class="feature-section feature-section-alt" id="ppt">
-  <div class="container">
-    <div class="section-head reveal">
-      <span class="section-eyebrow" style="color: var(--magenta);">Permanent Feature · Always Available</span>
-      <h2>PPT Studio. Premium presentations from any project.</h2>
-      <p>Generate a projector-ready <code>.pptx</code> from your project, website, research, or uploaded docs — with 4K images, clean layouts, and a built-in quality check. Always accessible, even after GitHub push.</p>
-    </div>
-
-    <div class="feature-grid feature-grid-reverse">
-      <!-- LEFT: mockup -->
-      <div class="feature-right reveal">
-        <div class="mockup mockup-ppt">
-          <div class="mockup-head">
-            <div class="dots"><span></span><span></span><span></span></div>
-            <span class="title">ppt-studio · slide preview</span>
-          </div>
-          <div class="mockup-body">
-            <!-- Slide thumbnails -->
-            <div class="slide-grid">
-              <div class="slide-thumb slide-title">
-                <div class="st-tag">Title</div>
-                <div class="st-title">Project Name</div>
-                <div class="st-sub">Built with DARKNESS</div>
-              </div>
-              <div class="slide-thumb">
-                <div class="st-tag">Problem</div>
-                <ul class="st-bullets">
-                  <li>Manual dev is slow</li>
-                  <li>Testing is effort-heavy</li>
-                  <li>Tools are fragmented</li>
-                </ul>
-              </div>
-              <div class="slide-thumb">
-                <div class="st-tag">Architecture</div>
-                <div class="st-diagram">
-                  <span class="st-node" style="--sn-color: var(--blue);">UI</span>
-                  <span class="st-arrow">→</span>
-                  <span class="st-node" style="--sn-color: var(--cyan);">API</span>
-                  <span class="st-arrow">→</span>
-                  <span class="st-node" style="--sn-color: var(--purple);">DB</span>
-                </div>
-              </div>
-              <div class="slide-thumb">
-                <div class="st-tag">Features</div>
-                <ul class="st-bullets">
-                  <li>Auth &amp; roles</li>
-                  <li>Dashboard</li>
-                  <li>Payments</li>
-                  <li>Analytics</li>
-                </ul>
-              </div>
-              <div class="slide-thumb">
-                <div class="st-tag">Tech Stack</div>
-                <div class="st-chips">
-                  <span>Next.js</span><span>Prisma</span><span>tRPC</span><span>Tailwind</span>
-                </div>
-              </div>
-              <div class="slide-thumb">
-                <div class="st-tag">Results</div>
-                <div class="st-stat">98%</div>
-                <div class="st-stat-lbl">tests passing</div>
-              </div>
-            </div>
-
-            <div class="mockup-divider"></div>
-
-            <!-- Quality check -->
-            <div class="quality-check">
-              <div class="qc-title">Quality check · auto-fix on fail</div>
-              <div class="qc-grid">
-                <div class="qc-item pass"><span class="qc-mark">✓</span> Text overflow</div>
-                <div class="qc-item pass"><span class="qc-mark">✓</span> Image resolution</div>
-                <div class="qc-item pass"><span class="qc-mark">✓</span> Alignment</div>
-                <div class="qc-item pass"><span class="qc-mark">✓</span> Font size</div>
-                <div class="qc-item pass"><span class="qc-mark">✓</span> Spacing</div>
-                <div class="qc-item pass"><span class="qc-mark">✓</span> Slide consistency</div>
-                <div class="qc-item pass"><span class="qc-mark">✓</span> Diagrams</div>
-                <div class="qc-item pass"><span class="qc-mark">✓</span> Projector readability</div>
-              </div>
-            </div>
-
-            <div class="mockup-divider"></div>
-
-            <!-- Output actions -->
-            <div class="ppt-actions">
-              <button class="gh-btn gh-btn-primary">⬇ Download PPTX</button>
-              <button class="gh-btn gh-btn-ghost">Edit</button>
-              <button class="gh-btn gh-btn-ghost">Regenerate</button>
-              <button class="gh-btn gh-btn-ghost">Change Theme</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- RIGHT: explanation -->
-      <div class="feature-left reveal">
-        <h3>What PPT Studio generates</h3>
-        <p class="feature-intro">
-          A premium, international-level presentation — only including slides relevant to your project.
-          No forced sections, no overloaded slides, no tiny text.
-        </p>
-
-        <div class="ppt-content-grid">
-          <span class="ppt-chip">Title Slide</span>
-          <span class="ppt-chip">Introduction</span>
-          <span class="ppt-chip">Problem Statement</span>
-          <span class="ppt-chip">Objectives</span>
-          <span class="ppt-chip">Target Users</span>
-          <span class="ppt-chip">Existing System</span>
-          <span class="ppt-chip">Proposed System</span>
-          <span class="ppt-chip">Features</span>
-          <span class="ppt-chip">Architecture</span>
-          <span class="ppt-chip">Workflow</span>
-          <span class="ppt-chip">Mind Map</span>
-          <span class="ppt-chip">Tech Stack</span>
-          <span class="ppt-chip">Database</span>
-          <span class="ppt-chip">UI Screenshots</span>
-          <span class="ppt-chip">Implementation</span>
-          <span class="ppt-chip">Testing</span>
-          <span class="ppt-chip">Results</span>
-          <span class="ppt-chip">Advantages</span>
-          <span class="ppt-chip">Limitations</span>
-          <span class="ppt-chip">Future Scope</span>
-          <span class="ppt-chip">Conclusion</span>
-          <span class="ppt-chip">References</span>
-        </div>
-
-        <ul class="feature-list">
-          <li>
-            <span class="fl-icon" style="--fl-color: var(--magenta);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-            </span>
-            <div>
-              <strong>Projector-optimized</strong>
-              <span>Large readable fonts, strong visual hierarchy, high contrast, 4K images (min 3840×2160). No blurry slides on the big screen.</span>
-            </div>
-          </li>
-          <li>
-            <span class="fl-icon" style="--fl-color: var(--green);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-            </span>
-            <div>
-              <strong>Auto-fix quality check</strong>
-              <span>If a slide fails overflow, alignment, or resolution checks — the AI fixes it and re-runs the check. Loop until perfect.</span>
-            </div>
-          </li>
-          <li>
-            <span class="fl-icon" style="--fl-color: var(--blue);">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
-            </span>
-            <div>
-              <strong>Versioned &amp; permanent</strong>
-              <span>PPT v1, v2, v3… saved inside your project with full history. Compare, restore, or regenerate any version — anytime.</span>
-            </div>
-          </li>
-        </ul>
       </div>
     </div>
   </div>
@@ -4060,6 +3446,623 @@
   </div>
 </section>
 
+<!-- ===== AI ASSISTANT ===== -->
+<section class="feature-section feature-section-chat" id="chat">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow" style="color: var(--blue);">Core Interface · ChatGPT-Style AI Assistant</span>
+      <h2>The chat that runs the entire platform.</h2>
+      <p>Not a static UI. A real conversational engine — streaming responses, markdown, code execution, tool use, memory, and deep integration with every studio. Just describe what you want; DARKNESS figures out how to do it.</p>
+    </div>
+
+    <div class="chat-mockup reveal" id="chatMockup">
+      <div class="mockup-head">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <span class="title">darkness · ai assistant</span>
+        <span class="chat-status-pill"><span class="chat-status-dot"></span> Online</span>
+      </div>
+      <div class="chat-body">
+        <!-- Sidebar -->
+        <aside class="chat-sidebar">
+          <button class="chat-new-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Chat
+          </button>
+          <div class="chat-search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search chats…" />
+          </div>
+          <div class="chat-sidebar-section">
+            <div class="chat-sidebar-title">Pinned</div>
+            <div class="chat-item active">
+              <span class="chat-item-pin">★</span>
+              <span class="chat-item-name">Build AI Portfolio Website</span>
+            </div>
+            <div class="chat-item">
+              <span class="chat-item-pin">★</span>
+              <span class="chat-item-name">Food Delivery Plan</span>
+            </div>
+          </div>
+          <div class="chat-sidebar-section">
+            <div class="chat-sidebar-title">Recent</div>
+            <div class="chat-item">
+              <span class="chat-item-name">React 19 features</span>
+            </div>
+            <div class="chat-item">
+              <span class="chat-item-name">Payment gateway research</span>
+            </div>
+            <div class="chat-item">
+              <span class="chat-item-name">Logo design ideas</span>
+            </div>
+            <div class="chat-item">
+              <span class="chat-item-name">API auth debugging</span>
+            </div>
+          </div>
+          <div class="chat-sidebar-section">
+            <div class="chat-sidebar-title">Folders</div>
+            <div class="chat-folder">📁 College</div>
+            <div class="chat-folder">📁 Projects</div>
+            <div class="chat-folder">📁 Research</div>
+          </div>
+        </aside>
+
+        <!-- Main chat area -->
+        <div class="chat-main">
+          <!-- Top bar -->
+          <div class="chat-topbar">
+            <div class="chat-model-selector">
+              <span class="chat-model-dot"></span>
+              <span class="chat-model-name">Darkness Reasoning</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            <div class="chat-toggles">
+              <button class="chat-toggle" id="webSearchToggle" data-on="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                Web Search
+              </button>
+              <button class="chat-toggle" id="deepResearchToggle" data-on="false">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11H3v10h6V11zm12-8h-6v18h6V3z"/></svg>
+                Deep Research
+              </button>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <div class="chat-messages" id="chatMessages">
+            <div class="chat-welcome" id="chatWelcome">
+              <div class="chat-welcome-orb"></div>
+              <h3>What can I help you build, understand, research or create?</h3>
+              <p class="chat-welcome-sub">Ask anything, or describe what you want to build. The orchestrator routes your request to the right model, tool, and agent.</p>
+              <div class="chat-suggested">
+                <button data-prompt="Build me a modern AI portfolio website with dark mode and purple accents.">Build a Website</button>
+                <button data-prompt="Explain how recursion works, with a code example.">Explain a Topic</button>
+                <button data-prompt="Write a JavaScript function to debounce API calls.">Write Code</button>
+                <button data-prompt="Research the latest AI coding tools in 2026.">Research a Topic</button>
+                <button data-prompt="Create a presentation about this project.">Create a PPT</button>
+                <button data-prompt="Analyze the attached requirements.pdf and summarize key features.">Analyze a File</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Composer -->
+          <div class="chat-composer">
+            <div class="chat-composer-input-wrap">
+              <div class="chat-composer-tools-left">
+                <button class="chat-tool-btn" title="Attach file">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                </button>
+                <button class="chat-tool-btn" title="Upload image">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </button>
+                <button class="chat-tool-btn" title="Voice input">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+              </div>
+              <textarea id="chatInput" placeholder="Ask anything, or describe what you want to build…" rows="1"></textarea>
+              <button class="chat-send-btn" id="chatSendBtn" title="Send">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+              </button>
+            </div>
+            <div class="chat-composer-hint">
+              <span><kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</span>
+              <span class="chat-context-pill">Project Context: AI Portfolio Website</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature highlights + tool chips -->
+    <div class="chat-features-grid">
+      <div class="chat-feature reveal">
+        <div class="cf-icon" style="--cf-color: var(--blue);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h4>Streaming responses</h4>
+        <p>Token-by-token rendering with live markdown. Meaningful activity status — never just "Loading…".</p>
+      </div>
+      <div class="chat-feature reveal">
+        <div class="cf-icon" style="--cf-color: var(--cyan);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        </div>
+        <h4>Code execution &amp; auto-fix</h4>
+        <p>Code blocks run in a sandbox. Errors are auto-routed back to the AI, fixed, and re-run within retry limits.</p>
+      </div>
+      <div class="chat-feature reveal">
+        <div class="cf-icon" style="--cf-color: var(--purple);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        </div>
+        <h4>Conversation memory</h4>
+        <p>Remembers project context, decisions, and preferences. Long chats are summarized without losing critical info.</p>
+      </div>
+      <div class="chat-feature reveal">
+        <div class="cf-icon" style="--cf-color: var(--magenta);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        </div>
+        <h4>Intelligent routing</h4>
+        <p>Simple questions hit a fast model. Coding hits Z.ai. Research triggers a multi-source workflow. You never pick.</p>
+      </div>
+    </div>
+
+    <!-- Tools the AI can use -->
+    <div class="chat-tools-strip reveal">
+      <div class="cts-label">AI can use <strong>14+ tools</strong> · invoked automatically when needed:</div>
+      <div class="cts-chips">
+        <span class="cts-chip">🔍 Web Search</span>
+        <span class="cts-chip">🌐 Browser</span>
+        <span class="cts-chip">📄 File Reader</span>
+        <span class="cts-chip">✏️ File Writer</span>
+        <span class="cts-chip">💻 Code Editor</span>
+        <span class="cts-chip">▶️ Code Runner</span>
+        <span class="cts-chip">🗄️ Database</span>
+        <span class="cts-chip">🎨 Image Gen</span>
+        <span class="cts-chip">📊 PPT Gen</span>
+        <span class="cts-chip">📝 Doc Gen</span>
+        <span class="cts-chip">🔀 Git</span>
+        <span class="cts-chip">🧪 Testing</span>
+        <span class="cts-chip">🔒 Security Scan</span>
+        <span class="cts-chip">🐙 GitHub</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== WORKFLOW ===== -->
+<section class="workflow" id="workflow">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow">The Workflow</span>
+      <h2>From idea to deployment — in one continuous flow.</h2>
+      <p>No more juggling tools. Describe what you want, and a coordinated team of AI agents takes it from concept to production.</p>
+    </div>
+
+    <div class="workflow-steps">
+      <div class="step reveal" style="--step-color: var(--blue);">
+        <div class="step-num">01</div>
+        <h3>Describe</h3>
+        <p>Type, paste, speak, or upload a file. However you express your idea, the platform understands it.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--purple);">
+        <div class="step-num">02</div>
+        <h3>Understand</h3>
+        <p>The AI extracts goals, users, roles, features, pages, data models, APIs, and technical requirements.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--purple);">
+        <div class="step-num">03</div>
+        <h3>Visualize</h3>
+        <p>An interactive mind map renders the full project architecture. Edit any node before building begins.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--violet);">
+        <div class="step-num">04</div>
+        <h3>Approve</h3>
+        <p>Review the plan, accept AI assumptions, or request changes. Nothing gets built without your green light.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--cyan);">
+        <div class="step-num">05</div>
+        <h3>Build</h3>
+        <p>Specialized AI agents generate production-ready frontend, backend, database, and infrastructure code.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--green);">
+        <div class="step-num">06</div>
+        <h3>Test</h3>
+        <p>An AI testing engineer writes and runs test suites, then reports any failures with full context.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--orange);">
+        <div class="step-num">07</div>
+        <h3>Fix</h3>
+        <p>Errors are routed straight back to the coding agent, which patches them — and re-runs the tests.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--magenta);">
+        <div class="step-num">08</div>
+        <h3>Preview</h3>
+        <p>A live preview opens instantly. Edit anything in natural language and watch it update in real time.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--blue);">
+        <div class="step-num">09</div>
+        <h3>Deploy</h3>
+        <p>Ship to staging or production with one click. Version control and rollback are built in.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--violet);">
+        <div class="step-num">10</div>
+        <h3>Push to GitHub</h3>
+        <p>After final approval, push the finished project directly to your repository — no Git commands, no ZIP files.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--magenta);">
+        <div class="step-num">11</div>
+        <h3>Create PPT</h3>
+        <p>Generate a premium, projector-ready presentation from your project — anytime, permanently available.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== IDEA ENGINE ===== -->
+<section class="engine" id="engine">
+  <div class="container">
+    <div class="engine-grid">
+      <div class="engine-left reveal">
+        <span class="section-eyebrow">Idea Understanding Engine</span>
+        <h2>It doesn't just write code. It understands your idea first.</h2>
+        <p>
+          Before any code is generated, the platform builds a structured understanding of your project —
+          extracting goals, users, features, data models, and technical constraints. You see the full
+          blueprint before a single file is created.
+        </p>
+        <ul class="engine-list">
+          <li><span class="check">✓</span> Project goal &amp; target users identified automatically</li>
+          <li><span class="check">✓</span> User roles, features, and pages extracted</li>
+          <li><span class="check">✓</span> Database schema &amp; API surface designed</li>
+          <li><span class="check">✓</span> Security, testing, and tech-stack recommendations</li>
+          <li><span class="check">✓</span> Smart clarification only when it matters</li>
+        </ul>
+      </div>
+
+      <div class="engine-visual reveal">
+        <div class="ev-head">
+          <div class="dots"><span></span><span></span><span></span></div>
+          <span class="title">idea-engine · parsing</span>
+        </div>
+        <div class="ev-node" style="--node-color: var(--blue);"><span class="pill"></span><span class="lbl">Project Goal</span><span class="val">e-commerce</span></div>
+        <div class="ev-node" style="--node-color: var(--purple);"><span class="pill"></span><span class="lbl">User Roles</span><span class="val">customer · admin</span></div>
+        <div class="ev-node" style="--node-color: var(--magenta);"><span class="pill"></span><span class="lbl">Pages</span><span class="val">12 identified</span></div>
+        <div class="ev-node" style="--node-color: var(--cyan);"><span class="pill"></span><span class="lbl">Data Models</span><span class="val">7 entities</span></div>
+        <div class="ev-node" style="--node-color: var(--green);"><span class="pill"></span><span class="lbl">Test Cases</span><span class="val">34 planned</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== GITHUB DIRECT PUSH ===== -->
+<section class="feature-section" id="github">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow" style="color: var(--violet);">Final Delivery · Optional</span>
+      <h2>Push to GitHub. No Git, no terminal, no ZIP files.</h2>
+      <p>Once your project is built, tested, and approved — push it straight to your repository. DARKNESS handles validation, security scanning, commits, and verification. You just paste a URL.</p>
+    </div>
+
+    <div class="feature-grid">
+      <!-- LEFT: explanation -->
+      <div class="feature-left reveal">
+        <h3>How it works</h3>
+        <p class="feature-intro">
+          GitHub is a <strong>final optional step</strong> — shown only after the project is complete.
+          It never appears during planning, coding, testing, or debugging.
+        </p>
+
+        <ul class="feature-list">
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--violet);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            </span>
+            <div>
+              <strong>Smart repository detection</strong>
+              <span>Paste a URL — owner and repo name are auto-extracted and validated before any auth happens.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--green);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </span>
+            <div>
+              <strong>Automatic security scan</strong>
+              <span>API keys, tokens, <code>.env</code> files, and credentials are blocked before push — with one-click auto-fix to environment variables.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--orange);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+            </span>
+            <div>
+              <strong>Branch management</strong>
+              <span>Push to <code>main</code>, pick an existing branch, or create a new one like <code>ai-build-v1</code> for safer AI-generated changes.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--red);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            <div>
+              <strong>Conflict-safe pushes</strong>
+              <span>Remote changes are never silently overwritten. Conflicts trigger a clear review with Pull, Branch, or Cancel options.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--blue);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <div>
+              <strong>Credentials never exposed</strong>
+              <span>Tokens are handled server-side only. Never logged, never sent to AI models, never committed, never visible in frontend code.</span>
+            </div>
+          </li>
+        </ul>
+
+        <div class="auto-push-toggle">
+          <div class="apt-label">
+            <strong>Automatically push successful builds</strong>
+            <span>OFF by default · only triggers when tests + security pass</span>
+          </div>
+          <div class="apt-switch" aria-label="Auto-push toggle">
+            <div class="apt-knob"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: mockup -->
+      <div class="feature-right reveal">
+        <div class="mockup">
+          <div class="mockup-head">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <span class="title">github · connect &amp; push</span>
+          </div>
+          <div class="mockup-body">
+            <!-- Connection form -->
+            <div class="gh-form">
+              <label class="gh-label">Repository URL</label>
+              <div class="gh-input">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                <span>https://github.com/username/my-project</span>
+              </div>
+
+              <label class="gh-label">GitHub Access Token</label>
+              <div class="gh-input gh-input-secret">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>••••••••••••••••••••••••</span>
+                <em>server-side only</em>
+              </div>
+
+              <div class="gh-detected">
+                <span class="gh-det-pill">✓ Provider: GitHub</span>
+                <span class="gh-det-pill">Owner: <code>username</code></span>
+                <span class="gh-det-pill">Repo: <code>my-project</code></span>
+              </div>
+
+              <div class="gh-buttons">
+                <button class="gh-btn gh-btn-primary">Connect &amp; Push</button>
+                <button class="gh-btn gh-btn-ghost">Test Connection</button>
+              </div>
+            </div>
+
+            <div class="mockup-divider"></div>
+
+            <!-- Push progress timeline -->
+            <div class="push-timeline">
+              <div class="pt-title">Push progress</div>
+              <div class="pt-step done">
+                <span class="pt-mark">✓</span>
+                <span class="pt-text">Connected to repository</span>
+              </div>
+              <div class="pt-step done">
+                <span class="pt-mark">✓</span>
+                <span class="pt-text">Repository verified</span>
+              </div>
+              <div class="pt-step done">
+                <span class="pt-mark">✓</span>
+                <span class="pt-text">Project validated</span>
+              </div>
+              <div class="pt-step done">
+                <span class="pt-mark">✓</span>
+                <span class="pt-text">Security scan completed · 0 secrets</span>
+              </div>
+              <div class="pt-step active">
+                <span class="pt-mark pt-spinner"></span>
+                <span class="pt-text">Pushing changes…</span>
+              </div>
+              <div class="pt-step">
+                <span class="pt-mark">○</span>
+                <span class="pt-text">Verifying GitHub</span>
+              </div>
+            </div>
+
+            <div class="mockup-divider"></div>
+
+            <!-- Success card -->
+            <div class="gh-success">
+              <div class="gh-success-head">
+                <span class="gh-success-icon">🎉</span>
+                <strong>Successfully pushed to GitHub</strong>
+              </div>
+              <div class="gh-success-meta">
+                <div><span>Repository</span><code>username/my-project</code></div>
+                <div><span>Branch</span><code>main</code></div>
+                <div><span>Commit</span><code>a8f31c2</code></div>
+                <div><span>Files</span><code>47 changed</code></div>
+              </div>
+              <div class="gh-success-actions">
+                <button class="gh-btn gh-btn-primary">Open GitHub</button>
+                <button class="gh-btn gh-btn-ghost">Copy Link</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PPT STUDIO ===== -->
+<section class="feature-section feature-section-alt" id="ppt">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow" style="color: var(--magenta);">Permanent Feature · Always Available</span>
+      <h2>PPT Studio. Premium presentations from any project.</h2>
+      <p>Generate a projector-ready <code>.pptx</code> from your project, website, research, or uploaded docs — with 4K images, clean layouts, and a built-in quality check. Always accessible, even after GitHub push.</p>
+    </div>
+
+    <div class="feature-grid feature-grid-reverse">
+      <!-- LEFT: mockup -->
+      <div class="feature-right reveal">
+        <div class="mockup mockup-ppt">
+          <div class="mockup-head">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <span class="title">ppt-studio · slide preview</span>
+          </div>
+          <div class="mockup-body">
+            <!-- Slide thumbnails -->
+            <div class="slide-grid">
+              <div class="slide-thumb slide-title">
+                <div class="st-tag">Title</div>
+                <div class="st-title">Project Name</div>
+                <div class="st-sub">Built with DARKNESS</div>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Problem</div>
+                <ul class="st-bullets">
+                  <li>Manual dev is slow</li>
+                  <li>Testing is effort-heavy</li>
+                  <li>Tools are fragmented</li>
+                </ul>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Architecture</div>
+                <div class="st-diagram">
+                  <span class="st-node" style="--sn-color: var(--blue);">UI</span>
+                  <span class="st-arrow">→</span>
+                  <span class="st-node" style="--sn-color: var(--cyan);">API</span>
+                  <span class="st-arrow">→</span>
+                  <span class="st-node" style="--sn-color: var(--purple);">DB</span>
+                </div>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Features</div>
+                <ul class="st-bullets">
+                  <li>Auth &amp; roles</li>
+                  <li>Dashboard</li>
+                  <li>Payments</li>
+                  <li>Analytics</li>
+                </ul>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Tech Stack</div>
+                <div class="st-chips">
+                  <span>Next.js</span><span>Prisma</span><span>tRPC</span><span>Tailwind</span>
+                </div>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Results</div>
+                <div class="st-stat">98%</div>
+                <div class="st-stat-lbl">tests passing</div>
+              </div>
+            </div>
+
+            <div class="mockup-divider"></div>
+
+            <!-- Quality check -->
+            <div class="quality-check">
+              <div class="qc-title">Quality check · auto-fix on fail</div>
+              <div class="qc-grid">
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Text overflow</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Image resolution</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Alignment</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Font size</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Spacing</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Slide consistency</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Diagrams</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Projector readability</div>
+              </div>
+            </div>
+
+            <div class="mockup-divider"></div>
+
+            <!-- Output actions -->
+            <div class="ppt-actions">
+              <button class="gh-btn gh-btn-primary">⬇ Download PPTX</button>
+              <button class="gh-btn gh-btn-ghost">Edit</button>
+              <button class="gh-btn gh-btn-ghost">Regenerate</button>
+              <button class="gh-btn gh-btn-ghost">Change Theme</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: explanation -->
+      <div class="feature-left reveal">
+        <h3>What PPT Studio generates</h3>
+        <p class="feature-intro">
+          A premium, international-level presentation — only including slides relevant to your project.
+          No forced sections, no overloaded slides, no tiny text.
+        </p>
+
+        <div class="ppt-content-grid">
+          <span class="ppt-chip">Title Slide</span>
+          <span class="ppt-chip">Introduction</span>
+          <span class="ppt-chip">Problem Statement</span>
+          <span class="ppt-chip">Objectives</span>
+          <span class="ppt-chip">Target Users</span>
+          <span class="ppt-chip">Existing System</span>
+          <span class="ppt-chip">Proposed System</span>
+          <span class="ppt-chip">Features</span>
+          <span class="ppt-chip">Architecture</span>
+          <span class="ppt-chip">Workflow</span>
+          <span class="ppt-chip">Mind Map</span>
+          <span class="ppt-chip">Tech Stack</span>
+          <span class="ppt-chip">Database</span>
+          <span class="ppt-chip">UI Screenshots</span>
+          <span class="ppt-chip">Implementation</span>
+          <span class="ppt-chip">Testing</span>
+          <span class="ppt-chip">Results</span>
+          <span class="ppt-chip">Advantages</span>
+          <span class="ppt-chip">Limitations</span>
+          <span class="ppt-chip">Future Scope</span>
+          <span class="ppt-chip">Conclusion</span>
+          <span class="ppt-chip">References</span>
+        </div>
+
+        <ul class="feature-list">
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--magenta);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </span>
+            <div>
+              <strong>Projector-optimized</strong>
+              <span>Large readable fonts, strong visual hierarchy, high contrast, 4K images (min 3840×2160). No blurry slides on the big screen.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--green);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <div>
+              <strong>Auto-fix quality check</strong>
+              <span>If a slide fails overflow, alignment, or resolution checks — the AI fixes it and re-runs the check. Loop until perfect.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--blue);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
+            </span>
+            <div>
+              <strong>Versioned &amp; permanent</strong>
+              <span>PPT v1, v2, v3… saved inside your project with full history. Compare, restore, or regenerate any version — anytime.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ===== CTA ===== -->
 <section class="cta">
   <h2 class="reveal">Ready to build something <span class="grad" style="background: linear-gradient(135deg, var(--blue), var(--purple), var(--magenta)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">extraordinary</span>?</h2>
@@ -4083,10 +4086,10 @@
     <div class="footer-col">
       <h4>Product</h4>
       <ul>
-        <li><a href="#chat">AI Assistant</a></li>
+        <li><a href="#capabilities">Capabilities</a></li>
         <li><a href="#orchestrator">Multi-AI</a></li>
         <li><a href="#think">Think Modes</a></li>
-        <li><a href="#capabilities">Capabilities</a></li>
+        <li><a href="#chat">AI Assistant</a></li>
         <li><a href="#workflow">Workflow</a></li>
         <li><a href="#github">GitHub Push</a></li>
         <li><a href="#ppt">PPT Studio</a></li>
