@@ -3633,6 +3633,55 @@
   .search-result-snippet { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
   .search-result-snippet mark { background: rgba(168,85,247,0.3); color: #fff; border-radius: 2px; padding: 0 2px; }
 
+  .chat-item .chat-item-pin-btn {
+    opacity: 0;
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    color: var(--text-faint);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.14s ease;
+    flex-shrink: 0;
+    font-size: 12px;
+  }
+  .chat-item:hover .chat-item-pin-btn { opacity: 1; }
+  .chat-item .chat-item-pin-btn:hover { background: rgba(251,146,60,0.15); }
+  .chat-item .chat-item-pin { font-size: 11px; }
+
+  /* Home page inline chat */
+  .home-messages {
+    width: 100%;
+    max-width: 760px;
+    margin-top: 24px;
+    text-align: left;
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 0 4px;
+  }
+  .home-messages::-webkit-scrollbar { width: 4px; }
+  .home-messages::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+  .home-msg {
+    margin-bottom: 16px;
+    padding: 12px 16px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.6;
+    animation: msgIn 0.3s ease;
+  }
+  .home-msg-user {
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    margin-left: 40px;
+  }
+  .home-msg-ai {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    margin-right: 40px;
+  }
+  .home-msg-sender { font-size: 11px; font-weight: 600; color: var(--text-faint); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .home-msg-content { color: #e8eaf2; }
+  .home-msg-content strong { color: #fff; }
+  .home-msg-content code { background: rgba(168,85,247,0.14); padding: 1.5px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #d8c4f8; }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 860px) {
     /* Sidebar collapses on mobile */
@@ -3856,6 +3905,9 @@
       <button>Build a SaaS dashboard for analytics…</button>
       <button>Turn my idea into a complete business website…</button>
     </div>
+
+    <!-- Inline messages (home page acts as AI assistant) -->
+    <div class="home-messages" id="homeMessages"></div>
   </div>
 </section>
 
@@ -5359,6 +5411,20 @@
         </div>
         <div class="setting-row">
           <div class="setting-info">
+            <div class="setting-label">Export all settings</div>
+            <div class="setting-desc">Download theme, API URL, preferences as JSON.</div>
+          </div>
+          <button class="setting-action-btn" id="exportSettingsBtn">Export Settings</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Import settings</div>
+            <div class="setting-desc">Restore settings from a previously exported JSON file.</div>
+          </div>
+          <button class="setting-action-btn" id="importSettingsBtn">Import Settings</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
             <div class="setting-label">Clear all chats</div>
             <div class="setting-desc">Permanently delete all conversations.</div>
           </div>
@@ -5939,8 +6005,13 @@
         const q = prompt('Search across all your chats:');
         if (q) searchAllChats(q);
       }},
+      { cmd: '/quiz', icon: '❓', desc: 'Generate a quiz from this conversation', action: () => { generateQuiz(); }},
+      { cmd: '/md-export', icon: '📄', desc: 'Export this conversation as Markdown', action: () => { exportMarkdown(); }},
+      { cmd: '/pin', icon: '📌', desc: 'Pin/unpin this conversation', action: () => { togglePin(); }},
+      { cmd: '/settings-export', icon: '⚙️', desc: 'Export all settings as JSON', action: () => { exportSettings(); }},
+      { cmd: '/settings-import', icon: '📥', desc: 'Import settings from JSON', action: () => { importSettings(); }},
       { cmd: '/help', icon: '❓', desc: 'Show available commands', action: () => {
-        appendAIMessage('**Available slash commands:**\n\n- `/clear` — Clear current conversation\n- `/new` — Start a new chat\n- `/mode auto|fast|think|deep|coding|ppt` — Switch AI mode\n- `/image` — Generate an image from text\n- `/translate` — Translate text to another language\n- `/code` — Run JavaScript in a sandbox\n- `/search` — Search the web\n- `/folder` — Move this chat to a folder\n- `/collab` — Start real-time collaboration\n- `/summarize` — Summarize the conversation so far\n- `/theme` — Change accent color / theme\n- `/search-chats` — Search across all conversations\n- `/export` — Export this conversation as JSON\n- `/import` — Import a conversation from JSON\n- `/share` — Create a shareable link for this chat\n- `/help` — Show this help\n\nYou can also just type your question normally.', true);
+        appendAIMessage('**Available slash commands:**\n\n- `/clear` — Clear current conversation\n- `/new` — Start a new chat\n- `/mode auto|fast|think|deep|coding|ppt` — Switch AI mode\n- `/image` — Generate an image from text\n- `/translate` — Translate text to another language\n- `/code` — Run JavaScript in a sandbox\n- `/search` — Search the web\n- `/folder` — Move this chat to a folder\n- `/collab` — Start real-time collaboration\n- `/summarize` — Summarize the conversation so far\n- `/quiz` — Generate a quiz from this conversation\n- `/theme` — Change accent color / theme\n- `/search-chats` — Search across all conversations\n- `/pin` — Pin/unpin this conversation\n- `/export` — Export this conversation as JSON\n- `/md-export` — Export as Markdown\n- `/import` — Import a conversation from JSON\n- `/settings-export` — Export all settings\n- `/settings-import` — Import settings\n- `/share` — Create a shareable link for this chat\n- `/help` — Show this help\n\nYou can also just type your question normally.', true);
       }},
     ];
 
@@ -6932,6 +7003,181 @@
         renderChatSidebar();
       };
       window.__appendAIMessage = (content, skipStream) => appendAIMessage(content, skipStream);
+
+      // ── /quiz: Generate a quiz from the conversation ──
+      window.generateQuiz = async function() {
+        const conv = currentConversation;
+        if (!conv || conv.messages.length === 0) {
+          appendAIMessage('⚠️ No conversation to generate a quiz from. Start chatting first.', true);
+          return;
+        }
+        const apiUrl = localStorage.getItem('darkness-api-url') || '';
+        if (!apiUrl) {
+          appendAIMessage('⚠️ Quiz generation requires the AI backend.\n\nGo to **Settings → General → AI Backend URL**.', true);
+          return;
+        }
+        appendAIMessage('❓ Generating quiz from your conversation…', true);
+        trackEvent('quiz_generated', {});
+        try {
+          const convText = conv.messages.map(m => `${m.role === 'user' ? 'User' : 'AI'}: ${m.content.slice(0, 300)}`).join('\n\n');
+          const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messages: [{ role: 'user', content: `Based on this conversation, create a 5-question quiz (multiple choice with 4 options each). Format each question as:\n\n**Q1.** Question text\nA) option\nB) option\nC) option\nD) option\n**Answer:** X\n\nConversation:\n${convText}` }],
+              mode: 'think'
+            })
+          });
+          const data = await res.json();
+          if (data.success) {
+            appendAIMessage('**Quiz Time!** 📝\n\n' + data.response + '\n\n*Answers are included below each question.*', true);
+          } else {
+            appendAIMessage('⚠️ Quiz generation failed: ' + (data.error || 'Unknown error'), true);
+          }
+        } catch(e) {
+          appendAIMessage('⚠️ Quiz generation failed: ' + e.message, true);
+        }
+      };
+
+      // ── /md-export: Export conversation as Markdown ──
+      window.exportMarkdown = function() {
+        const conv = currentConversation;
+        if (!conv || conv.messages.length === 0) {
+          appendAIMessage('⚠️ No messages to export.', true);
+          return;
+        }
+        let md = `# ${conv.title}\n\n`;
+        md += `*Exported from DARKNESS AI on ${new Date().toLocaleString()}*\n\n`;
+        md += `---\n\n`;
+        conv.messages.forEach(m => {
+          md += `## ${m.role === 'user' ? '👤 You' : '🤖 DARKNESS AI'}\n\n`;
+          md += `${m.content}\n\n`;
+        });
+        md += `---\n\n*${conv.messages.length} messages • Powered by DARKNESS AI*`;
+        const blob = new Blob([md], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `darkness-${conv.title.replace(/[^a-z0-9]/gi, '_').slice(0, 30)}.md`;
+        a.click();
+        URL.revokeObjectURL(url);
+        appendAIMessage(`✅ Exported **${conv.title}** as Markdown (${conv.messages.length} messages).`, true);
+        trackEvent('md_exported', {});
+      };
+
+      // ── /pin: Pin/unpin conversation ──
+      window.togglePin = function() {
+        const conv = currentConversation;
+        if (!conv) return;
+        conv.pinned = !conv.pinned;
+        updateConversation(conv);
+        renderChatSidebar();
+        appendAIMessage(conv.pinned ? `📌 Pinned **${conv.title}**.` : `📌 Unpinned **${conv.title}**.`, true);
+        trackEvent('conversation_pinned', { pinned: conv.pinned });
+      };
+      // Also modify renderChatSidebar to show pinned convs at top
+      const origRender = renderChatSidebar;
+      renderChatSidebar = function() {
+        const convs = loadConversations();
+        const recentSection = document.querySelectorAll('.chat-sidebar-section')[1];
+        if (!recentSection) return;
+        const title = recentSection.querySelector('.chat-sidebar-title');
+        recentSection.innerHTML = '';
+        if (title) recentSection.appendChild(title);
+        if (convs.length === 0) {
+          const empty = document.createElement('div');
+          empty.style.cssText = 'padding:8px 10px;font-size:12px;color:var(--text-faint);';
+          empty.textContent = 'No chats yet';
+          recentSection.appendChild(empty);
+          return;
+        }
+        // Sort: pinned first, then by createdAt desc
+        const sorted = [...convs].sort((a, b) => {
+          if (a.pinned && !b.pinned) return -1;
+          if (!a.pinned && b.pinned) return 1;
+          return (b.createdAt || 0) - (a.createdAt || 0);
+        });
+        sorted.forEach(conv => {
+          const item = document.createElement('div');
+          item.className = 'chat-item';
+          item.setAttribute('data-conv-id', conv.id);
+          if (currentConversation?.id === conv.id) item.classList.add('active');
+          item.innerHTML = `
+            ${conv.pinned ? '<span class="chat-item-pin">📌</span>' : ''}
+            <span class="chat-item-name">${escapeHtml(conv.title)}</span>
+            <button class="chat-item-pin-btn" title="Pin/unpin" data-conv-id="${conv.id}">📌</button>
+            <button class="chat-item-delete" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+          `;
+          const pinBtn = item.querySelector('.chat-item-pin-btn');
+          pinBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            conv.pinned = !conv.pinned;
+            updateConversation(conv);
+            renderChatSidebar();
+          });
+          item.addEventListener('click', (e) => {
+            if (e.target.closest('.chat-item-delete')) {
+              e.stopPropagation();
+              deleteConversation(conv.id);
+            } else if (!e.target.closest('.chat-item-pin-btn')) {
+              currentConversation = conv;
+              renderChatSidebar();
+              renderMessages();
+            }
+          });
+          recentSection.appendChild(item);
+        });
+      };
+
+      // ── /settings-export: Export all settings ──
+      window.exportSettings = function() {
+        const settings = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('darkness-')) {
+            settings[key] = localStorage.getItem(key);
+          }
+        }
+        settings.__exportedAt = new Date().toISOString();
+        const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'darkness-settings.json';
+        a.click();
+        URL.revokeObjectURL(url);
+        appendAIMessage(`✅ Exported ${Object.keys(settings).length} settings as JSON.`, true);
+      };
+
+      // ── /settings-import: Import settings ──
+      window.importSettings = function() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            try {
+              const data = JSON.parse(ev.target.result);
+              let count = 0;
+              Object.keys(data).forEach(key => {
+                if (key.startsWith('darkness-') && key !== '__exportedAt') {
+                  localStorage.setItem(key, data[key]);
+                  count++;
+                }
+              });
+              appendAIMessage(`✅ Imported ${count} settings. Reloading to apply…`, true);
+              setTimeout(() => location.reload(), 1500);
+            } catch(err) {
+              appendAIMessage('⚠️ Settings import failed: ' + err.message, true);
+            }
+          };
+          reader.readAsText(file);
+        });
+        input.click();
+      };
     })();
   })();
 
@@ -7355,6 +7601,51 @@
       const a = document.createElement('a');
       a.href = url; a.download = 'darkness-data.json'; a.click();
       URL.revokeObjectURL(url);
+    });
+
+    // Settings export/import buttons
+    document.getElementById('exportSettingsBtn')?.addEventListener('click', () => {
+      if (window.exportSettings) window.exportSettings();
+      else {
+        const settings = {};
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('darkness-')) settings[key] = localStorage.getItem(key);
+        }
+        settings.__exportedAt = new Date().toISOString();
+        const blob = new Blob([JSON.stringify(settings, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'darkness-settings.json'; a.click();
+        URL.revokeObjectURL(url);
+      }
+    });
+    document.getElementById('importSettingsBtn')?.addEventListener('click', () => {
+      if (window.importSettings) window.importSettings();
+      else {
+        const input = document.createElement('input');
+        input.type = 'file'; input.accept = '.json';
+        input.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            try {
+              const data = JSON.parse(ev.target.result);
+              let count = 0;
+              Object.keys(data).forEach(key => {
+                if (key.startsWith('darkness-') && key !== '__exportedAt') {
+                  localStorage.setItem(key, data[key]); count++;
+                }
+              });
+              alert('Imported ' + count + ' settings. Reloading...');
+              location.reload();
+            } catch(err) { alert('Import failed: ' + err.message); }
+          };
+          reader.readAsText(file);
+        });
+        input.click();
+      }
     });
     document.getElementById('clearChats')?.addEventListener('click', () => {
       if (confirm('Delete all chats? This cannot be undone.')) {
@@ -7919,37 +8210,112 @@
       window.scrollTo({ top: 0, behavior: 'instant' });
     }
 
-    // ── 1. Hero "Create Project" button → go to chat + fill + send ──
+    // ── 1. Hero "Create Project" button → send inline on home page ──
     const createBtn = document.getElementById('createBtn');
+    const homeMessages = document.getElementById('homeMessages');
+    let homeMode = 'auto';
+    // Sync home mode tabs
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        homeMode = tab.getAttribute('data-mode');
+      });
+    });
     createBtn?.addEventListener('click', () => {
       const promptEl = document.getElementById('prompt');
       const v = promptEl?.value.trim();
       if (!v) { promptEl?.focus(); return; }
-      switchPage('chat');
-      setTimeout(() => {
-        const chatInput = document.getElementById('chatInput');
-        if (chatInput) {
-          chatInput.value = v;
-          chatInput.dispatchEvent(new Event('input'));
-          chatInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
-        }
-      }, 200);
+      sendHomeMessage(v);
+      promptEl.value = '';
+      promptEl.style.height = 'auto';
+    });
+    // Enter to send on home page
+    document.getElementById('prompt')?.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        createBtn?.click();
+      }
     });
 
-    // ── 2. Hero example prompts → go to chat + fill ──
+    async function sendHomeMessage(text) {
+      // Show user message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'home-msg home-msg-user';
+      userMsg.innerHTML = `<div class="home-msg-sender">You</div><div class="home-msg-content">${text.replace(/</g,'&lt;')}</div>`;
+      homeMessages?.appendChild(userMsg);
+      homeMessages.scrollTop = homeMessages.scrollHeight;
+
+      // Show thinking
+      const aiMsg = document.createElement('div');
+      aiMsg.className = 'home-msg home-msg-ai';
+      aiMsg.innerHTML = `<div class="home-msg-sender">Darkness AI</div><div class="home-msg-content"><span class="chat-thinking"><span class="chat-thinking-dots"><span></span><span></span><span></span></span> Thinking…</span></div>`;
+      homeMessages?.appendChild(aiMsg);
+      homeMessages.scrollTop = homeMessages.scrollHeight;
+
+      const contentEl = aiMsg.querySelector('.home-msg-content');
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+
+      if (!apiUrl) {
+        // Demo response
+        setTimeout(() => {
+          contentEl.innerHTML = 'I\'m <strong>DARKNESS</strong> — your AI assistant. To get real AI responses, go to <strong>Settings → General → AI Backend URL</strong> and enter your backend URL (run <code>node server.js</code> locally).<br><br>In the meantime, you can explore the platform using the sidebar. Try the <strong>AI Assistant</strong> page for the full chat experience.';
+          homeMessages.scrollTop = homeMessages.scrollHeight;
+        }, 800);
+        return;
+      }
+
+      // Real AI via streaming
+      try {
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: [{ role: 'user', content: text }], mode: homeMode })
+        });
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullResponse = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.content) {
+                  fullResponse += data.content;
+                  contentEl.innerHTML = fullResponse.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>');
+                  homeMessages.scrollTop = homeMessages.scrollHeight;
+                }
+              } catch(e) {}
+            }
+          }
+        }
+        if (!fullResponse) {
+          contentEl.innerHTML = '<em>(No response received)</em>';
+        }
+        // TTS
+        if (window.__darknessTTS && window.__darknessTTS() && 'speechSynthesis' in window) {
+          speechSynthesis.speak(new SpeechSynthesisUtterance(fullResponse));
+        }
+      } catch(e) {
+        contentEl.innerHTML = '⚠️ Connection failed: ' + e.message + '<br><br>Make sure the backend is running.';
+      }
+    }
+
+    // ── 2. Hero example prompts → fill input on home page ──
     document.querySelectorAll('#examples button').forEach(btn => {
       btn.addEventListener('click', () => {
         const text = btn.textContent.replace(/…$/, '');
-        switchPage('chat');
-        setTimeout(() => {
-          const chatInput = document.getElementById('chatInput');
-          if (chatInput) {
-            chatInput.value = text;
-            chatInput.focus();
-            chatInput.style.height = 'auto';
-            chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
-          }
-        }, 200);
+        const promptEl = document.getElementById('prompt');
+        if (promptEl) {
+          promptEl.value = text;
+          promptEl.focus();
+          promptEl.style.height = 'auto';
+          promptEl.style.height = Math.min(promptEl.scrollHeight, 200) + 'px';
+        }
       });
     });
 
