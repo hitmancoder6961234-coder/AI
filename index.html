@@ -3366,6 +3366,112 @@
     display: flex; align-items: center; gap: 8px;
   }
 
+  /* Setting text input */
+  .setting-text-input {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 12px;
+    color: #fff;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .setting-text-input:focus { border-color: rgba(168, 85, 247, 0.5); }
+
+  /* ===== LIGHT THEME ===== */
+  body[data-theme="light"] {
+    --bg: #f7f7f8;
+    --bg-elev: #ffffff;
+    --bg-card: rgba(0, 0, 0, 0.025);
+    --border: rgba(0, 0, 0, 0.08);
+    --border-strong: rgba(0, 0, 0, 0.14);
+    --text: #1a1a2e;
+    --text-dim: #5a5a72;
+    --text-faint: #9999aa;
+  }
+  body[data-theme="light"] .bg-ambient {
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(168, 85, 247, 0.12), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(0, 212, 255, 0.08), transparent 60%),
+      var(--bg);
+  }
+  body[data-theme="light"] .bg-grid {
+    background-image:
+      linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+  }
+  body[data-theme="light"] .app-sidebar {
+    background: rgba(255, 255, 255, 0.92);
+  }
+  body[data-theme="light"] .chat-input,
+  body[data-theme="light"] .mockup,
+  body[data-theme="light"] .chat-mockup {
+    background: var(--bg-elev);
+  }
+  body[data-theme="light"] .ai-input {
+    background: rgba(255, 255, 255, 0.92);
+  }
+  body[data-theme="light"] .mobile-menu-toggle {
+    background: rgba(255, 255, 255, 0.9);
+    color: #1a1a2e;
+  }
+
+  /* ===== SLASH COMMAND DROPDOWN ===== */
+  .slash-commands {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 0; right: 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    box-shadow: 0 -12px 40px -8px rgba(0,0,0,0.4);
+    overflow: hidden;
+    z-index: 50;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .slash-commands.open { display: block; }
+  .sc-header {
+    padding: 8px 14px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    border-bottom: 1px solid var(--border);
+  }
+  .sc-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .sc-item:hover, .sc-item.selected {
+    background: rgba(168, 85, 247, 0.1);
+  }
+  .sc-item-icon { font-size: 16px; width: 22px; text-align: center; }
+  .sc-item-body { flex: 1; }
+  .sc-item-cmd { font-size: 13px; font-weight: 600; color: #fff; font-family: 'JetBrains Mono', monospace; }
+  .sc-item-desc { font-size: 11.5px; color: var(--text-dim); margin-top: 1px; }
+
+  /* ===== CHAT HISTORY SIDEBAR ITEMS (functional) ===== */
+  .chat-item[data-conv-id] { cursor: pointer; }
+  .chat-item .chat-item-delete {
+    opacity: 0;
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    color: var(--text-faint);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.14s ease;
+    flex-shrink: 0;
+  }
+  .chat-item:hover .chat-item-delete { opacity: 1; }
+  .chat-item .chat-item-delete:hover { background: rgba(248,113,113,0.15); color: #fca5a5; }
+  .chat-item .chat-item-delete svg { width: 13px; height: 13px; }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 860px) {
     /* Sidebar collapses on mobile */
@@ -4312,7 +4418,12 @@
 
           <!-- Composer -->
           <div class="chat-composer">
-            <div class="chat-composer-input-wrap">
+            <div class="chat-composer-input-wrap" style="position:relative;">
+              <!-- Slash commands dropdown -->
+              <div class="slash-commands" id="slashCommands">
+                <div class="sc-header">Slash Commands</div>
+                <div id="slashCommandsList"></div>
+              </div>
               <div class="chat-composer-tools-left">
                 <button class="chat-tool-btn" title="Attach file">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -4324,14 +4435,14 @@
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
                 </button>
               </div>
-              <textarea id="chatInput" placeholder="Ask anything, or describe what you want to build…" rows="1"></textarea>
+              <textarea id="chatInput" placeholder="Ask anything, or describe what you want to build…  Type / for commands" rows="1"></textarea>
               <button class="chat-send-btn" id="chatSendBtn" title="Send">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
               </button>
             </div>
             <div class="chat-composer-hint">
-              <span><kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line</span>
-              <span class="chat-context-pill">Project Context: AI Portfolio Website</span>
+              <span><kbd>Enter</kbd> to send · <kbd>Shift+Enter</kbd> for new line · Type <kbd>/</kbd> for commands</span>
+              <span class="chat-context-pill" id="chatModeIndicator">Mode: Auto</span>
             </div>
           </div>
         </div>
@@ -4945,6 +5056,20 @@
           </div>
           <label class="toggle"><input type="checkbox" id="showModeTabs" checked><span class="toggle-slider"></span></label>
         </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">AI Backend URL</div>
+            <div class="setting-desc">Connect DARKNESS to a real AI. Enter your backend URL (runs the z-ai-web-dev-sdk).</div>
+          </div>
+          <input type="text" class="setting-text-input" id="apiUrlInput" placeholder="http://localhost:3000" style="width:200px;" />
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Connection status</div>
+            <div class="setting-desc" id="apiStatusText">Not connected — running in demo mode.</div>
+          </div>
+          <button class="setting-action-btn" id="testApiBtn">Test</button>
+        </div>
       </div>
 
       <!-- Personalization -->
@@ -5154,7 +5279,7 @@
     aptKnob.style.background = aptOn ? '#fff' : 'var(--text-dim)';
   });
 
-  // ===== AI ASSISTANT INTERACTIVE CHAT =====
+  // ===== AI ASSISTANT INTERACTIVE CHAT (with real API + history + slash commands) =====
   (function() {
     const chatInput = document.getElementById('chatInput');
     const chatSendBtn = document.getElementById('chatSendBtn');
@@ -5163,10 +5288,201 @@
     const webSearchToggle = document.getElementById('webSearchToggle');
     const deepResearchToggle = document.getElementById('deepResearchToggle');
     const suggestedBtns = document.querySelectorAll('.chat-suggested button');
+    const slashCommands = document.getElementById('slashCommands');
+    const slashCommandsList = document.getElementById('slashCommandsList');
+    const chatModeIndicator = document.getElementById('chatModeIndicator');
+    const chatNewBtn = document.querySelector('.chat-new-btn');
 
     let isStreaming = false;
+    let currentMode = 'auto';
+    let currentConversation = null; // { id, title, messages: [] }
 
-    // Toggle buttons (Web Search / Deep Research)
+    // ── Chat History (user-specific, localStorage) ──
+    function getStorageKey() {
+      const user = sessionStorage.getItem('darkness-user');
+      if (user) {
+        try { const u = JSON.parse(user); return 'darkness-chats-' + u.email; } catch(e) {}
+      }
+      return 'darkness-chats-guest';
+    }
+    function loadConversations() {
+      try { return JSON.parse(localStorage.getItem(getStorageKey()) || '[]'); }
+      catch(e) { return []; }
+    }
+    function saveConversations(convs) {
+      localStorage.setItem(getStorageKey(), JSON.stringify(convs));
+    }
+    function createConversation() {
+      const convs = loadConversations();
+      const conv = { id: 'conv-' + Date.now(), title: 'New Chat', messages: [], createdAt: Date.now() };
+      convs.unshift(conv);
+      saveConversations(convs);
+      currentConversation = conv;
+      renderChatSidebar();
+      renderMessages();
+      chatInput?.focus();
+    }
+    function getCurrentConversation() {
+      if (currentConversation) return currentConversation;
+      const convs = loadConversations();
+      if (convs.length === 0) {
+        createConversation();
+        return currentConversation;
+      }
+      currentConversation = convs[0];
+      return currentConversation;
+    }
+    function updateConversation(conv) {
+      const convs = loadConversations();
+      const idx = convs.findIndex(c => c.id === conv.id);
+      if (idx >= 0) { convs[idx] = conv; saveConversations(convs); }
+    }
+    function deleteConversation(id) {
+      let convs = loadConversations();
+      convs = convs.filter(c => c.id !== id);
+      saveConversations(convs);
+      if (currentConversation?.id === id) {
+        currentConversation = convs[0] || null;
+        if (!currentConversation) createConversation();
+      }
+      renderChatSidebar();
+      renderMessages();
+    }
+    function renderChatSidebar() {
+      const convs = loadConversations();
+      // Find the "Recent" section in the chat sidebar
+      const recentSection = document.querySelectorAll('.chat-sidebar-section')[1];
+      if (!recentSection) return;
+      // Keep the title, replace items
+      const title = recentSection.querySelector('.chat-sidebar-title');
+      recentSection.innerHTML = '';
+      if (title) recentSection.appendChild(title);
+      if (convs.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'padding:8px 10px;font-size:12px;color:var(--text-faint);';
+        empty.textContent = 'No chats yet';
+        recentSection.appendChild(empty);
+        return;
+      }
+      convs.forEach(conv => {
+        const item = document.createElement('div');
+        item.className = 'chat-item';
+        item.setAttribute('data-conv-id', conv.id);
+        if (currentConversation?.id === conv.id) item.classList.add('active');
+        item.innerHTML = `
+          <span class="chat-item-name">${escapeHtml(conv.title)}</span>
+          <button class="chat-item-delete" title="Delete"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+        `;
+        item.addEventListener('click', (e) => {
+          if (e.target.closest('.chat-item-delete')) {
+            e.stopPropagation();
+            deleteConversation(conv.id);
+          } else {
+            currentConversation = conv;
+            renderChatSidebar();
+            renderMessages();
+          }
+        });
+        recentSection.appendChild(item);
+      });
+    }
+    function renderMessages() {
+      const conv = getCurrentConversation();
+      if (!conv || conv.messages.length === 0) {
+        if (chatWelcome) chatWelcome.style.display = '';
+        chatMessages.innerHTML = '';
+        // Re-add welcome
+        if (chatWelcome) chatMessages.appendChild(chatWelcome);
+        return;
+      }
+      if (chatWelcome) chatWelcome.style.display = 'none';
+      chatMessages.innerHTML = '';
+      conv.messages.forEach(m => {
+        if (m.role === 'user') appendUserMessage(m.content, false);
+        else appendAIMessage(m.content, false);
+      });
+      scrollChat();
+    }
+
+    // ── Real AI API call (with fallback to demo) ──
+    async function callAIBackend(messages, mode) {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) return null; // No backend configured → use fallback
+      try {
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages, mode })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (data.success) return data.response;
+        throw new Error(data.error || 'Unknown error');
+      } catch(e) {
+        console.warn('AI backend unavailable, using demo mode:', e.message);
+        return null;
+      }
+    }
+
+    // ── Slash Commands ──
+    const slashCommandList = [
+      { cmd: '/clear', icon: '🗑️', desc: 'Clear current conversation', action: () => {
+        if (currentConversation) {
+          currentConversation.messages = [];
+          currentConversation.title = 'New Chat';
+          updateConversation(currentConversation);
+          renderChatSidebar();
+          renderMessages();
+        }
+      }},
+      { cmd: '/new', icon: '➕', desc: 'Start a new chat', action: () => { createConversation(); }},
+      { cmd: '/mode auto', icon: '⚡', desc: 'Switch to Auto mode', action: () => { setMode('auto'); }},
+      { cmd: '/mode fast', icon: '⚡', desc: 'Switch to Fast mode', action: () => { setMode('fast'); }},
+      { cmd: '/mode think', icon: '🧠', desc: 'Switch to Think mode', action: () => { setMode('think'); }},
+      { cmd: '/mode deep', icon: '🔬', desc: 'Switch to Deep Think mode', action: () => { setMode('deep'); }},
+      { cmd: '/mode coding', icon: '💻', desc: 'Switch to Coding mode', action: () => { setMode('coding'); }},
+      { cmd: '/mode ppt', icon: '📊', desc: 'Switch to PPT mode', action: () => { setMode('ppt'); }},
+      { cmd: '/help', icon: '❓', desc: 'Show available commands', action: () => {
+        appendAIMessage('**Available slash commands:**\n\n- `/clear` — Clear current conversation\n- `/new` — Start a new chat\n- `/mode auto|fast|think|deep|coding|ppt` — Switch AI mode\n- `/help` — Show this help\n\nYou can also just type your question normally.', true);
+      }},
+    ];
+    function setMode(mode) {
+      currentMode = mode;
+      const labels = { auto: 'Auto', fast: 'Fast', think: 'Think', deep: 'Deep Think', coding: 'Coding', ppt: 'PPT' };
+      if (chatModeIndicator) chatModeIndicator.textContent = 'Mode: ' + (labels[mode] || 'Auto');
+      // Also sync home mode tabs
+      document.querySelectorAll('.mode-tab').forEach(t => {
+        t.classList.toggle('active', t.getAttribute('data-mode') === mode);
+      });
+    }
+    function showSlashCommands(query) {
+      const filtered = slashCommandList.filter(c => c.cmd.startsWith(query));
+      if (!filtered.length) { slashCommands?.classList.remove('open'); return; }
+      slashCommandsList.innerHTML = filtered.map((c, i) => `
+        <div class="sc-item ${i === 0 ? 'selected' : ''}" data-cmd="${c.cmd}">
+          <span class="sc-item-icon">${c.icon}</span>
+          <div class="sc-item-body">
+            <div class="sc-item-cmd">${c.cmd}</div>
+            <div class="sc-item-desc">${c.desc}</div>
+          </div>
+        </div>
+      `).join('');
+      slashCommands?.classList.add('open');
+      slashCommandsList.querySelectorAll('.sc-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const cmd = item.getAttribute('data-cmd');
+          const found = slashCommandList.find(c => c.cmd === cmd);
+          if (found) {
+            found.action();
+            chatInput.value = '';
+            slashCommands?.classList.remove('open');
+            chatInput.focus();
+          }
+        });
+      });
+    }
+
+    // Toggle buttons
     function bindToggle(btn) {
       btn?.addEventListener('click', () => {
         const on = btn.getAttribute('data-on') === 'true';
@@ -5180,10 +5496,38 @@
     chatInput?.addEventListener('input', () => {
       chatInput.style.height = 'auto';
       chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+      // Slash command detection
+      const val = chatInput.value;
+      if (val.startsWith('/') && !val.includes(' ')) {
+        showSlashCommands(val);
+      } else if (val.startsWith('/') && val.includes(' ')) {
+        // Still show if it's /mode (which has a space)
+        if (val.startsWith('/mode')) showSlashCommands(val.split(' ').slice(0, 2).join(' '));
+        else slashCommands?.classList.remove('open');
+      } else {
+        slashCommands?.classList.remove('open');
+      }
     });
 
     // Enter to send, Shift+Enter for newline
     chatInput?.addEventListener('keydown', (e) => {
+      if (slashCommands?.classList.contains('open')) {
+        if (e.key === 'Escape') { slashCommands.classList.remove('open'); return; }
+        if (e.key === 'Enter') {
+          // Select the highlighted command
+          const sel = slashCommandsList.querySelector('.sc-item.selected');
+          if (sel) { e.preventDefault(); sel.click(); return; }
+        }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const items = slashCommandsList.querySelectorAll('.sc-item');
+          const curIdx = Array.from(items).findIndex(i => i.classList.contains('selected'));
+          let nextIdx = e.key === 'ArrowDown' ? (curIdx + 1) % items.length : (curIdx - 1 + items.length) % items.length;
+          items.forEach(i => i.classList.remove('selected'));
+          if (items[nextIdx]) items[nextIdx].classList.add('selected');
+          return;
+        }
+      }
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
         send();
@@ -5191,6 +5535,7 @@
     });
 
     chatSendBtn?.addEventListener('click', send);
+    chatNewBtn?.addEventListener('click', (e) => { e.preventDefault(); createConversation(); });
 
     // Suggested prompts fill the input
     suggestedBtns.forEach(btn => {
@@ -5202,15 +5547,43 @@
       });
     });
 
+    // Sync mode from home tabs
+    document.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        const mode = tab.getAttribute('data-mode');
+        setMode(mode);
+      });
+    });
+
     function send() {
       const text = chatInput.value.trim();
       if (!text || isStreaming) return;
+      // If it's a slash command, don't send to AI
+      if (text.startsWith('/')) {
+        const parts = text.split(' ');
+        const cmd = parts.slice(0, parts[0] === '/mode' ? 2 : 1).join(' ');
+        const found = slashCommandList.find(c => c.cmd === cmd);
+        if (found) { found.action(); }
+        else { appendAIMessage('Unknown command: `' + cmd + '`. Type `/help` for available commands.', true); }
+        chatInput.value = '';
+        slashCommands?.classList.remove('open');
+        chatInput.style.height = 'auto';
+        return;
+      }
 
+      const conv = getCurrentConversation();
       if (chatWelcome) chatWelcome.style.display = 'none';
 
-      appendUserMessage(text);
+      appendUserMessage(text, true);
+      conv.messages.push({ role: 'user', content: text });
+      // Auto-title from first message
+      if (conv.title === 'New Chat') {
+        conv.title = text.slice(0, 40) + (text.length > 40 ? '…' : '');
+        renderChatSidebar();
+      }
       chatInput.value = '';
       chatInput.style.height = 'auto';
+      slashCommands?.classList.remove('open');
 
       // Show thinking indicator
       const thinkingEl = document.createElement('div');
@@ -5219,7 +5592,6 @@
       chatMessages.appendChild(thinkingEl);
       scrollChat();
 
-      // After short delay, update status text
       setTimeout(() => {
         const txt = thinkingEl.querySelector('.chat-thinking-text');
         if (txt) txt.textContent = ' Generating answer…';
@@ -5227,11 +5599,11 @@
 
       setTimeout(() => {
         thinkingEl.remove();
-        streamAIResponse(text);
-      }, 1400);
+        streamAIResponse(text, conv);
+      }, 1200);
     }
 
-    function appendUserMessage(text) {
+    function appendUserMessage(text, addToConv) {
       const msg = document.createElement('div');
       msg.className = 'chat-msg chat-msg-user';
       msg.innerHTML = `
@@ -5245,10 +5617,7 @@
       scrollChat();
     }
 
-    function streamAIResponse(userText) {
-      isStreaming = true;
-      chatSendBtn.disabled = true;
-
+    function appendAIMessage(content, skipStream) {
       const msg = document.createElement('div');
       msg.className = 'chat-msg chat-msg-ai';
       msg.innerHTML = `
@@ -5260,369 +5629,114 @@
       `;
       chatMessages.appendChild(msg);
       const contentEl = msg.querySelector('.chat-msg-content');
-
-      // Decide on response based on user input
-      const response = pickResponse(userText);
-      const webSearchOn = webSearchToggle?.getAttribute('data-on') === 'true';
-
-      // Show activity panel first (if applicable)
-      let activityEl = null;
-      if (response.activity || webSearchOn) {
-        activityEl = document.createElement('div');
-        activityEl.className = 'chat-activity';
-        const steps = webSearchOn ? [
-          { label: 'Searching web', delay: 0 },
-          { label: 'Reading sources', delay: 500 },
-          { label: 'Synthesizing answer', delay: 1000 }
-        ] : (response.activity || []);
-        let activityHtml = '<div class="chat-activity-title">AI Activity</div>';
-        steps.forEach(s => {
-          activityHtml += `<div class="chat-activity-step" data-label="${s.label}"><span class="chat-activity-mark">○</span><span class="chat-activity-spinner" style="display:none;"></span> ${s.label}</div>`;
-        });
-        activityEl.innerHTML = activityHtml;
-        msg.querySelector('.chat-msg-body').insertBefore(activityEl, contentEl);
-
-        // Animate steps
-        const stepEls = activityEl.querySelectorAll('.chat-activity-step');
-        stepEls.forEach((stepEl, i) => {
-          setTimeout(() => {
-            // Mark previous as done
-            if (i > 0) {
-              const prev = stepEls[i - 1];
-              prev.classList.remove('active');
-              prev.classList.add('done');
-              prev.querySelector('.chat-activity-mark').textContent = '✓';
-              prev.querySelector('.chat-activity-spinner').style.display = 'none';
-            }
-            // Activate current
-            stepEl.classList.add('active');
-            stepEl.querySelector('.chat-activity-mark').style.display = 'none';
-            stepEl.querySelector('.chat-activity-spinner').style.display = 'inline-flex';
-          }, steps[i].delay);
-        });
-
-        // Mark last as done after all delays
-        const lastDelay = steps[steps.length - 1].delay + 600;
-        setTimeout(() => {
-          const last = stepEls[stepEls.length - 1];
-          last.classList.remove('active');
-          last.classList.add('done');
-          last.querySelector('.chat-activity-mark').style.display = '';
-          last.querySelector('.chat-activity-mark').textContent = '✓';
-          last.querySelector('.chat-activity-spinner').style.display = 'none';
-
-          // Now begin streaming the actual content
-          beginStream();
-        }, lastDelay);
+      if (skipStream) {
+        contentEl.innerHTML = renderMarkdown(content);
+        attachCodeCopyHandlers(contentEl);
+        addMessageActions(contentEl, content);
       } else {
-        beginStream();
+        contentEl.innerHTML = renderMarkdown(content) + '<span class="chat-cursor"></span>';
+        setTimeout(() => {
+          contentEl.innerHTML = renderMarkdown(content);
+          attachCodeCopyHandlers(contentEl);
+          addMessageActions(contentEl, content);
+        }, 800);
       }
+      scrollChat();
+    }
 
-      function beginStream() {
-        const fullHtml = renderMarkdown(response.content);
-        // Stream by characters — reveal more each tick, re-render markdown each time
-        const total = response.content.length;
-        let i = 0;
-        const chunkSize = 4;
-        const tick = () => {
-          i += chunkSize;
-          if (i >= total) {
-            contentEl.innerHTML = fullHtml;
-            attachCodeCopyHandlers(contentEl);
-            // Sources
-            if (response.sources && response.sources.length) {
-              const src = document.createElement('div');
-              src.className = 'chat-sources';
-              src.innerHTML = '<div class="chat-sources-title">Sources</div>' +
-                response.sources.map((s, idx) => `<a class="chat-source-link" href="#" onclick="return false;">[${idx + 1}] ${s}</a>`).join('');
-              contentEl.appendChild(src);
-            }
-            // Quick actions
-            const qa = document.createElement('div');
-            qa.className = 'chat-quick-actions';
-            (response.quickActions || ['Explain simpler', 'Give example', 'Summarize', 'Create PPT']).forEach(a => {
-              const b = document.createElement('button');
-              b.className = 'chat-quick-action';
-              b.textContent = a;
-              b.addEventListener('click', () => {
-                chatInput.value = a;
-                chatInput.focus();
-              });
-              qa.appendChild(b);
-            });
-            contentEl.appendChild(qa);
-            // Message actions
-            const ma = document.createElement('div');
-            ma.className = 'chat-msg-actions';
-            ma.innerHTML = `
-              <button class="chat-msg-action" title="Copy" data-act="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
-              <button class="chat-msg-action" title="Like" data-act="like"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
-              <button class="chat-msg-action" title="Dislike" data-act="dislike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
-              <button class="chat-msg-action" title="Regenerate" data-act="regen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
-              <button class="chat-msg-action" title="Read aloud" data-act="tts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
-            `;
-            ma.querySelectorAll('.chat-msg-action').forEach(b => {
-              b.addEventListener('click', () => handleMessageAction(b, contentEl));
-            });
-            contentEl.appendChild(ma);
+    function addMessageActions(contentEl, fullText) {
+      const ma = document.createElement('div');
+      ma.className = 'chat-msg-actions';
+      ma.innerHTML = `
+        <button class="chat-msg-action" title="Copy" data-act="copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>
+        <button class="chat-msg-action" title="Like" data-act="like"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg></button>
+        <button class="chat-msg-action" title="Dislike" data-act="dislike"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg></button>
+        <button class="chat-msg-action" title="Regenerate" data-act="regen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg></button>
+        <button class="chat-msg-action" title="Read aloud" data-act="tts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg></button>
+      `;
+      ma.querySelectorAll('.chat-msg-action').forEach(b => {
+        b.addEventListener('click', () => handleMessageAction(b, contentEl, fullText));
+      });
+      contentEl.appendChild(ma);
+    }
 
-            isStreaming = false;
-            chatSendBtn.disabled = false;
-            scrollChat();
-            return;
+    async function streamAIResponse(userText, conv) {
+      isStreaming = true;
+      chatSendBtn.disabled = true;
+
+      const msg = document.createElement('div');
+      msg.className = 'chat-msg chat-msg-ai';
+      msg.innerHTML = `
+        <div class="chat-msg-avatar"></div>
+        <div class="chat-msg-body">
+          <div class="chat-msg-sender">Darkness AI</div>
+          <div class="chat-msg-content"><span class="chat-thinking"><span class="chat-thinking-dots"><span></span><span></span><span></span></span><span class="chat-thinking-text"> Connecting to AI…</span></span></div>
+        </div>
+      `;
+      chatMessages.appendChild(msg);
+      const contentEl = msg.querySelector('.chat-msg-content');
+      scrollChat();
+
+      // Build messages array for API
+      const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.content }));
+
+      // Try real backend first
+      const realResponse = await callAIBackend(apiMessages, currentMode);
+      const response = realResponse || pickResponse(userText).content;
+
+      // Stream the response token-by-token
+      const fullHtml = renderMarkdown(response);
+      const total = response.length;
+      let i = 0;
+      const chunkSize = realResponse ? 3 : 4; // Slightly faster for real responses
+
+      const tick = () => {
+        i += chunkSize;
+        if (i >= total) {
+          contentEl.innerHTML = fullHtml;
+          attachCodeCopyHandlers(contentEl);
+          addMessageActions(contentEl, response);
+          // Save to conversation
+          if (conv) {
+            conv.messages.push({ role: 'assistant', content: response });
+            updateConversation(conv);
           }
-          // Reveal partial — render markdown of partial content
-          const partial = response.content.slice(0, i);
-          contentEl.innerHTML = renderMarkdown(partial) + '<span class="chat-cursor"></span>';
+          isStreaming = false;
+          chatSendBtn.disabled = false;
           scrollChat();
-          setTimeout(tick, 16);
-        };
-        tick();
-      }
-    }
-
-    function pickResponse(userText) {
-      const t = userText.toLowerCase();
-      if (t.includes('website') || t.includes('build') || t.includes('portfolio')) {
-        return {
-          content: `Great — let's build that **AI Portfolio Website**. Here's my plan:
-
-## Project Structure
-
-- **Hero section** with animated intro and your name
-- **Project gallery** with category filtering
-- **About page** with skills and timeline
-- **Contact form** with email integration
-- **Dark mode** toggle (purple accents, per your request)
-
-Here's the home page scaffold:
-
-\`\`\`javascript
-// app/page.tsx
-export default function HomePage() {
-  return (
-    <main className="min-h-screen bg-black text-white">
-      <Hero />
-      <Projects />
-      <About />
-      <Contact />
-    </main>
-  );
-}
-\`\`\`
-
-Want me to:
-1. Generate the **full file structure**
-2. Set up the **design system** (colors, typography, spacing)
-3. Open an interactive **mind map** of all features
-
-Just say the word and I'll start coding.`,
-          activity: [
-            { label: 'Understanding request', delay: 0 },
-            { label: 'Planning architecture', delay: 400 },
-            { label: 'Generating response', delay: 900 }
-          ],
-          quickActions: ['Generate full project', 'Open mind map', 'Set up design system', 'Create PPT']
-        };
-      }
-      if (t.includes('recursion') || t.includes('explain')) {
-        return {
-          content: `**Recursion** is when a function calls itself to break a problem into smaller, identical sub-problems.
-
-## How it works
-
-Every recursive function needs two things:
-
-1. **Base case** — when to stop
-2. **Recursive case** — call itself with a smaller input
-
-Here's a classic example — computing factorial:
-
-\`\`\`javascript
-function factorial(n) {
-  if (n <= 1) return 1;        // base case
-  return n * factorial(n - 1); // recursive case
-}
-
-factorial(5); // → 120
-\`\`\`
-
-The call stack unwinds: \`5 * 4 * 3 * 2 * 1 = 120\`.
-
-> **Tip:** Every recursion can be rewritten as a loop. Use recursion when the problem is naturally recursive (trees, graphs, divide-and-conquer).`,
-          activity: [
-            { label: 'Analyzing question', delay: 0 },
-            { label: 'Writing explanation', delay: 400 }
-          ],
-          quickActions: ['Give example', 'Show iterative version', 'Make notes', 'Create diagram']
-        };
-      }
-      if (t.includes('code') || t.includes('debounce') || t.includes('function')) {
-        return {
-          content: `Here's a clean **debounce** implementation in JavaScript:
-
-\`\`\`javascript
-function debounce(fn, delay = 300) {
-  let timer;
-  return (...args) => {
-    clearTimeout(timer);
-    timer = setTimeout(() => fn(...args), delay);
-  };
-}
-
-// Usage
-const search = debounce((q) => {
-  console.log('Searching for:', q);
-}, 400);
-\`\`\`
-
-## How it works
-
-- Each call **clears** the previous timer
-- Only the **last call** within the delay window actually runs
-- Perfect for search inputs, resize handlers, autosave
-
-Want me to add **cancel** / **flush** methods, or convert it to TypeScript?`,
-          activity: [
-            { label: 'Understanding request', delay: 0 },
-            { label: 'Generating code', delay: 400 }
-          ],
-          quickActions: ['Add TypeScript types', 'Add cancel method', 'Run code', 'Explain line-by-line']
-        };
-      }
-      if (t.includes('research') || t.includes('latest')) {
-        return {
-          content: `Here's a research summary on the **latest AI coding tools in 2026**.
-
-## Top AI Coding Tools (2026)
-
-The landscape has matured significantly. The most relevant categories:
-
-- **Code-generation platforms** — full project builders (Z.ai, Cursor, Continue)
-- **IDE-integrated assistants** — inline completion + chat (GitHub Copilot, JetBrains AI)
-- **Autonomous agents** — end-to-end task execution (Devin, OpenHands)
-- **Code review & security** — automated PR analysis (CodeRabbit, Snyk)
-
-## Key Trends
-
-1. **Multi-agent orchestration** is replacing single-model workflows
-2. **Tool use** (browser, terminal, file system) is now table stakes
-3. **Project-level context** matters more than file-level autocomplete
-4. **Open-weight models** are closing the gap with proprietary ones
-
-For your use case (building a portfolio site), an orchestrator-style platform like DARKNESS — which routes between models and tools automatically — is the most efficient path.`,
-          activity: [
-            { label: 'Research planning', delay: 0 },
-            { label: 'Searching sources', delay: 500 },
-            { label: 'Reading sources', delay: 1100 },
-            { label: 'Synthesizing report', delay: 1700 }
-          ],
-          sources: ['github.blog/features', 'zapier.com/blog/best-ai-coding-tools', 'infoworld.com/article/ai-coding-2026', 'z.ai/docs/coding-engine'],
-          quickActions: ['Deepen research', 'Create PPT', 'Make notes', 'Translate']
-        };
-      }
-      if (t.includes('ppt') || t.includes('presentation')) {
-        return {
-          content: `Got it — I'll analyze the current project and generate a **premium PPTX**.
-
-## PPT Plan
-
-Based on your project context (*AI Portfolio Website*), I'll include:
-
-1. **Title slide** — project name + your branding
-2. **Problem statement** — why a portfolio matters
-3. **Objectives** — what the site achieves
-4. **Features** — hero, gallery, contact, dark mode
-5. **Architecture** — Next.js + Tailwind + Prisma
-6. **Tech stack** — diagram of the stack
-7. **UI screenshots** — auto-captured from preview
-8. **Results** — performance + Lighthouse scores
-9. **Future scope** — CMS, blog, analytics
-10. **Conclusion**
-
-I'll search for **4K images**, run the **quality check loop**, and produce a downloadable \`.pptx\`.
-
-> Open PPT Studio to customize themes, layouts, and slide order.`,
-          activity: [
-            { label: 'Analyzing project', delay: 0 },
-            { label: 'Creating outline', delay: 500 },
-            { label: 'Searching 4K images', delay: 1100 },
-            { label: 'Running quality checks', delay: 1700 }
-          ],
-          quickActions: ['Open PPT Studio', 'Change theme', 'Add slides', 'Download PPTX']
-        };
-      }
-      if (t.includes('analy') || t.includes('file') || t.includes('pdf')) {
-        return {
-          content: `I can analyze **PDF, DOCX, PPTX, XLSX, CSV, and TXT** files for you.
-
-## What I can do
-
-- **Summarize** long documents in seconds
-- **Extract** key information, tables, and entities
-- **Compare** multiple documents
-- **Answer questions** about the content
-- **Generate** reports, PPTs, or notes from the file
-
-To get started, click the **attach** (📎) button in the composer and upload your file. I'll show upload progress, then automatically read and analyze it.
-
-> For your requirements.pdf, I'll extract feature lists, user roles, and acceptance criteria — then suggest a project plan.`,
-          activity: [
-            { label: 'Waiting for file upload', delay: 0 }
-          ],
-          quickActions: ['Summarize', 'Extract features', 'Create project plan', 'Make notes']
-        };
-      }
-      // Default response
-      return {
-        content: `I'm **DARKNESS** — your AI assistant for building, researching, and creating.
-
-I can help you:
-
-- **Build** a website, app, or dashboard from a description
-- **Explain** any topic, with code examples
-- **Write** code in 20+ languages
-- **Research** any subject with web search + citations
-- **Create** presentations, documents, and images
-- **Analyze** uploaded files
-- **Debug** and refactor existing code
-
-What would you like to do? Just describe it in plain language — I'll figure out which model, tool, and agent to use.`,
-        activity: [
-          { label: 'Understanding request', delay: 0 },
-          { label: 'Generating response', delay: 400 }
-        ],
-        quickActions: ['Build a website', 'Write code', 'Research a topic', 'Create a PPT']
+          return;
+        }
+        const partial = response.slice(0, i);
+        contentEl.innerHTML = renderMarkdown(partial) + '<span class="chat-cursor"></span>';
+        scrollChat();
+        setTimeout(tick, realResponse ? 8 : 16);
       };
+      tick();
     }
 
-    function handleMessageAction(btn, contentEl) {
+    function handleMessageAction(btn, contentEl, fullText) {
       const act = btn.getAttribute('data-act');
       if (act === 'copy') {
-        const text = contentEl.innerText;
-        navigator.clipboard?.writeText(text).then(() => {
+        navigator.clipboard?.writeText(fullText).then(() => {
           const orig = btn.innerHTML;
           btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
           btn.style.color = 'var(--green)';
           setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 1600);
         });
-      } else if (act === 'like') {
-        btn.style.color = 'var(--green)';
-      } else if (act === 'dislike') {
-        btn.style.color = 'var(--red)';
-      } else if (act === 'regen') {
-        // Re-trigger streaming with last user message
+      } else if (act === 'like') { btn.style.color = 'var(--green)'; }
+      else if (act === 'dislike') { btn.style.color = 'var(--red)'; }
+      else if (act === 'regen') {
         const lastUser = Array.from(chatMessages.querySelectorAll('.chat-msg-user .chat-msg-content')).pop();
         if (lastUser && !isStreaming) {
-          // Remove the last AI message
           const aiMsgs = chatMessages.querySelectorAll('.chat-msg-ai');
           if (aiMsgs.length) aiMsgs[aiMsgs.length - 1].remove();
-          streamAIResponse(lastUser.textContent);
+          const conv = getCurrentConversation();
+          if (conv.messages.length >= 2) conv.messages.pop(); // Remove last AI msg from history
+          streamAIResponse(lastUser.textContent, conv);
         }
       } else if (act === 'tts') {
-        // Browser TTS
         if ('speechSynthesis' in window) {
-          const utter = new SpeechSynthesisUtterance(contentEl.innerText);
+          const utter = new SpeechSynthesisUtterance(fullText);
           utter.rate = 1.05;
           speechSynthesis.cancel();
           speechSynthesis.speak(utter);
@@ -5654,43 +5768,28 @@ What would you like to do? Just describe it in plain language — I'll figure ou
     }
 
     function renderMarkdown(md) {
-      // Extract code blocks first (so other replacements don't touch their content)
       const codeBlocks = [];
       let working = md.replace(/```(\w+)?\n([\s\S]*?)```/g, (m, lang, code) => {
         const idx = codeBlocks.length;
         codeBlocks.push({ lang: lang || 'code', code });
         return `\x00CODE${idx}\x00`;
       });
-
-      // Escape HTML
       working = escapeHtml(working);
-
-      // Headings
       working = working.replace(/^### (.+)$/gm, '<h4>$1</h4>');
       working = working.replace(/^## (.+)$/gm, '<h3>$1</h3>');
       working = working.replace(/^# (.+)$/gm, '<h2>$1</h2>');
-
-      // Bold / italic / inline code
       working = working.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
       working = working.replace(/\*([^*]+)\*/g, '<em>$1</em>');
       working = working.replace(/`([^`]+)`/g, '<code>$1</code>');
-
-      // Blockquotes
       working = working.replace(/^&gt; (.+)$/gm, '<blockquote>$1</blockquote>');
-
-      // Lists
       working = working.replace(/^- (.+)$/gm, '<li>$1</li>');
       working = working.replace(/(<li>[\s\S]*?<\/li>)(?=\n\n|\n[^<]|$)/g, '<ul>$1</ul>');
       working = working.replace(/^\d+\. (.+)$/gm, '<li>$1</li>');
-
-      // Paragraphs / line breaks
       working = working.split(/\n\n+/).map(block => {
         if (block.match(/^<(h\d|ul|ol|blockquote|pre|div)/)) return block;
         if (block.includes('<li>')) return `<ul>${block}</ul>`;
         return `<p>${block.replace(/\n/g, '<br>')}</p>`;
       }).join('\n');
-
-      // Restore code blocks
       working = working.replace(/\x00CODE(\d+)\x00/g, (m, idx) => {
         const { lang, code } = codeBlocks[parseInt(idx, 10)];
         return `<div class="chat-code-block">
@@ -5704,20 +5803,26 @@ What would you like to do? Just describe it in plain language — I'll figure ou
           <pre><code>${escapeHtml(code)}</code></pre>
         </div>`;
       });
-
       return working;
     }
 
     function escapeHtml(s) {
-      return s
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+      return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     }
 
     function scrollChat() {
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
+
+    // Initialize: load existing conversations or create one
+    const existing = loadConversations();
+    if (existing.length > 0) {
+      currentConversation = existing[0];
+      renderMessages();
+    } else {
+      createConversation();
+    }
+    renderChatSidebar();
   })();
 
   // ===== MULTI-AI ORCHESTRATOR — Mode selector =====
@@ -6106,6 +6211,37 @@ What would you like to do? Just describe it in plain language — I'll figure ou
         location.reload();
       }
     });
+
+    // API URL setting
+    const apiUrlInput = document.getElementById('apiUrlInput');
+    const testApiBtn = document.getElementById('testApiBtn');
+    const apiStatusText = document.getElementById('apiStatusText');
+    if (apiUrlInput) {
+      const savedUrl = localStorage.getItem('darkness-api-url');
+      if (savedUrl) apiUrlInput.value = savedUrl;
+      apiUrlInput.addEventListener('change', () => {
+        localStorage.setItem('darkness-api-url', apiUrlInput.value.trim());
+        if (apiStatusText) apiStatusText.textContent = apiUrlInput.value.trim() ? 'URL saved. Click Test to verify.' : 'Not connected — running in demo mode.';
+      });
+    }
+    if (testApiBtn) {
+      testApiBtn.addEventListener('click', async () => {
+        const url = (apiUrlInput?.value || '').trim();
+        if (!url) { if (apiStatusText) apiStatusText.textContent = 'Enter a URL first.'; return; }
+        if (apiStatusText) apiStatusText.textContent = 'Testing…';
+        try {
+          const res = await fetch(url.replace(/\/$/, '') + '/api/health');
+          const data = await res.json();
+          if (data.status === 'ok') {
+            if (apiStatusText) apiStatusText.innerHTML = '<span style="color:var(--green);">✓ Connected — real AI active</span>';
+          } else {
+            if (apiStatusText) apiStatusText.textContent = 'Unexpected response.';
+          }
+        } catch(e) {
+          if (apiStatusText) apiStatusText.innerHTML = '<span style="color:var(--red);">✕ Cannot reach backend. Run "node server.js" first.</span>';
+        }
+      });
+    }
 
     // Restore saved preferences
     const savedTheme = localStorage.getItem('darkness-theme');
