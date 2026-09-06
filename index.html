@@ -6,6 +6,11 @@
 <title>DARKNESS — An entire software company inside one AI platform</title>
 <meta name="description" content="Describe it → Understand it → Visualize the plan → Approve it → Build it → Test it → Fix it → Preview it → Deploy it. From the darkness of an idea, a real product emerges. Powered by DARKNESS." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='40%25' stop-color='%23000000'/%3E%3Cstop offset='55%25' stop-color='%23a855f7'/%3E%3Cstop offset='100%25' stop-color='%2300d4ff' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='100' height='100' fill='%2305060a'/%3E%3Ccircle cx='50' cy='50' r='48' fill='url(%23g)'/%3E%3Ccircle cx='50' cy='50' r='22' fill='%2305060a'/%3E%3C/svg%3E" />
+<link rel="manifest" href="./manifest.json" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="DARKNESS" />
+<meta name="mobile-web-app-capable" content="yes" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -3570,6 +3575,22 @@
   }
   .webhook-delete:hover { background: rgba(248,113,113,0.2); }
 
+  /* PWA install button */
+  .pwa-install-btn {
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 12.5px;
+    color: var(--green);
+    background: rgba(52, 211, 153, 0.08);
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    text-align: left;
+    margin-bottom: 10px;
+    transition: all 0.16s ease;
+    cursor: pointer;
+  }
+  .pwa-install-btn:hover { background: rgba(52, 211, 153, 0.15); }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 860px) {
     /* Sidebar collapses on mobile */
@@ -5861,8 +5882,14 @@
         if (code) runCode('javascript', code);
       }},
       { cmd: '/share', icon: '🔗', desc: 'Create a shareable link for this chat', action: () => { shareChat(); }},
+      { cmd: '/search', icon: '🔍', desc: 'Search the web', action: () => {
+        const q = prompt('What do you want to search for?');
+        if (q) webSearch(q);
+      }},
+      { cmd: '/folder', icon: '📁', desc: 'Move this chat to a folder', action: () => { moveToFolder(); }},
+      { cmd: '/collab', icon: '👥', desc: 'Start real-time collaboration', action: () => { startCollab(); }},
       { cmd: '/help', icon: '❓', desc: 'Show available commands', action: () => {
-        appendAIMessage('**Available slash commands:**\n\n- `/clear` — Clear current conversation\n- `/new` — Start a new chat\n- `/mode auto|fast|think|deep|coding|ppt` — Switch AI mode\n- `/image` — Generate an image from text\n- `/translate` — Translate text to another language\n- `/code` — Run JavaScript in a sandbox\n- `/export` — Export this conversation as JSON\n- `/import` — Import a conversation from JSON\n- `/share` — Create a shareable link for this chat\n- `/help` — Show this help\n\nYou can also just type your question normally.', true);
+        appendAIMessage('**Available slash commands:**\n\n- `/clear` — Clear current conversation\n- `/new` — Start a new chat\n- `/mode auto|fast|think|deep|coding|ppt` — Switch AI mode\n- `/image` — Generate an image from text\n- `/translate` — Translate text to another language\n- `/code` — Run JavaScript in a sandbox\n- `/search` — Search the web\n- `/folder` — Move this chat to a folder\n- `/collab` — Start real-time collaboration\n- `/export` — Export this conversation as JSON\n- `/import` — Import a conversation from JSON\n- `/share` — Create a shareable link for this chat\n- `/help` — Show this help\n\nYou can also just type your question normally.', true);
       }},
     ];
 
@@ -6179,6 +6206,214 @@
         body: JSON.stringify(payload)
       }).catch(() => {});
     }
+
+    // ── Web search ──
+    async function webSearch(query) {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) {
+        appendAIMessage('⚠️ Web search requires the AI backend.\n\nGo to **Settings → General → AI Backend URL** and enter your backend URL.', true);
+        return;
+      }
+      appendUserMessage(`/search: ${query}`, false);
+      trackEvent('web_searched', { query: query.slice(0, 50) });
+
+      const msg = document.createElement('div');
+      msg.className = 'chat-msg chat-msg-ai';
+      msg.innerHTML = `
+        <div class="chat-msg-avatar"></div>
+        <div class="chat-msg-body">
+          <div class="chat-msg-sender">Darkness AI</div>
+          <div class="chat-msg-content"><span class="chat-thinking"><span class="chat-thinking-dots"><span></span><span></span><span></span></span> Searching the web…</span></div>
+        </div>
+      `;
+      chatMessages.appendChild(msg);
+      scrollChat();
+
+      try {
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, num: 5 })
+        });
+        const data = await res.json();
+        const contentEl = msg.querySelector('.chat-msg-content');
+        if (data.success && data.results.length > 0) {
+          let html = `<p>🔍 <strong>Search results for "${escapeHtml(query)}"</strong></p>`;
+          html += `<p style="font-size:11px;color:var(--text-faint);margin-bottom:10px;">Source: ${data.source}</p>`;
+          data.results.forEach((r, i) => {
+            html += `<div style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;">`;
+            html += `<div style="font-weight:600;color:#fff;font-size:13.5px;margin-bottom:4px;">${i+1}. ${escapeHtml(r.title || 'Untitled')}</div>`;
+            html += `<div style="font-size:12.5px;color:var(--text-dim);margin-bottom:6px;">${escapeHtml(r.snippet || '')}</div>`;
+            if (r.url) html += `<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener" style="font-size:11.5px;color:var(--blue);word-break:break-all;">${escapeHtml(r.url)}</a>`;
+            html += `</div>`;
+          });
+          contentEl.innerHTML = html;
+          addMessageActions(contentEl, 'Search results for: ' + query);
+        } else {
+          contentEl.innerHTML = '⚠️ No results found.';
+        }
+      } catch(e) {
+        msg.querySelector('.chat-msg-content').innerHTML = '⚠️ Search failed: ' + e.message;
+      }
+    }
+
+    // ── Conversation folders ──
+    function getFolders() {
+      try { return JSON.parse(localStorage.getItem('darkness-folders') || '[]'); }
+      catch(e) { return []; }
+    }
+    function saveFolders(folders) {
+      localStorage.setItem('darkness-folders', JSON.stringify(folders));
+    }
+    function moveToFolder() {
+      const conv = getCurrentConversation();
+      if (!conv) return;
+      const folders = getFolders();
+      const options = ['+ Create new folder', ...folders.map(f => f.name), '— No folder (remove)'];
+      const choice = prompt('Move to folder:\n\n' + options.map((o, i) => `${i}: ${o}`).join('\n') + '\n\nEnter the number:');
+      if (choice === null) return;
+      const idx = parseInt(choice);
+      if (isNaN(idx)) return;
+
+      let folderName = '';
+      if (idx === 0) {
+        folderName = prompt('New folder name:');
+        if (!folderName) return;
+        folders.push({ id: 'folder-' + Date.now(), name: folderName, conversationIds: [] });
+        saveFolders(folders);
+      } else if (idx === folders.length + 1) {
+        // Remove from folder
+        folders.forEach(f => {
+          f.conversationIds = f.conversationIds.filter(id => id !== conv.id);
+        });
+        saveFolders(folders);
+        conv.folderId = null;
+        updateConversation(conv);
+        renderChatSidebar();
+        appendAIMessage(`✅ Removed **${conv.title}** from all folders.`, true);
+        return;
+      } else if (idx >= 1 && idx <= folders.length) {
+        folderName = folders[idx - 1].name;
+      } else return;
+
+      // Remove from all folders first
+      folders.forEach(f => {
+        f.conversationIds = f.conversationIds.filter(id => id !== conv.id);
+      });
+      // Add to selected folder
+      const folder = folders.find(f => f.name === folderName);
+      if (folder) {
+        folder.conversationIds.push(conv.id);
+        conv.folderId = folder.id;
+        updateConversation(conv);
+      }
+      saveFolders(folders);
+      renderChatSidebar();
+      renderFoldersInSidebar();
+      appendAIMessage(`✅ Moved **${conv.title}** to folder **${folderName}**.`, true);
+    }
+    function renderFoldersInSidebar() {
+      const folders = getFolders();
+      let foldersSection = document.querySelector('.chat-sidebar-section.folders-dynamic');
+      if (!foldersSection) {
+        // Find the static "Folders" section and replace it
+        const staticFolders = document.querySelectorAll('.chat-sidebar-section')[2];
+        if (staticFolders) {
+          staticFolders.classList.add('folders-dynamic');
+          foldersSection = staticFolders;
+        }
+      }
+      if (!foldersSection) return;
+      const title = foldersSection.querySelector('.chat-sidebar-title');
+      foldersSection.innerHTML = '';
+      if (title) foldersSection.appendChild(title);
+      if (folders.length === 0) {
+        const empty = document.createElement('div');
+        empty.style.cssText = 'padding:6px 10px;font-size:11.5px;color:var(--text-faint);';
+        empty.textContent = 'Use /folder to organize';
+        foldersSection.appendChild(empty);
+        return;
+      }
+      folders.forEach(folder => {
+        const el = document.createElement('div');
+        el.className = 'chat-folder';
+        el.innerHTML = `📁 ${escapeHtml(folder.name)} <span style="color:var(--text-faint);font-size:11px;">(${folder.conversationIds.length})</span>`;
+        el.addEventListener('click', () => {
+          // Filter conversations to this folder
+          const convs = loadConversations().filter(c => folder.conversationIds.includes(c.id));
+          if (convs.length > 0) {
+            currentConversation = convs[0];
+            renderMessages();
+            renderChatSidebar();
+          }
+        });
+        foldersSection.appendChild(el);
+      });
+    }
+
+    // ── Real-time collaboration (BroadcastChannel + collab session URL) ──
+    let collabChannel = null;
+    let collabSessionId = null;
+    function startCollab() {
+      if (collabSessionId) {
+        appendAIMessage(`👥 **Collaboration session active**\n\nSession URL: \`${location.origin}${location.pathname}#collab=${collabSessionId}\`\n\nShare this URL with others on the same browser to sync in real time. Messages sent in this chat will appear in all connected tabs.`, true);
+        return;
+      }
+      collabSessionId = 'collab-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      collabChannel = new BroadcastChannel('darkness-collab-' + collabSessionId);
+      collabChannel.onmessage = (e) => {
+        if (e.data.type === 'message') {
+          // Receive a message from another tab
+          const conv = getCurrentConversation();
+          if (conv) {
+            conv.messages.push(e.data.message);
+            updateConversation(conv);
+            if (e.data.message.role === 'user') appendUserMessage(e.data.message.content, false);
+            else appendAIMessage(e.data.message.content, false);
+          }
+        } else if (e.data.type === 'join') {
+          // A new tab joined — send current conversation
+          const conv = getCurrentConversation();
+          if (conv) {
+            collabChannel.postMessage({ type: 'sync', conversation: conv });
+          }
+        } else if (e.data.type === 'sync') {
+          // Receive a sync from another tab
+          if (e.data.conversation) {
+            currentConversation = e.data.conversation;
+            saveConversations(loadConversations().map(c => c.id === currentConversation.id ? currentConversation : c));
+            renderMessages();
+          }
+        }
+      };
+      // Announce join
+      collabChannel.postMessage({ type: 'join' });
+      trackEvent('collab_started', { sessionId: collabSessionId });
+      appendAIMessage(`👥 **Real-time collaboration started!**\n\nSession URL:\n\`${location.origin}${location.pathname}#collab=${collabSessionId}\`\n\nShare this URL with others (opens in a new tab on the same browser to sync). Messages sent in this chat will appear in all connected tabs in real time.\n\n*Note: This uses BroadcastChannel for same-browser sync. For cross-device collaboration, deploy the backend with WebSocket support.*`, true);
+    }
+    function joinCollabSession(sessionId) {
+      collabSessionId = sessionId;
+      collabChannel = new BroadcastChannel('darkness-collab-' + sessionId);
+      collabChannel.onmessage = (e) => {
+        if (e.data.type === 'message') {
+          const conv = getCurrentConversation();
+          if (conv) {
+            conv.messages.push(e.data.message);
+            updateConversation(conv);
+            if (e.data.message.role === 'user') appendUserMessage(e.data.message.content, false);
+            else appendAIMessage(e.data.message.content, false);
+          }
+        } else if (e.data.type === 'sync' && e.data.conversation) {
+          currentConversation = e.data.conversation;
+          renderMessages();
+        }
+      };
+      collabChannel.postMessage({ type: 'join' });
+      appendAIMessage(`👥 **Joined collaboration session.** Messages will sync in real time.`, true);
+    }
+    // Hook into message sending to broadcast
+    const origAppendUser = appendUserMessage;
+    const origAppendAI = appendAIMessage;
     function setMode(mode) {
       currentMode = mode;
       const labels = { auto: 'Auto', fast: 'Fast', think: 'Think', deep: 'Deep Think', coding: 'Coding', ppt: 'PPT' };
@@ -6595,8 +6830,14 @@
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // Initialize: check for shared chat in URL, then load conversations
+    // Initialize: check for shared chat / collab session in URL, then load conversations
     (async () => {
+      // Check for collab session in URL
+      if (location.hash.startsWith('#collab=')) {
+        const sessionId = location.hash.slice(8);
+        joinCollabSession(sessionId);
+        history.replaceState(null, '', location.pathname);
+      }
       // Check for shared chat in URL first
       const shared = await loadSharedChat();
       if (!shared) {
@@ -6616,8 +6857,56 @@
         }
       }
       renderChatSidebar();
+      renderFoldersInSidebar();
       trackEvent('session_started', { userAgent: navigator.userAgent.slice(0, 50) });
     })();
+  })();
+
+  // ===== PWA: Service Worker Registration + Install Prompt =====
+  (function() {
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then((reg) => {
+          console.log('✓ DARKNESS PWA service worker registered');
+        }).catch((err) => {
+          console.warn('Service worker registration failed:', err);
+        });
+      });
+    }
+
+    // Install prompt (PWA)
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      // Show install button
+      const installBtn = document.createElement('button');
+      installBtn.className = 'pwa-install-btn';
+      installBtn.innerHTML = '📱 Install App';
+      installBtn.title = 'Install DARKNESS as an app';
+      installBtn.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            console.log('PWA installed');
+          }
+          deferredPrompt = null;
+          installBtn.remove();
+        }
+      });
+      // Add to sidebar footer
+      const sidebarFooter = document.querySelector('.sidebar-footer');
+      if (sidebarFooter) {
+        sidebarFooter.insertBefore(installBtn, sidebarFooter.firstChild);
+      }
+    });
+
+    // Detect if already installed
+    window.addEventListener('appinstalled', () => {
+      console.log('DARKNESS installed as PWA');
+    });
   })();
 
   // ===== MULTI-AI ORCHESTRATOR — Mode selector =====

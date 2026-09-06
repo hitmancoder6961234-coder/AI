@@ -614,13 +614,89 @@ async function fireWebhooks(userId, event, data) {
 }
 
 // ──────────────────────────────────────────────
+// POST /api/search — web search proxy
+// ──────────────────────────────────────────────
+app.post('/api/search', async (req, res) => {
+  try {
+    const { query, num = 5 } = req.body;
+    if (!query) return res.status(400).json({ error: 'query is required' });
+
+    // Try to use the ZAI SDK's web search capability if available
+    // Otherwise fall back to a DuckDuckGo HTML scrape (no API key needed)
+    const zai = await initZAI();
+
+    // Method 1: Try ZAI SDK web search (if the SDK supports it)
+    if (zai.web_search) {
+      try {
+        const results = await zai.web_search.search({ query, num });
+        if (results && results.length > 0) {
+          return res.json({ success: true, results, source: 'zai-sdk' });
+        }
+      } catch(e) {
+        console.log('ZAI web search not available, falling back to DuckDuckGo');
+      }
+    }
+
+    // Method 2: DuckDuckGo Instant Answer API (no key needed)
+    try {
+      const ddgRes = await fetch(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`);
+      const ddgData = await ddgRes.json();
+      const results = [];
+      if (ddgData.AbstractText) {
+        results.push({
+          title: ddgData.Heading || query,
+          snippet: ddgData.AbstractText,
+          url: ddgData.AbstractURL || '',
+          source: 'DuckDuckGo'
+        });
+      }
+      if (ddgData.RelatedTopics) {
+        for (const t of ddgData.RelatedTopics.slice(0, num - results.length)) {
+          if (t.Text && t.FirstURL) {
+            results.push({
+              title: t.Text.split(' - ')[0] || t.Text.slice(0, 80),
+              snippet: t.Text,
+              url: t.FirstURL,
+              source: 'DuckDuckGo'
+            });
+          }
+        }
+      }
+      if (results.length > 0) {
+        return res.json({ success: true, results, source: 'duckduckgo' });
+      }
+    } catch(e) {
+      console.log('DuckDuckGo search failed:', e.message);
+    }
+
+    // Method 3: Use ZAI chat to generate a search-like summary
+    const completion = await zai.chat.completions.create({
+      messages: [
+        { role: 'assistant', content: 'You are a web search assistant. The user wants to search the web. Provide the most relevant, factual information you have. If you are unsure, say so. Format as a list of key findings with sources if you know them.' },
+        { role: 'user', content: `Search query: ${query}\n\nProvide the top ${num} relevant results or key facts.` }
+      ],
+      thinking: { type: 'disabled' }
+    });
+    const summary = completion.choices[0]?.message?.content || 'No results found.';
+    return res.json({
+      success: true,
+      results: [{ title: query, snippet: summary, url: '', source: 'AI knowledge' }],
+      source: 'ai-knowledge'
+    });
+  } catch (error) {
+    console.error('Search error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ──────────────────────────────────────────────
 // GET /api/health
 // ──────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     sdk: zaiInstance ? 'ready' : 'initializing',
-    features: ['chat', 'streaming', 'upload', 'pdf-extraction', 'image-generation', 'translate', 'conversations-db', 'code-sandbox', 'sharing', 'analytics', 'webhooks']
+    features: ['chat', 'streaming', 'upload', 'pdf-extraction', 'image-generation', 'translate', 'conversations-db', 'code-sandbox', 'sharing', 'analytics', 'webhooks', 'web-search']
   });
 });
 
