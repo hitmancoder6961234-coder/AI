@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Nexus AI — An entire software company inside one AI platform</title>
-<meta name="description" content="Describe it → Understand it → Visualize the plan → Approve it → Build it → Test it → Fix it → Preview it → Deploy it. Turn your ideas into real products with Nexus AI." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%2300d4ff'/%3E%3Cstop offset='1' stop-color='%23a855f7'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='42' fill='none' stroke='url(%23g)' stroke-width='6'/%3E%3Ccircle cx='50' cy='50' r='14' fill='url(%23g)'/%3E%3C/svg%3E" />
+<title>DARKNESS — An entire software company inside one AI platform</title>
+<meta name="description" content="Describe it → Understand it → Visualize the plan → Approve it → Build it → Test it → Fix it → Preview it → Deploy it. From the darkness of an idea, a real product emerges. Powered by DARKNESS." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='50%25' r='50%25'%3E%3Cstop offset='40%25' stop-color='%23000000'/%3E%3Cstop offset='55%25' stop-color='%23a855f7'/%3E%3Cstop offset='100%25' stop-color='%2300d4ff' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3Crect width='100' height='100' fill='%2305060a'/%3E%3Ccircle cx='50' cy='50' r='48' fill='url(%23g)'/%3E%3Ccircle cx='50' cy='50' r='22' fill='%2305060a'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -99,27 +99,27 @@
   .logo-mark {
     width: 32px;
     height: 32px;
-    border-radius: 9px;
-    background: conic-gradient(from 220deg, var(--blue), var(--purple), var(--magenta), var(--blue));
+    border-radius: 50%;
+    background:
+      radial-gradient(circle, transparent 38%, var(--purple) 42%, var(--blue) 56%, transparent 72%),
+      radial-gradient(circle, var(--bg) 0%, var(--bg) 40%, transparent 41%);
     position: relative;
-    box-shadow: 0 0 24px rgba(168, 85, 247, 0.45);
+    box-shadow:
+      0 0 18px rgba(168, 85, 247, 0.55),
+      0 0 6px rgba(0, 212, 255, 0.4),
+      inset 0 0 8px rgba(0,0,0,0.9);
+    animation: corona 4s ease-in-out infinite;
   }
-  .logo-mark::after {
-    content: '';
-    position: absolute;
-    inset: 6px;
-    border-radius: 5px;
-    background: var(--bg);
+  @keyframes corona {
+    0%, 100% { box-shadow: 0 0 18px rgba(168, 85, 247, 0.55), 0 0 6px rgba(0, 212, 255, 0.4), inset 0 0 8px rgba(0,0,0,0.9); }
+    50% { box-shadow: 0 0 28px rgba(168, 85, 247, 0.8), 0 0 10px rgba(0, 212, 255, 0.6), inset 0 0 10px rgba(0,0,0,0.95); }
   }
-  .logo-mark::before {
-    content: '';
-    position: absolute;
-    inset: 11px;
-    border-radius: 3px;
-    background: linear-gradient(135deg, var(--blue), var(--purple));
-    z-index: 1;
+  .logo span {
+    background: linear-gradient(135deg, #fff 20%, #c4a8ff 60%, #6ad8ff);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+    letter-spacing: 0.18em;
+    font-weight: 800;
   }
-  .logo span { background: linear-gradient(135deg, #fff 30%, #b8a4e8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
 
   .nav-links {
     display: flex;
@@ -175,12 +175,13 @@
     gap: 8px;
     padding: 6px 14px;
     border-radius: 999px;
-    background: rgba(168, 85, 247, 0.1);
-    border: 1px solid rgba(168, 85, 247, 0.25);
+    background: rgba(168, 85, 247, 0.12);
+    border: 1px solid rgba(168, 85, 247, 0.3);
     font-size: 12.5px;
-    font-weight: 500;
-    color: #d8c4f8;
+    font-weight: 600;
+    color: #e0d0ff;
     margin-bottom: 28px;
+    letter-spacing: 0.04em;
   }
   .hero-badge .dot {
     width: 6px; height: 6px; border-radius: 50%;
@@ -657,7 +658,7 @@
   <div class="nav-inner">
     <a href="#" class="logo">
       <span class="logo-mark"></span>
-      <span>Nexus AI</span>
+      <span>DARKNESS</span>
     </a>
     <ul class="nav-links">
       <li><a href="#capabilities">Capabilities</a></li>
@@ -679,14 +680,14 @@
 <section class="hero">
   <div class="hero-badge">
     <span class="dot"></span>
-    Powered by multi-agent AI · Now in early access
+    DARKNESS · Multi-agent AI · Now in early access
   </div>
   <h1>
-    Turn your ideas into <br>
-    <span class="grad">real products.</span>
+    From the darkness of an idea,<br>
+    <span class="grad">a real product emerges.</span>
   </h1>
   <p class="sub">
-    Describe what you want to build. Our AI plans it, visualizes it, builds it,
+    Describe what you want to build. DARKNESS plans it, visualizes it, builds it,
     tests it, fixes it, and helps you ship it — an entire software company inside one platform.
   </p>
 
@@ -945,9 +946,9 @@
     <div class="footer-brand">
       <a href="#" class="logo">
         <span class="logo-mark"></span>
-        <span>Nexus AI</span>
+        <span>DARKNESS</span>
       </a>
-      <p>An entire software company inside one AI platform. Describe it, plan it, build it, ship it.</p>
+      <p>From the darkness of an idea, a real product emerges. An entire software company inside one AI platform.</p>
     </div>
     <div class="footer-col">
       <h4>Product</h4>
@@ -978,7 +979,7 @@
     </div>
   </div>
   <div class="footer-bottom">
-    <span>© 2026 Nexus AI. All rights reserved.</span>
+    <span>© 2026 DARKNESS. All rights reserved.</span>
     <span>Built from a single prompt · Powered by multi-agent AI</span>
   </div>
 </footer>
