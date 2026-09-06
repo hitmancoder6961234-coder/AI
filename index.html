@@ -3682,6 +3682,177 @@
   .home-msg-content strong { color: #fff; }
   .home-msg-content code { background: rgba(168,85,247,0.14); padding: 1.5px 6px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; color: #d8c4f8; }
 
+  /* Stop button (like ChatGPT) */
+  .stop-btn {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid var(--border-strong);
+    color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.18s ease;
+    animation: pulse 1.5s infinite;
+  }
+  .stop-btn:hover { background: rgba(255,255,255,0.2); }
+  .stop-btn svg { width: 14px; height: 14px; }
+  .stop-btn .stop-square {
+    width: 10px; height: 10px;
+    background: currentColor;
+    border-radius: 2px;
+  }
+
+  /* Floating AI chat widget (works on all pages) */
+  .float-chat-btn {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    width: 56px; height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--purple), var(--violet));
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 8px 24px -4px rgba(168, 85, 247, 0.6), 0 0 0 1px rgba(255,255,255,0.1);
+    cursor: pointer;
+    z-index: 500;
+    transition: all 0.25s ease;
+  }
+  .float-chat-btn:hover { transform: scale(1.08); box-shadow: 0 12px 32px -4px rgba(168, 85, 247, 0.8); }
+  .float-chat-btn svg { width: 26px; height: 26px; }
+  .float-chat-badge {
+    position: absolute;
+    top: -2px; right: -2px;
+    background: var(--green);
+    color: #000;
+    font-size: 10px;
+    font-weight: 700;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--bg);
+  }
+
+  .float-chat-panel {
+    display: none;
+    position: fixed;
+    bottom: 90px; right: 24px;
+    width: 380px;
+    max-width: calc(100vw - 48px);
+    height: 520px;
+    max-height: calc(100vh - 120px);
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    box-shadow: 0 24px 60px -12px rgba(0,0,0,0.6);
+    z-index: 501;
+    flex-direction: column;
+    overflow: hidden;
+    animation: floatPanelIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes floatPanelIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .float-chat-panel.open { display: flex; }
+  .float-chat-head {
+    padding: 14px 18px;
+    background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(0,212,255,0.08));
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .float-chat-head-info { display: flex; align-items: center; gap: 10px; }
+  .float-chat-head-orb {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--bg) 0%, var(--bg) 35%, transparent 38%),
+      radial-gradient(circle, transparent 35%, var(--purple) 40%, var(--blue) 60%, transparent 75%);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+  }
+  .float-chat-head-title { font-size: 14px; font-weight: 700; color: #fff; }
+  .float-chat-head-sub { font-size: 11px; color: var(--text-faint); }
+  .float-chat-close {
+    width: 28px; height: 28px;
+    border-radius: 7px;
+    color: var(--text-dim);
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.14s ease;
+  }
+  .float-chat-close:hover { background: rgba(255,255,255,0.06); color: #fff; }
+  .float-chat-close svg { width: 16px; height: 16px; }
+  .float-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+  }
+  .float-chat-messages::-webkit-scrollbar { width: 4px; }
+  .float-chat-messages::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 2px; }
+  .float-msg {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.55;
+    animation: msgIn 0.25s ease;
+  }
+  .float-msg-user {
+    background: rgba(168, 85, 247, 0.1);
+    border: 1px solid rgba(168, 85, 247, 0.2);
+    margin-left: 24px;
+  }
+  .float-msg-ai {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    margin-right: 24px;
+  }
+  .float-msg-sender { font-size: 10px; font-weight: 600; color: var(--text-faint); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .float-msg-content { color: #e8eaf2; word-wrap: break-word; }
+  .float-msg-content strong { color: #fff; }
+  .float-msg-content code { background: rgba(168,85,247,0.14); padding: 1px 5px; border-radius: 3px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #d8c4f8; }
+  .float-chat-input-wrap {
+    padding: 12px;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+    display: flex; gap: 8px; align-items: flex-end;
+  }
+  .float-chat-input-wrap textarea {
+    flex: 1;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 12px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    max-height: 80px;
+    transition: border-color 0.2s ease;
+  }
+  .float-chat-input-wrap textarea:focus { border-color: rgba(168, 85, 247, 0.4); }
+  .float-chat-input-wrap textarea::placeholder { color: var(--text-faint); }
+  .float-chat-send {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--purple), var(--violet));
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px -4px rgba(168, 85, 247, 0.6);
+    transition: all 0.18s ease;
+  }
+  .float-chat-send:hover { transform: translateY(-1px); }
+  .float-chat-send svg { width: 15px; height: 15px; }
+  .float-chat-send.stop {
+    background: rgba(255,255,255,0.1);
+    animation: pulse 1.5s infinite;
+  }
+  .float-chat-context {
+    padding: 6px 12px;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    background: rgba(0,212,255,0.05);
+    border-bottom: 1px solid var(--border);
+  }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 860px) {
     /* Sidebar collapses on mobile */
@@ -5777,14 +5948,15 @@
     // ── Real AI API call (streaming via SSE, with fallback to demo) ──
     // Calls the backend's /api/chat/stream endpoint and invokes onChunk
     // for each piece of text as it arrives. Returns the full response.
-    async function callAIBackendStream(messages, mode, onChunk) {
+    async function callAIBackendStream(messages, mode, onChunk, signal) {
       const apiUrl = localStorage.getItem('darkness-api-url') || '';
       if (!apiUrl) return null; // No backend configured → use fallback
       try {
         const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/chat/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages, mode })
+          body: JSON.stringify({ messages, mode }),
+          signal: signal || undefined
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
 
@@ -6624,7 +6796,15 @@
       }
     });
 
-    chatSendBtn?.addEventListener('click', send);
+    let chatAbortController = null;
+    const chatSendBtnOrigHTML = chatSendBtn?.innerHTML;
+    chatSendBtn?.addEventListener('click', () => {
+      if (isStreaming && chatAbortController) {
+        chatAbortController.abort();
+        return;
+      }
+      send();
+    });
     chatNewBtn?.addEventListener('click', (e) => { e.preventDefault(); createConversation(); });
 
     // Wire attach button (file upload)
@@ -6773,7 +6953,14 @@
 
     async function streamAIResponse(userText, conv) {
       isStreaming = true;
-      chatSendBtn.disabled = true;
+      // Show stop button instead of disabling
+      if (chatSendBtn) {
+        chatSendBtn.disabled = false;
+        chatSendBtn.innerHTML = '<span class="stop-square"></span>';
+        chatSendBtn.className = 'chat-send-btn stop-btn';
+        chatSendBtn.title = 'Stop generating';
+      }
+      chatAbortController = new AbortController();
 
       const msg = document.createElement('div');
       msg.className = 'chat-msg chat-msg-ai';
@@ -6806,7 +6993,7 @@
         // Update content live as chunks arrive
         contentEl.innerHTML = renderMarkdown(fullSoFar) + '<span class="chat-cursor"></span>';
         scrollChat();
-      });
+      }, chatAbortController?.signal);
 
       if (realResponse) {
         // Real streaming completed — finalize
@@ -6819,7 +7006,8 @@
           updateConversation(conv);
         }
         isStreaming = false;
-        chatSendBtn.disabled = false;
+        if (chatSendBtn) { chatSendBtn.innerHTML = chatSendBtnOrigHTML; chatSendBtn.className = 'chat-send-btn'; chatSendBtn.title = 'Send'; }
+        chatAbortController = null;
         scrollChat();
         // Auto-TTS if enabled
         if (window.__darknessTTS && window.__darknessTTS() && 'speechSynthesis' in window) {
@@ -6844,7 +7032,8 @@
               updateConversation(conv);
             }
             isStreaming = false;
-            chatSendBtn.disabled = false;
+            if (chatSendBtn) { chatSendBtn.innerHTML = chatSendBtnOrigHTML; chatSendBtn.className = 'chat-send-btn'; chatSendBtn.title = 'Send'; }
+            chatAbortController = null;
             scrollChat();
             // Auto-TTS if enabled
             if (window.__darknessTTS && window.__darknessTTS() && 'speechSynthesis' in window) {
@@ -8214,6 +8403,9 @@
     const createBtn = document.getElementById('createBtn');
     const homeMessages = document.getElementById('homeMessages');
     let homeMode = 'auto';
+    let homeAbortController = null;
+    let homeIsGenerating = false;
+    const createBtnOrigHTML = createBtn?.innerHTML;
     // Sync home mode tabs
     document.querySelectorAll('.mode-tab').forEach(tab => {
       tab.addEventListener('click', () => {
@@ -8221,6 +8413,11 @@
       });
     });
     createBtn?.addEventListener('click', () => {
+      if (homeIsGenerating) {
+        // Stop generation
+        if (homeAbortController) homeAbortController.abort();
+        return;
+      }
       const promptEl = document.getElementById('prompt');
       const v = promptEl?.value.trim();
       if (!v) { promptEl?.focus(); return; }
@@ -8235,6 +8432,21 @@
         createBtn?.click();
       }
     });
+
+    function setHomeGenerating(isGen) {
+      homeIsGenerating = isGen;
+      if (createBtn) {
+        if (isGen) {
+          createBtn.innerHTML = '<span class="stop-square"></span>';
+          createBtn.className = 'ai-send stop-btn';
+          createBtn.title = 'Stop generating';
+        } else {
+          createBtn.innerHTML = createBtnOrigHTML;
+          createBtn.className = 'ai-send';
+          createBtn.title = 'Send';
+        }
+      }
+    }
 
     async function sendHomeMessage(text) {
       // Show user message
@@ -8263,12 +8475,15 @@
         return;
       }
 
-      // Real AI via streaming
+      // Real AI via streaming with AbortController
+      homeAbortController = new AbortController();
+      setHomeGenerating(true);
       try {
         const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/chat/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: [{ role: 'user', content: text }], mode: homeMode })
+          body: JSON.stringify({ messages: [{ role: 'user', content: text }], mode: homeMode }),
+          signal: homeAbortController.signal
         });
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
@@ -8301,7 +8516,14 @@
           speechSynthesis.speak(new SpeechSynthesisUtterance(fullResponse));
         }
       } catch(e) {
-        contentEl.innerHTML = '⚠️ Connection failed: ' + e.message + '<br><br>Make sure the backend is running.';
+        if (e.name === 'AbortError') {
+          contentEl.innerHTML += '<br><br><em style="color:var(--text-faint);">⏹ Generation stopped.</em>';
+        } else {
+          contentEl.innerHTML = '⚠️ Connection failed: ' + e.message + '<br><br>Make sure the backend is running.';
+        }
+      } finally {
+        setHomeGenerating(false);
+        homeAbortController = null;
       }
     }
 
@@ -8590,6 +8812,206 @@
     }
 
     showToast('DARKNESS ready — all buttons are now functional.', 3000);
+  })();
+
+  // ===== FLOATING AI CHAT WIDGET (works on ALL pages) =====
+  (function() {
+    // Create the floating button + panel
+    const floatBtn = document.createElement('div');
+    floatBtn.className = 'float-chat-btn';
+    floatBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="float-chat-badge">AI</span>
+    `;
+    document.body.appendChild(floatBtn);
+
+    const panel = document.createElement('div');
+    panel.className = 'float-chat-panel';
+    panel.innerHTML = `
+      <div class="float-chat-head">
+        <div class="float-chat-head-info">
+          <div class="float-chat-head-orb"></div>
+          <div>
+            <div class="float-chat-head-title">DARKNESS AI</div>
+            <div class="float-chat-head-sub" id="floatContextLabel">Ask about anything</div>
+          </div>
+        </div>
+        <button class="float-chat-close" id="floatChatClose">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="float-chat-context" id="floatChatContext">Context: Home page</div>
+      <div class="float-chat-messages" id="floatChatMessages">
+        <div class="float-msg float-msg-ai">
+          <div class="float-msg-sender">Darkness AI</div>
+          <div class="float-msg-content">Hi! I'm your AI assistant. I can answer questions about any section of the platform. What would you like to know?</div>
+        </div>
+      </div>
+      <div class="float-chat-input-wrap">
+        <textarea id="floatChatInput" placeholder="Ask anything…" rows="1"></textarea>
+        <button class="float-chat-send" id="floatChatSend" title="Send">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+        </button>
+      </div>
+    `;
+    document.body.appendChild(panel);
+
+    const floatMessages = document.getElementById('floatChatMessages');
+    const floatInput = document.getElementById('floatChatInput');
+    const floatSend = document.getElementById('floatChatSend');
+    const floatContext = document.getElementById('floatChatContext');
+    const sendOrigHTML = floatSend.innerHTML;
+
+    let floatAbortController = null;
+    let floatIsGenerating = false;
+    let floatMessagesHistory = [];
+
+    // Toggle panel
+    floatBtn.addEventListener('click', () => {
+      panel.classList.toggle('open');
+      if (panel.classList.contains('open')) {
+        updateContext();
+        floatInput.focus();
+      }
+    });
+    document.getElementById('floatChatClose').addEventListener('click', () => {
+      panel.classList.remove('open');
+    });
+
+    // Update context based on active page
+    function updateContext() {
+      const activePage = document.querySelector('.app-page.active');
+      const pageName = activePage?.getAttribute('data-page') || 'home';
+      const labels = {
+        home: 'Home page', capabilities: 'Capabilities section', orchestrator: 'Multi-AI Orchestrator',
+        think: 'Think Modes section', chat: 'AI Assistant', analytics: 'Usage Analytics',
+        workflow: 'Workflow section', engine: 'Idea Engine', github: 'GitHub Push section', ppt: 'PPT Studio'
+      };
+      const label = labels[pageName] || pageName;
+      floatContext.textContent = 'Context: ' + label;
+      floatMessagesHistory = []; // Reset context when page changes
+    }
+
+    // Auto-resize textarea
+    floatInput.addEventListener('input', () => {
+      floatInput.style.height = 'auto';
+      floatInput.style.height = Math.min(floatInput.scrollHeight, 80) + 'px';
+    });
+    floatInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        floatSend.click();
+      }
+    });
+
+    floatSend.addEventListener('click', () => {
+      if (floatIsGenerating) {
+        if (floatAbortController) floatAbortController.abort();
+        return;
+      }
+      const text = floatInput.value.trim();
+      if (!text) return;
+      sendFloatMessage(text);
+      floatInput.value = '';
+      floatInput.style.height = 'auto';
+    });
+
+    function setFloatGenerating(isGen) {
+      floatIsGenerating = isGen;
+      if (isGen) {
+        floatSend.innerHTML = '<span class="stop-square"></span>';
+        floatSend.className = 'float-chat-send stop';
+        floatSend.title = 'Stop generating';
+      } else {
+        floatSend.innerHTML = sendOrigHTML;
+        floatSend.className = 'float-chat-send';
+        floatSend.title = 'Send';
+      }
+    }
+
+    async function sendFloatMessage(text) {
+      // Show user message
+      const userMsg = document.createElement('div');
+      userMsg.className = 'float-msg float-msg-user';
+      userMsg.innerHTML = `<div class="float-msg-sender">You</div><div class="float-msg-content">${text.replace(/</g,'&lt;')}</div>`;
+      floatMessages.appendChild(userMsg);
+      floatMessages.scrollTop = floatMessages.scrollHeight;
+
+      // Show thinking
+      const aiMsg = document.createElement('div');
+      aiMsg.className = 'float-msg float-msg-ai';
+      aiMsg.innerHTML = `<div class="float-msg-sender">Darkness AI</div><div class="float-msg-content"><span class="chat-thinking"><span class="chat-thinking-dots"><span></span><span></span><span></span></span> Thinking…</span></div>`;
+      floatMessages.appendChild(aiMsg);
+      floatMessages.scrollTop = floatMessages.scrollHeight;
+
+      const contentEl = aiMsg.querySelector('.float-msg-content');
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+
+      // Build context-aware system prompt
+      const activePage = document.querySelector('.app-page.active');
+      const pageName = activePage?.getAttribute('data-page') || 'home';
+      const contextPrompt = `You are DARKNESS AI, helping the user on the "${pageName}" section of the platform. Answer concisely (2-3 short paragraphs max). If the user asks about something on this page, explain it. If they ask a general question, answer it directly.`;
+
+      floatMessagesHistory.push({ role: 'user', content: text });
+
+      if (!apiUrl) {
+        setTimeout(() => {
+          contentEl.innerHTML = 'I\'m <strong>DARKNESS</strong>. To get real AI responses, configure your backend URL in <strong>Settings → General</strong>.';
+          floatMessagesHistory.push({ role: 'assistant', content: 'Configure backend to enable AI.' });
+          floatMessages.scrollTop = floatMessages.scrollHeight;
+        }, 600);
+        return;
+      }
+
+      floatAbortController = new AbortController();
+      setFloatGenerating(true);
+      try {
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            messages: floatMessagesHistory,
+            mode: 'fast',
+            systemPrompt: contextPrompt
+          }),
+          signal: floatAbortController.signal
+        });
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullResponse = '';
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.content) {
+                  fullResponse += data.content;
+                  contentEl.innerHTML = fullResponse.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/`([^`]+)`/g, '<code>$1</code>');
+                  floatMessages.scrollTop = floatMessages.scrollHeight;
+                }
+              } catch(e) {}
+            }
+          }
+        }
+        if (!fullResponse) contentEl.innerHTML = '<em>(No response)</em>';
+        floatMessagesHistory.push({ role: 'assistant', content: fullResponse });
+      } catch(e) {
+        if (e.name === 'AbortError') {
+          contentEl.innerHTML += '<br><em style="color:var(--text-faint);">⏹ Stopped.</em>';
+        } else {
+          contentEl.innerHTML = '⚠️ ' + e.message;
+        }
+      } finally {
+        setFloatGenerating(false);
+        floatAbortController = null;
+      }
+    }
   })();
 </script>
 </body>
