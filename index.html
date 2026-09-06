@@ -3418,6 +3418,13 @@
     color: #1a1a2e;
   }
 
+  /* Voice recording state */
+  .chat-tool-btn.recording {
+    background: rgba(248, 113, 113, 0.2) !important;
+    color: var(--red) !important;
+    animation: pulse 1.5s infinite;
+  }
+
   /* ===== SLASH COMMAND DROPDOWN ===== */
   .slash-commands {
     display: none;
@@ -5404,10 +5411,55 @@
       scrollChat();
     }
 
-    // ── Real AI API call (with fallback to demo) ──
-    async function callAIBackend(messages, mode) {
+    // ── Real AI API call (streaming via SSE, with fallback to demo) ──
+    // Calls the backend's /api/chat/stream endpoint and invokes onChunk
+    // for each piece of text as it arrives. Returns the full response.
+    async function callAIBackendStream(messages, mode, onChunk) {
       const apiUrl = localStorage.getItem('darkness-api-url') || '';
       if (!apiUrl) return null; // No backend configured → use fallback
+      try {
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/chat/stream', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages, mode })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullResponse = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          // Parse SSE events
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              try {
+                const data = JSON.parse(line.slice(6));
+                if (data.content) {
+                  fullResponse += data.content;
+                  if (onChunk) onChunk(data.content, fullResponse);
+                }
+              } catch(e) { /* skip non-JSON */ }
+            }
+          }
+        }
+        return fullResponse || null;
+      } catch(e) {
+        console.warn('AI backend unavailable, using demo mode:', e.message);
+        return null;
+      }
+    }
+
+    // Legacy non-streaming call (used as fallback)
+    async function callAIBackend(messages, mode) {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) return null;
       try {
         const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/chat', {
           method: 'POST',
@@ -5422,6 +5474,125 @@
         console.warn('AI backend unavailable, using demo mode:', e.message);
         return null;
       }
+    }
+
+    // ── File upload (PDF/DOCX/TXT extraction via backend) ──
+    let uploadedFileContext = null; // { filename, text, fileType }
+    async function uploadFile(file) {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) {
+        appendAIMessage('⚠️ File upload requires the AI backend to be running.\n\nGo to **Settings → General → AI Backend URL** and enter your backend URL (e.g., `http://localhost:3000`), then try again.', true);
+        return;
+      }
+      // Show uploading indicator
+      const uploadMsg = document.createElement('div');
+      uploadMsg.className = 'chat-msg chat-msg-user';
+      uploadMsg.innerHTML = `
+        <div class="chat-msg-avatar">U</div>
+        <div class="chat-msg-body">
+          <div class="chat-msg-sender">You</div>
+          <div class="chat-msg-content" style="display:flex;align-items:center;gap:8px;">
+            <span>📄</span>
+            <span>Uploading ${escapeHtml(file.name)}…</span>
+            <span class="chat-thinking-dots"><span></span><span></span><span></span></span>
+          </div>
+        </div>
+      `;
+      chatMessages.appendChild(uploadMsg);
+      scrollChat();
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/upload', {
+          method: 'POST',
+          body: formData
+        });
+        const data = await res.json();
+        uploadMsg.remove();
+        if (data.success) {
+          uploadedFileContext = {
+            filename: data.filename,
+            text: data.text,
+            fileType: data.fileType
+          };
+          // Show file chip
+          const chipMsg = document.createElement('div');
+          chipMsg.className = 'chat-msg chat-msg-user';
+          const icon = data.fileType === 'pdf' ? '📕' : data.fileType === 'docx' ? '📘' : data.fileType === 'image' ? '🖼️' : '📄';
+          chipMsg.innerHTML = `
+            <div class="chat-msg-avatar">U</div>
+            <div class="chat-msg-body">
+              <div class="chat-msg-sender">You</div>
+              <div class="chat-msg-content">
+                <div style="display:inline-flex;align-items:center;gap:8px;padding:8px 12px;background:rgba(52,211,153,0.1);border:1px solid rgba(52,211,153,0.3);border-radius:8px;">
+                  <span>${icon}</span>
+                  <span><strong>${escapeHtml(data.filename)}</strong></span>
+                  <span style="color:var(--text-faint);font-size:12px;">${data.fileType} · ${(data.size/1024).toFixed(1)}KB</span>
+                  <button class="chat-code-btn" style="margin-left:8px;" onclick="this.closest('.chat-msg').remove()">✕</button>
+                </div>
+                <p style="margin-top:8px;font-size:12px;color:var(--text-dim);">File ready. Ask me anything about it — I'll use its content as context.</p>
+              </div>
+            </div>
+          `;
+          chatMessages.appendChild(chipMsg);
+          scrollChat();
+        } else {
+          appendAIMessage('⚠️ Upload failed: ' + (data.error || 'Unknown error'), true);
+        }
+      } catch(e) {
+        uploadMsg.remove();
+        appendAIMessage('⚠️ Upload failed: ' + e.message + '\n\nMake sure the backend is running (`node server.js`).', true);
+      }
+    }
+
+    // ── Voice input via Web Speech API ──
+    let isRecording = false;
+    let recognition = null;
+    function initVoiceInput() {
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SR) return null;
+      const rec = new SR();
+      rec.continuous = true;
+      rec.interimResults = true;
+      rec.lang = 'en-US';
+      let finalText = '';
+      rec.onresult = (event) => {
+        let interim = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) finalText += transcript;
+          else interim += transcript;
+        }
+        chatInput.value = finalText + interim;
+        chatInput.style.height = 'auto';
+        chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+      };
+      rec.onerror = (e) => {
+        console.warn('Voice error:', e.error);
+        stopRecording();
+      };
+      rec.onend = () => { stopRecording(); };
+      return rec;
+    }
+    function startRecording() {
+      if (!recognition) recognition = initVoiceInput();
+      if (!recognition) {
+        appendAIMessage('⚠️ Voice input is not supported in this browser. Try Chrome or Edge.', true);
+        return;
+      }
+      try {
+        recognition.start();
+        isRecording = true;
+        voiceBtn?.classList.add('recording');
+        voiceBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="2" fill="currentColor"/></svg>';
+      } catch(e) { /* already started */ }
+    }
+    function stopRecording() {
+      if (recognition) { try { recognition.stop(); } catch(e) {} }
+      isRecording = false;
+      voiceBtn?.classList.remove('recording');
+      voiceBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>';
     }
 
     // ── Slash Commands ──
@@ -5536,6 +5707,26 @@
 
     chatSendBtn?.addEventListener('click', send);
     chatNewBtn?.addEventListener('click', (e) => { e.preventDefault(); createConversation(); });
+
+    // Wire attach button (file upload)
+    const attachBtn = document.querySelector('.chat-tool-btn[title="Attach file"]');
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.pdf,.docx,.txt,.md,.csv,.json,.js,.ts,.py,.jsx,.tsx,.html,.css,.png,.jpg,.jpeg,.gif,.webp';
+    fileInput.style.display = 'none';
+    document.body.appendChild(fileInput);
+    attachBtn?.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', (e) => {
+      if (e.target.files[0]) uploadFile(e.target.files[0]);
+      fileInput.value = ''; // Reset for re-upload
+    });
+
+    // Wire voice button (Web Speech API)
+    const voiceBtn = document.querySelector('.chat-tool-btn[title="Voice input"]');
+    voiceBtn?.addEventListener('click', () => {
+      if (isRecording) stopRecording();
+      else startRecording();
+    });
 
     // Suggested prompts fill the input
     suggestedBtns.forEach(btn => {
@@ -5677,41 +5868,68 @@
       const contentEl = msg.querySelector('.chat-msg-content');
       scrollChat();
 
-      // Build messages array for API
-      const apiMessages = conv.messages.map(m => ({ role: m.role, content: m.content }));
-
-      // Try real backend first
-      const realResponse = await callAIBackend(apiMessages, currentMode);
-      const response = realResponse || pickResponse(userText).content;
-
-      // Stream the response token-by-token
-      const fullHtml = renderMarkdown(response);
-      const total = response.length;
-      let i = 0;
-      const chunkSize = realResponse ? 3 : 4; // Slightly faster for real responses
-
-      const tick = () => {
-        i += chunkSize;
-        if (i >= total) {
-          contentEl.innerHTML = fullHtml;
-          attachCodeCopyHandlers(contentEl);
-          addMessageActions(contentEl, response);
-          // Save to conversation
-          if (conv) {
-            conv.messages.push({ role: 'assistant', content: response });
-            updateConversation(conv);
-          }
-          isStreaming = false;
-          chatSendBtn.disabled = false;
-          scrollChat();
-          return;
+      // Build messages array for API (include uploaded file context if any)
+      let apiMessages = conv.messages.map(m => ({ role: m.role, content: m.content }));
+      if (uploadedFileContext) {
+        // Prepend file context to the latest user message
+        const lastMsg = apiMessages[apiMessages.length - 1];
+        if (lastMsg && lastMsg.role === 'user') {
+          lastMsg.content = `I've uploaded a file: ${uploadedFileContext.filename} (${uploadedFileContext.fileType}). Here is its content:\n\n---\n${uploadedFileContext.text}\n---\n\nMy question: ${lastMsg.content}`;
         }
-        const partial = response.slice(0, i);
-        contentEl.innerHTML = renderMarkdown(partial) + '<span class="chat-cursor"></span>';
+        uploadedFileContext = null; // Clear after use
+      }
+
+      // Try real streaming backend first
+      let response = '';
+      const realResponse = await callAIBackendStream(apiMessages, currentMode, (chunk, fullSoFar) => {
+        response = fullSoFar;
+        // Update content live as chunks arrive
+        contentEl.innerHTML = renderMarkdown(fullSoFar) + '<span class="chat-cursor"></span>';
         scrollChat();
-        setTimeout(tick, realResponse ? 8 : 16);
-      };
-      tick();
+      });
+
+      if (realResponse) {
+        // Real streaming completed — finalize
+        response = realResponse;
+        contentEl.innerHTML = renderMarkdown(response);
+        attachCodeCopyHandlers(contentEl);
+        addMessageActions(contentEl, response);
+        if (conv) {
+          conv.messages.push({ role: 'assistant', content: response });
+          updateConversation(conv);
+        }
+        isStreaming = false;
+        chatSendBtn.disabled = false;
+        scrollChat();
+      } else {
+        // Fallback to demo response with simulated streaming
+        response = pickResponse(userText).content;
+        const fullHtml = renderMarkdown(response);
+        const total = response.length;
+        let i = 0;
+        const chunkSize = 4;
+        const tick = () => {
+          i += chunkSize;
+          if (i >= total) {
+            contentEl.innerHTML = fullHtml;
+            attachCodeCopyHandlers(contentEl);
+            addMessageActions(contentEl, response);
+            if (conv) {
+              conv.messages.push({ role: 'assistant', content: response });
+              updateConversation(conv);
+            }
+            isStreaming = false;
+            chatSendBtn.disabled = false;
+            scrollChat();
+            return;
+          }
+          const partial = response.slice(0, i);
+          contentEl.innerHTML = renderMarkdown(partial) + '<span class="chat-cursor"></span>';
+          scrollChat();
+          setTimeout(tick, 16);
+        };
+        tick();
+      }
     }
 
     function handleMessageAction(btn, contentEl, fullText) {

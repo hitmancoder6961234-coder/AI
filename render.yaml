@@ -1,0 +1,27 @@
+# Render Blueprint — DARKNESS AI Backend
+# https://render.com/docs/blueprint-spec
+# 
+# How to deploy:
+# 1. Push this repo to GitHub (already done)
+# 2. Go to https://dashboard.render.com/blueprints
+# 3. Click "New Blueprint" and select your GitHub repo (hitmancoder6961234-coder/AI)
+# 4. Render will detect this render.yaml and create the service automatically
+# 5. Once deployed, copy the URL (e.g., https://darkness-ai.onrender.com)
+# 6. Open DARKNESS → Settings → General → AI Backend URL
+# 7. Paste the Render URL and click "Test"
+
+services:
+  - type: web
+    name: darkness-ai-backend
+    runtime: node
+    plan: free  # Change to 'starter' for production
+    region: oregon  # or singapore / frankfurt — pick closest to your users
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000  # Render assigns this automatically, but set a default
