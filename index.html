@@ -5343,11 +5343,62 @@
       const convs = loadConversations();
       const idx = convs.findIndex(c => c.id === conv.id);
       if (idx >= 0) { convs[idx] = conv; saveConversations(convs); }
+      // Sync to backend DB if signed in + backend configured
+      syncConversationToBackend(conv);
+    }
+    // ── Backend DB sync (multi-user) ──
+    async function syncConversationToBackend(conv) {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      const userJson = sessionStorage.getItem('darkness-user');
+      if (!apiUrl || !userJson) return; // Not connected or not signed in
+      try {
+        const user = JSON.parse(userJson);
+        await fetch(apiUrl.replace(/\/$/, '') + '/api/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userEmail: user.email,
+            userName: user.name,
+            userPicture: user.picture,
+            conversation: conv
+          })
+        });
+      } catch(e) { /* silent fail — localStorage is the fallback */ }
+    }
+    async function loadConversationsFromBackend() {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      const userJson = sessionStorage.getItem('darkness-user');
+      if (!apiUrl || !userJson) return null;
+      try {
+        const user = JSON.parse(userJson);
+        const res = await fetch(`${apiUrl.replace(/\/$/, '')}/api/conversations?userEmail=${encodeURIComponent(user.email)}&userName=${encodeURIComponent(user.name || '')}&userPicture=${encodeURIComponent(user.picture || '')}`);
+        const data = await res.json();
+        if (data.success && data.conversations) {
+          // Fetch full messages for each conversation
+          const fullConvs = [];
+          for (const c of data.conversations) {
+            try {
+              const fullRes = await fetch(`${apiUrl.replace(/\/$/, '')}/api/conversations/${c.id}`);
+              const fullData = await fullRes.json();
+              if (fullData.success && fullData.conversation) {
+                fullConvs.push(fullData.conversation);
+              }
+            } catch(e) {}
+          }
+          return fullConvs;
+        }
+      } catch(e) {}
+      return null;
     }
     function deleteConversation(id) {
       let convs = loadConversations();
       convs = convs.filter(c => c.id !== id);
       saveConversations(convs);
+      // Also delete from backend DB
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (apiUrl) {
+        fetch(apiUrl.replace(/\/$/, '') + '/api/conversations/' + id, { method: 'DELETE' }).catch(() => {});
+      }
       if (currentConversation?.id === id) {
         currentConversation = convs[0] || null;
         if (!currentConversation) createConversation();
@@ -5613,10 +5664,159 @@
       { cmd: '/mode deep', icon: '🔬', desc: 'Switch to Deep Think mode', action: () => { setMode('deep'); }},
       { cmd: '/mode coding', icon: '💻', desc: 'Switch to Coding mode', action: () => { setMode('coding'); }},
       { cmd: '/mode ppt', icon: '📊', desc: 'Switch to PPT mode', action: () => { setMode('ppt'); }},
+      { cmd: '/image', icon: '🎨', desc: 'Generate an image from text', action: () => {
+        const prompt = prompt('Describe the image you want to generate:');
+        if (prompt) generateImage(prompt);
+      }},
+      { cmd: '/translate', icon: '🌐', desc: 'Translate text to another language', action: () => {
+        const lang = prompt('Translate to which language? (e.g., Spanish, French, Hindi, Arabic)');
+        if (!lang) return;
+        const text = prompt('Enter the text to translate:');
+        if (text) translateText(text, lang);
+      }},
+      { cmd: '/export', icon: '📥', desc: 'Export this conversation as JSON', action: () => { exportChat(); }},
+      { cmd: '/import', icon: '📤', desc: 'Import a conversation from JSON', action: () => { importChat(); }},
       { cmd: '/help', icon: '❓', desc: 'Show available commands', action: () => {
-        appendAIMessage('**Available slash commands:**\n\n- `/clear` — Clear current conversation\n- `/new` — Start a new chat\n- `/mode auto|fast|think|deep|coding|ppt` — Switch AI mode\n- `/help` — Show this help\n\nYou can also just type your question normally.', true);
+        appendAIMessage('**Available slash commands:**\n\n- `/clear` — Clear current conversation\n- `/new` — Start a new chat\n- `/mode auto|fast|think|deep|coding|ppt` — Switch AI mode\n- `/image` — Generate an image from text\n- `/translate` — Translate text to another language\n- `/export` — Export this conversation as JSON\n- `/import` — Import a conversation from JSON\n- `/help` — Show this help\n\nYou can also just type your question normally.', true);
       }},
     ];
+
+    // ── Image generation ──
+    async function generateImage(prompt) {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) {
+        appendAIMessage('⚠️ Image generation requires the AI backend.\n\nGo to **Settings → General → AI Backend URL** and enter your backend URL.', true);
+        return;
+      }
+      // Show generating message
+      const msg = document.createElement('div');
+      msg.className = 'chat-msg chat-msg-ai';
+      msg.innerHTML = `
+        <div class="chat-msg-avatar"></div>
+        <div class="chat-msg-body">
+          <div class="chat-msg-sender">Darkness AI</div>
+          <div class="chat-msg-content"><span class="chat-thinking"><span class="chat-thinking-dots"><span></span><span></span><span></span></span> Generating image: "${escapeHtml(prompt)}"…</span></div>
+        </div>
+      `;
+      chatMessages.appendChild(msg);
+      scrollChat();
+
+      try {
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, size: '1024x1024' })
+        });
+        const data = await res.json();
+        msg.querySelector('.chat-msg-content').innerHTML = '';
+        if (data.success) {
+          const imgWrap = document.createElement('div');
+          imgWrap.innerHTML = `
+            <p style="margin-bottom:8px;">🎨 <strong>Generated image:</strong></p>
+            <img src="${data.image}" alt="${escapeHtml(prompt)}" style="max-width:100%;border-radius:12px;border:1px solid var(--border);" />
+            <p style="margin-top:8px;font-size:12px;color:var(--text-dim);">Prompt: "${escapeHtml(prompt)}"</p>
+          `;
+          msg.querySelector('.chat-msg-content').appendChild(imgWrap);
+          addMessageActions(msg.querySelector('.chat-msg-content'), `Image: ${prompt}`);
+          scrollChat();
+        } else {
+          msg.querySelector('.chat-msg-content').innerHTML = '⚠️ Image generation failed: ' + (data.error || 'Unknown error');
+        }
+      } catch(e) {
+        msg.querySelector('.chat-msg-content').innerHTML = '⚠️ Image generation failed: ' + e.message;
+      }
+    }
+
+    // ── Translation ──
+    async function translateText(text, targetLanguage) {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) {
+        appendAIMessage('⚠️ Translation requires the AI backend.\n\nGo to **Settings → General → AI Backend URL** and enter your backend URL.', true);
+        return;
+      }
+      appendUserMessage(`/translate to ${targetLanguage}: ${text}`, false);
+      const msg = document.createElement('div');
+      msg.className = 'chat-msg chat-msg-ai';
+      msg.innerHTML = `
+        <div class="chat-msg-avatar"></div>
+        <div class="chat-msg-body">
+          <div class="chat-msg-sender">Darkness AI</div>
+          <div class="chat-msg-content"><span class="chat-thinking"><span class="chat-thinking-dots"><span></span><span></span><span></span></span> Translating to ${escapeHtml(targetLanguage)}…</span></div>
+        </div>
+      `;
+      chatMessages.appendChild(msg);
+      scrollChat();
+
+      try {
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/translate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, targetLanguage })
+        });
+        const data = await res.json();
+        if (data.success) {
+          msg.querySelector('.chat-msg-content').innerHTML = renderMarkdown('**Translation (' + escapeHtml(targetLanguage) + '):**\n\n' + data.translation);
+          addMessageActions(msg.querySelector('.chat-msg-content'), data.translation);
+        } else {
+          msg.querySelector('.chat-msg-content').innerHTML = '⚠️ Translation failed: ' + (data.error || 'Unknown error');
+        }
+      } catch(e) {
+        msg.querySelector('.chat-msg-content').innerHTML = '⚠️ Translation failed: ' + e.message;
+      }
+    }
+
+    // ── Chat export/import ──
+    function exportChat() {
+      const conv = getCurrentConversation();
+      if (!conv || conv.messages.length === 0) {
+        appendAIMessage('⚠️ No messages to export. Start a conversation first.', true);
+        return;
+      }
+      const data = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        conversation: conv
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `darkness-chat-${conv.title.replace(/[^a-z0-9]/gi, '_').slice(0, 30)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      appendAIMessage(`✅ Exported **${conv.title}** (${conv.messages.length} messages) as JSON.`, true);
+    }
+    function importChat() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const data = JSON.parse(ev.target.result);
+            const conv = data.conversation || data;
+            if (!conv.messages) throw new Error('Invalid format');
+            // Create new conversation with imported data
+            conv.id = 'conv-' + Date.now();
+            conv.createdAt = Date.now();
+            const convs = loadConversations();
+            convs.unshift(conv);
+            saveConversations(convs);
+            currentConversation = conv;
+            renderChatSidebar();
+            renderMessages();
+            appendAIMessage(`✅ Imported **${conv.title}** (${conv.messages.length} messages).`, true);
+          } catch(err) {
+            appendAIMessage('⚠️ Import failed: ' + err.message, true);
+          }
+        };
+        reader.readAsText(file);
+      });
+      input.click();
+    }
     function setMode(mode) {
       currentMode = mode;
       const labels = { auto: 'Auto', fast: 'Fast', think: 'Think', deep: 'Deep Think', coding: 'Coding', ppt: 'PPT' };
@@ -6032,15 +6232,25 @@
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // Initialize: load existing conversations or create one
-    const existing = loadConversations();
-    if (existing.length > 0) {
-      currentConversation = existing[0];
-      renderMessages();
-    } else {
-      createConversation();
-    }
-    renderChatSidebar();
+    // Initialize: try backend DB first, fall back to localStorage, then create
+    (async () => {
+      const backendConvs = await loadConversationsFromBackend();
+      if (backendConvs && backendConvs.length > 0) {
+        // Merge backend conversations with local (prefer backend)
+        saveConversations(backendConvs);
+        currentConversation = backendConvs[0];
+        renderMessages();
+      } else {
+        const existing = loadConversations();
+        if (existing.length > 0) {
+          currentConversation = existing[0];
+          renderMessages();
+        } else {
+          createConversation();
+        }
+      }
+      renderChatSidebar();
+    })();
   })();
 
   // ===== MULTI-AI ORCHESTRATOR — Mode selector =====
