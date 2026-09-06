@@ -2227,6 +2227,470 @@
   }
   .oss-icon { font-size: 16px; }
 
+  /* ===== THINK MODES ===== */
+  .feature-section-think {
+    background:
+      linear-gradient(180deg, transparent, rgba(139, 92, 246, 0.03) 30%, transparent 70%);
+  }
+
+  /* 3 mode cards */
+  .think-modes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+    margin-bottom: 56px;
+  }
+  .think-mode-card {
+    position: relative;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 22px 20px;
+    transition: all 0.25s ease;
+    overflow: hidden;
+  }
+  .think-mode-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--tmc-color, var(--violet)), transparent);
+    opacity: 0.7;
+  }
+  .think-mode-card[data-mode="fast"] { --tmc-color: var(--cyan); }
+  .think-mode-card[data-mode="think"] { --tmc-color: var(--blue); }
+  .think-mode-card[data-mode="deep"] { --tmc-color: var(--violet); }
+  .think-mode-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--border-strong);
+  }
+  .think-mode-card.active {
+    border-color: var(--tmc-color);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--tmc-color) 6%, transparent), var(--bg-card));
+    box-shadow: 0 0 0 1px var(--tmc-color), 0 12px 30px -10px color-mix(in srgb, var(--tmc-color) 50%, transparent);
+  }
+  .tmc-badge {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--tmc-color) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--tmc-color) 35%, transparent);
+    color: var(--tmc-color);
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .tmc-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px;
+  }
+  .tmc-icon { font-size: 26px; }
+  .tmc-name {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #fff;
+  }
+  .tmc-tag {
+    font-size: 12px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 12px;
+  }
+  .tmc-tag em {
+    color: var(--tmc-color);
+    font-style: normal;
+    font-weight: 600;
+  }
+  .tmc-desc {
+    font-size: 13.5px;
+    color: var(--text-dim);
+    line-height: 1.55;
+    margin-bottom: 16px;
+  }
+  .tmc-budget {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-bottom: 16px;
+  }
+  .tmc-budget-row {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11.5px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tmc-budget-row span { width: 48px; }
+  .tmc-bar {
+    flex: 1;
+    height: 5px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .tmc-bar > span {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, var(--tmc-color), color-mix(in srgb, var(--tmc-color) 60%, #fff));
+    border-radius: 3px;
+  }
+  .tmc-flow {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+    padding: 12px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+  }
+  .tmc-flow-node {
+    padding: 4px 9px;
+    border-radius: 6px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tmc-flow-final {
+    background: color-mix(in srgb, var(--tmc-color) 14%, transparent);
+    border-color: color-mix(in srgb, var(--tmc-color) 35%, transparent);
+    color: var(--tmc-color);
+    font-weight: 600;
+  }
+  .tmc-flow-arrow {
+    color: var(--text-faint);
+    font-size: 11px;
+  }
+
+  /* Interactive demo */
+  .think-demo {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 28px;
+    margin-bottom: 56px;
+    position: relative;
+    overflow: hidden;
+  }
+  .think-demo::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(139, 92, 246, 0.10), transparent 50%),
+      radial-gradient(circle at 80% 100%, rgba(0, 212, 255, 0.06), transparent 50%);
+    pointer-events: none;
+  }
+  .think-demo > * { position: relative; z-index: 1; }
+  .think-demo-head { margin-bottom: 20px; }
+  .think-demo-head h3 { font-size: 19px; font-weight: 700; margin-bottom: 4px; }
+  .think-demo-head p { font-size: 13.5px; color: var(--text-dim); }
+  .think-demo-head p strong { color: #fff; font-weight: 600; }
+
+  .think-demo-controls {
+    display: flex; align-items: center; gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    padding: 14px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .tdc-mode-buttons { display: flex; gap: 6px; }
+  .tdc-mode-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: all 0.18s ease;
+  }
+  .tdc-mode-btn:hover { background: rgba(255,255,255,0.07); color: #fff; }
+  .tdc-mode-btn.active {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(168, 85, 247, 0.15));
+    border-color: rgba(139, 92, 246, 0.5);
+    color: #fff;
+  }
+  .tdc-question {
+    flex: 1;
+    display: flex; align-items: center; gap: 8px;
+    min-width: 200px;
+  }
+  .tdc-question-label {
+    font-size: 11px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tdc-question-text {
+    font-size: 13px;
+    color: #e8eaf2;
+    font-style: italic;
+  }
+  .tdc-run-btn {
+    padding: 9px 18px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, var(--violet), var(--purple));
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 6px 16px -6px rgba(139, 92, 246, 0.6);
+    transition: all 0.18s ease;
+  }
+  .tdc-run-btn:hover { transform: translateY(-1px); }
+  .tdc-run-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .think-demo-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .think-demo-timeline, .think-demo-result {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    min-height: 280px;
+  }
+  .tdt-placeholder, .tdr-placeholder {
+    color: var(--text-faint);
+    font-size: 13.5px;
+    text-align: center;
+    padding: 60px 20px;
+  }
+  .tdt-placeholder strong, .tdr-placeholder strong { color: var(--text-dim); }
+
+  .tdt-step {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0;
+    font-size: 13px;
+    color: var(--text-faint);
+    border-bottom: 1px solid var(--border);
+    opacity: 0;
+    animation: tdtIn 0.3s ease forwards;
+  }
+  .tdt-step:last-child { border-bottom: none; }
+  @keyframes tdtIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+  .tdt-mark {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+  }
+  .tdt-step.done { color: var(--text-dim); }
+  .tdt-step.done .tdt-mark {
+    background: rgba(52, 211, 153, 0.15);
+    border-color: rgba(52, 211, 153, 0.4);
+    color: var(--green);
+  }
+  .tdt-step.active { color: #fff; }
+  .tdt-step.active .tdt-mark {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.5);
+    color: var(--violet);
+  }
+  .tdt-spinner {
+    width: 12px; height: 12px;
+    border: 2px solid rgba(139, 92, 246, 0.3);
+    border-top-color: var(--violet);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  .tdt-text { flex: 1; }
+  .tdt-time {
+    font-size: 10.5px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .tdr-content {
+    font-size: 13.5px;
+    color: #e8eaf2;
+    line-height: 1.65;
+  }
+  .tdr-content p { margin-bottom: 10px; }
+  .tdr-content strong { color: #fff; font-weight: 600; }
+  .tdr-content code {
+    background: rgba(168, 85, 247, 0.14);
+    padding: 1.5px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: #d8c4f8;
+  }
+  .tdr-meta {
+    display: flex; gap: 14px;
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 11.5px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .tdr-meta strong { color: #fff; font-weight: 600; }
+
+  /* Engine + state machine grid */
+  .think-engine-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.2fr;
+    gap: 36px;
+    margin-bottom: 48px;
+  }
+  .think-engine-left h3, .think-engine-right h3 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+  .tel-intro {
+    color: var(--text-dim);
+    font-size: 13.5px;
+    line-height: 1.55;
+    margin-bottom: 18px;
+  }
+
+  .engine-methods {
+    background: #0a0c14;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+  .engine-method { color: var(--text-faint); }
+  .engine-method.indent-1 { padding-left: 20px; }
+  .em-bracket { color: var(--text-faint); }
+  .em-key { color: #c4a8ff; }
+  .em-punct { color: var(--text-faint); }
+
+  .state-flow {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px;
+    background: #0a0c14;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .state-node {
+    padding: 6px 14px;
+    border-radius: 7px;
+    background: rgba(139, 92, 246, 0.10);
+    border: 1px solid rgba(139, 92, 246, 0.3);
+    color: #d8c4f8;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    min-width: 160px;
+    text-align: center;
+    transition: all 0.2s ease;
+  }
+  .state-node:hover {
+    background: rgba(139, 92, 246, 0.2);
+    border-color: rgba(139, 92, 246, 0.5);
+    transform: scale(1.04);
+  }
+  .state-final {
+    background: rgba(52, 211, 153, 0.15);
+    border-color: rgba(52, 211, 153, 0.4);
+    color: #6ee7b7;
+  }
+  .state-arrow {
+    color: var(--text-faint);
+    font-size: 13px;
+  }
+  .state-failures {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 14px;
+    justify-content: center;
+  }
+  .state-fail {
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(248, 113, 113, 0.1);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    color: #fca5a5;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  /* Comparison table */
+  .think-compare-table {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+  .tct-row {
+    display: grid;
+    grid-template-columns: 1fr 1.4fr 2fr 0.7fr 0.7fr;
+    gap: 12px;
+    padding: 14px 18px;
+    align-items: center;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.18s ease;
+  }
+  .tct-row:last-child { border-bottom: none; }
+  .tct-row:not(.tct-head):hover { background: rgba(255,255,255,0.03); }
+  .tct-head {
+    background: rgba(255,255,255,0.04);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .tct-cell {
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tct-cell strong { color: #fff; font-weight: 600; }
+  .tct-icon { font-size: 16px; }
+  .tct-cell code {
+    background: rgba(168, 85, 247, 0.14);
+    padding: 2px 8px;
+    border-radius: 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: #d8c4f8;
+  }
+  .tct-yes { color: var(--green); font-weight: 600; }
+  .tct-no { color: var(--text-faint); }
+  .tct-maybe { color: var(--orange); font-weight: 600; }
+
+  /* Principle strip */
+  .think-principle-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    padding: 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+  }
+  .tps-item {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .tps-icon { font-size: 16px; }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 860px) {
     .nav-links, .nav-cta .btn-ghost { display: none; }
@@ -2247,6 +2711,11 @@
     .orch-admin-grid { grid-template-columns: 1fr; gap: 32px; }
     .cap-row { grid-template-columns: 1.4fr 1fr 1fr; }
     .cap-row .cap-cell:nth-child(3) { display: none; }
+    .think-modes-grid { grid-template-columns: 1fr; }
+    .think-demo-body { grid-template-columns: 1fr; }
+    .think-engine-grid { grid-template-columns: 1fr; gap: 32px; }
+    .tct-row { grid-template-columns: 1fr 1fr; gap: 8px; }
+    .tct-row .tct-cell:nth-child(4), .tct-row .tct-cell:nth-child(5) { display: none; }
     .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
   }
   @media (max-width: 540px) {
@@ -2281,6 +2750,7 @@
     <ul class="nav-links">
       <li><a href="#chat">AI Assistant</a></li>
       <li><a href="#orchestrator">Multi-AI</a></li>
+      <li><a href="#think">Think Modes</a></li>
       <li><a href="#capabilities">Capabilities</a></li>
       <li><a href="#workflow">Workflow</a></li>
       <li><a href="#github">GitHub Push</a></li>
@@ -3373,6 +3843,223 @@
   </div>
 </section>
 
+<!-- ===== THINK MODES ===== -->
+<section class="feature-section feature-section-think" id="think">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow" style="color: var(--violet);">Inference Strategy · Fast / Think / Deep Think</span>
+      <h2>Not a longer answer. A different workflow.</h2>
+      <p>Selecting a mode doesn't make the AI smarter — it routes the request through a different backend workflow. <strong>Fast</strong> answers immediately. <strong>Think</strong> analyzes, then answers. <strong>Deep Think</strong> decomposes, plans, executes, verifies, and corrects — then answers. Same chat. Different computation budget.</p>
+    </div>
+
+    <!-- 3 mode cards -->
+    <div class="think-modes-grid">
+      <div class="think-mode-card reveal" data-mode="fast">
+        <div class="tmc-head">
+          <span class="tmc-icon">⚡</span>
+          <span class="tmc-name">Fast</span>
+        </div>
+        <div class="tmc-tag">Thinking budget: <em>Low</em></div>
+        <p class="tmc-desc">For simple questions, definitions, and quick explanations. The model answers immediately.</p>
+        <div class="tmc-budget">
+          <div class="tmc-budget-row"><span>Speed</span><div class="tmc-bar"><span style="width:95%"></span></div></div>
+          <div class="tmc-budget-row"><span>Depth</span><div class="tmc-bar"><span style="width:25%"></span></div></div>
+          <div class="tmc-budget-row"><span>Cost</span><div class="tmc-bar"><span style="width:20%"></span></div></div>
+        </div>
+        <div class="tmc-flow">
+          <span class="tmc-flow-node">User</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node">AI</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node tmc-flow-final">Answer</span>
+        </div>
+      </div>
+
+      <div class="think-mode-card reveal" data-mode="think">
+        <div class="tmc-head">
+          <span class="tmc-icon">🧠</span>
+          <span class="tmc-name">Think</span>
+        </div>
+        <div class="tmc-tag">Thinking budget: <em>Medium</em></div>
+        <p class="tmc-desc">For coding, planning, and moderate reasoning. Analyze → Plan → Answer → Check.</p>
+        <div class="tmc-budget">
+          <div class="tmc-budget-row"><span>Speed</span><div class="tmc-bar"><span style="width:60%"></span></div></div>
+          <div class="tmc-budget-row"><span>Depth</span><div class="tmc-bar"><span style="width:65%"></span></div></div>
+          <div class="tmc-budget-row"><span>Cost</span><div class="tmc-bar"><span style="width:55%"></span></div></div>
+        </div>
+        <div class="tmc-flow">
+          <span class="tmc-flow-node">User</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node">Analyze</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node">Plan</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node">AI</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node tmc-flow-final">Answer</span>
+        </div>
+      </div>
+
+      <div class="think-mode-card reveal active" data-mode="deep">
+        <div class="tmc-badge">Recommended for complex tasks</div>
+        <div class="tmc-head">
+          <span class="tmc-icon">🔬</span>
+          <span class="tmc-name">Deep Think</span>
+        </div>
+        <div class="tmc-tag">Thinking budget: <em>High</em></div>
+        <p class="tmc-desc">For complex math, large architecture, research, and multi-step projects. Decomposes, plans, executes, verifies, and corrects before answering.</p>
+        <div class="tmc-budget">
+          <div class="tmc-budget-row"><span>Speed</span><div class="tmc-bar"><span style="width:30%"></span></div></div>
+          <div class="tmc-budget-row"><span>Depth</span><div class="tmc-bar"><span style="width:95%"></span></div></div>
+          <div class="tmc-budget-row"><span>Cost</span><div class="tmc-bar"><span style="width:90%"></span></div></div>
+        </div>
+        <div class="tmc-flow">
+          <span class="tmc-flow-node">User</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node">Understand</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node">Decompose</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node">Plan</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node">Execute</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node">Verify</span>
+          <span class="tmc-flow-arrow">→</span>
+          <span class="tmc-flow-node tmc-flow-final">Answer</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive demo -->
+    <div class="think-demo reveal">
+      <div class="think-demo-head">
+        <h3>Live workflow demo</h3>
+        <p>Click a mode, then click <strong>Run</strong>. Watch how the same question takes a different path through the orchestrator.</p>
+      </div>
+      <div class="think-demo-controls">
+        <div class="tdc-mode-buttons">
+          <button class="tdc-mode-btn" data-mode="fast">⚡ Fast</button>
+          <button class="tdc-mode-btn" data-mode="think">🧠 Think</button>
+          <button class="tdc-mode-btn active" data-mode="deep">🔬 Deep Think</button>
+        </div>
+        <div class="tdc-question">
+          <span class="tdc-question-label">Question:</span>
+          <span class="tdc-question-text">&ldquo;Design the architecture of a production AI development platform.&rdquo;</span>
+        </div>
+        <button class="tdc-run-btn" id="thinkRunBtn">▶ Run workflow</button>
+      </div>
+      <div class="think-demo-body">
+        <div class="think-demo-timeline" id="thinkTimeline">
+          <div class="tdt-placeholder">Select a mode and click <strong>Run</strong> to see the inference workflow.</div>
+        </div>
+        <div class="think-demo-result" id="thinkResult">
+          <div class="tdr-placeholder">Final answer will appear here after the workflow completes.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DeepThinkEngine + state machine -->
+    <div class="think-engine-grid">
+      <!-- LEFT: engine methods -->
+      <div class="think-engine-left reveal">
+        <h3>DeepThinkEngine</h3>
+        <p class="tel-intro">A dedicated internal service that orchestrates the reasoning workflow around the model — it doesn't replace the model, it controls how much work is requested and when to stop.</p>
+        <div class="engine-methods">
+          <div class="engine-method"><span class="em-bracket">{</span></div>
+          <div class="engine-method indent-1"><span class="em-key">analyzeRequest</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">classifyProblem</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">decomposeProblem</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">createPlan</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">selectModel</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">selectTools</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">executeSteps</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">evaluateResult</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">detectErrors</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">requestRevision</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">verifyResult</span><span class="em-punct">()</span></div>
+          <div class="engine-method indent-1"><span class="em-key">generateFinalAnswer</span><span class="em-punct">()</span></div>
+          <div class="engine-method"><span class="em-bracket">}</span></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: state machine -->
+      <div class="think-engine-right reveal">
+        <h3>State machine</h3>
+        <p class="tel-intro">Every Deep Think request moves through these states. Failures branch cleanly — TIMEOUT, FAILED, CANCELLED, or WAITING_FOR_USER.</p>
+        <div class="state-flow">
+          <div class="state-node">IDLE</div>
+          <div class="state-arrow">↓</div>
+          <div class="state-node">UNDERSTANDING</div>
+          <div class="state-arrow">↓</div>
+          <div class="state-node">DECOMPOSING</div>
+          <div class="state-arrow">↓</div>
+          <div class="state-node">PLANNING</div>
+          <div class="state-arrow">↓</div>
+          <div class="state-node">RESEARCHING</div>
+          <div class="state-arrow">↓</div>
+          <div class="state-node">EXECUTING</div>
+          <div class="state-arrow">↓</div>
+          <div class="state-node">VERIFYING</div>
+          <div class="state-arrow">↓</div>
+          <div class="state-node">REVISING</div>
+          <div class="state-arrow">↓</div>
+          <div class="state-node">FINALIZING</div>
+          <div class="state-arrow">↓</div>
+          <div class="state-node state-final">COMPLETED</div>
+        </div>
+        <div class="state-failures">
+          <span class="state-fail">TIMEOUT</span>
+          <span class="state-fail">FAILED</span>
+          <span class="state-fail">CANCELLED</span>
+          <span class="state-fail">WAITING_FOR_USER</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Comparison table -->
+    <div class="think-compare-table reveal">
+      <div class="tct-row tct-head">
+        <div class="tct-cell">Mode</div>
+        <div class="tct-cell">Best for</div>
+        <div class="tct-cell">Workflow</div>
+        <div class="tct-cell">Verify</div>
+        <div class="tct-cell">Tools</div>
+      </div>
+      <div class="tct-row">
+        <div class="tct-cell"><span class="tct-icon">⚡</span><strong>Fast</strong></div>
+        <div class="tct-cell">Simple Q&amp;A, definitions</div>
+        <div class="tct-cell"><code>Model → Answer</code></div>
+        <div class="tct-cell tct-no">—</div>
+        <div class="tct-cell tct-no">—</div>
+      </div>
+      <div class="tct-row">
+        <div class="tct-cell"><span class="tct-icon">🧠</span><strong>Think</strong></div>
+        <div class="tct-cell">Coding, planning, technical</div>
+        <div class="tct-cell"><code>Analyze → Plan → AI → Check</code></div>
+        <div class="tct-cell tct-yes">Yes</div>
+        <div class="tct-cell tct-maybe">If needed</div>
+      </div>
+      <div class="tct-row">
+        <div class="tct-cell"><span class="tct-icon">🔬</span><strong>Deep Think</strong></div>
+        <div class="tct-cell">Architecture, research, math, multi-step</div>
+        <div class="tct-cell"><code>Understand → Decompose → Plan → Execute → Verify → Correct</code></div>
+        <div class="tct-cell tct-yes">Yes</div>
+        <div class="tct-cell tct-yes">Yes</div>
+      </div>
+    </div>
+
+    <!-- Principle strip -->
+    <div class="think-principle-strip reveal">
+      <div class="tps-item"><span class="tps-icon">🔒</span>Private chain-of-thought never shown</div>
+      <div class="tps-item"><span class="tps-icon">📈</span>Useful high-level progress shown</div>
+      <div class="tps-item"><span class="tps-icon">🎯</span>Verifier checks the result before you see it</div>
+      <div class="tps-item"><span class="tps-icon">♻️</span>Auto-correct loop on detected errors</div>
+      <div class="tps-item"><span class="tps-icon">💸</span>Deep Think only when the task warrants it</div>
+    </div>
+  </div>
+</section>
+
 <!-- ===== CTA ===== -->
 <section class="cta">
   <h2 class="reveal">Ready to build something <span class="grad" style="background: linear-gradient(135deg, var(--blue), var(--purple), var(--magenta)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">extraordinary</span>?</h2>
@@ -3398,6 +4085,7 @@
       <ul>
         <li><a href="#chat">AI Assistant</a></li>
         <li><a href="#orchestrator">Multi-AI</a></li>
+        <li><a href="#think">Think Modes</a></li>
         <li><a href="#capabilities">Capabilities</a></li>
         <li><a href="#workflow">Workflow</a></li>
         <li><a href="#github">GitHub Push</a></li>
@@ -4078,6 +4766,177 @@ What would you like to do? Just describe it in plain language — I'll figure ou
         }
       });
     });
+  })();
+
+  // ===== THINK MODES — interactive workflow demo =====
+  (function() {
+    const modeBtns = document.querySelectorAll('.tdc-mode-btn');
+    const modeCards = document.querySelectorAll('.think-mode-card');
+    const runBtn = document.getElementById('thinkRunBtn');
+    const timelineEl = document.getElementById('thinkTimeline');
+    const resultEl = document.getElementById('thinkResult');
+    let selectedMode = 'deep';
+    let running = false;
+
+    // Mode selector buttons
+    modeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (running) return;
+        modeBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        selectedMode = btn.getAttribute('data-mode');
+        // Also sync the card highlight
+        modeCards.forEach(c => c.classList.toggle('active', c.getAttribute('data-mode') === selectedMode));
+      });
+    });
+
+    // Clicking a card also selects the mode
+    modeCards.forEach(card => {
+      card.addEventListener('click', () => {
+        if (running) return;
+        const m = card.getAttribute('data-mode');
+        modeBtns.forEach(b => b.classList.toggle('active', b.getAttribute('data-mode') === m));
+        modeCards.forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+        selectedMode = m;
+      });
+    });
+
+    // Workflow definitions per mode
+    const workflows = {
+      fast: {
+        steps: [
+          { label: 'Receiving question', time: 80 },
+          { label: 'Querying fast model', time: 320 },
+          { label: 'Returning answer', time: 100 }
+        ],
+        answer: `<p><strong>Fast answer:</strong></p>
+<p>A production AI platform typically has 4 layers: <strong>frontend</strong> (chat UI), <strong>orchestrator</strong> (routing), <strong>AI providers</strong> (models), and <strong>tools</strong> (sandbox, search, file system).</p>
+<p>Use a managed orchestration layer to avoid rebuilding infra. Ship fast, refine later.</p>`,
+        meta: { mode: '⚡ Fast', time: '0.5s', tokens: '128', verify: 'No' }
+      },
+      think: {
+        steps: [
+          { label: 'Understanding request', time: 200 },
+          { label: 'Analyzing constraints', time: 380 },
+          { label: 'Planning approach', time: 340 },
+          { label: 'Querying reasoning model', time: 520 },
+          { label: 'Checking answer', time: 220 },
+          { label: 'Finalizing', time: 120 }
+        ],
+        answer: `<p><strong>Think answer:</strong></p>
+<p>For a production AI platform, I'd recommend a layered architecture:</p>
+<p><strong>1. Frontend</strong> — ChatGPT-style interface, project workspace, mind map viewer.<br>
+<strong>2. Orchestrator</strong> — Task classifier, context manager, provider router, tool router.<br>
+<strong>3. Providers</strong> — Z.ai for coding, a reasoning model, a multimodal model, plus a local fallback.<br>
+<strong>4. Tools</strong> — Sandbox, web search, file system, testing, GitHub.</p>
+<p>Add a verifier layer for code correctness and a usage/cost tracker for billing. Cache non-personal responses.</p>`,
+        meta: { mode: '🧠 Think', time: '1.8s', tokens: '342', verify: 'Yes' }
+      },
+      deep: {
+        steps: [
+          { label: 'Understanding the problem', time: 240 },
+          { label: 'Breaking problem into parts', time: 320 },
+          { label: 'Planning solution approach', time: 380 },
+          { label: 'Researching relevant patterns', time: 460 },
+          { label: 'Analyzing alternatives', time: 420 },
+          { label: 'Executing reasoning steps', time: 540 },
+          { label: 'Checking important constraints', time: 360 },
+          { label: 'Verifying the conclusion', time: 320 },
+          { label: 'Correcting refinements', time: 240 },
+          { label: 'Preparing final answer', time: 180 }
+        ],
+        answer: `<p><strong>Deep Think answer:</strong></p>
+<p>After decomposing the problem and analyzing 4 alternative architectures, here is the recommended production design:</p>
+<p><strong>Layer 1 — Interface:</strong> Streaming chat UI, project workspace, mind map viewer, PPT studio. Frontend never sees provider credentials.</p>
+<p><strong>Layer 2 — Orchestrator:</strong> Task classifier (20+ categories), context manager (summarization + retrieval), provider router (capability matrix + health), tool router (sandboxed), quality checker, answer synthesizer.</p>
+<p><strong>Layer 3 — Providers:</strong> Z.ai (coding), reasoning model (math/architecture), multimodal (vision), long-context (research), local (private). Each behind a unified adapter.</p>
+<p><strong>Layer 4 — Tools:</strong> Sandbox (code execution), web search, browser, file system, terminal, database, testing, image gen, PPT gen, GitHub.</p>
+<p><strong>Layer 5 — Safety:</strong> Prompt-injection guard, secret redaction, tenant isolation, audit log, cost limits, permission system.</p>
+<p><em>Verified:</em> Cross-checked against 3 sources. Confidence: <strong style="color: var(--green);">High</strong>.</p>`,
+        meta: { mode: '🔬 Deep Think', time: '3.5s', tokens: '894', verify: 'Yes + correct' }
+      }
+    };
+
+    runBtn?.addEventListener('click', () => {
+      if (running) return;
+      runWorkflow();
+    });
+
+    function runWorkflow() {
+      running = true;
+      runBtn.disabled = true;
+      runBtn.textContent = '● Running…';
+      modeBtns.forEach(b => b.disabled = true);
+
+      const wf = workflows[selectedMode];
+      timelineEl.innerHTML = '';
+      resultEl.innerHTML = '<div class="tdr-placeholder">Workflow running… final answer will appear here.</div>';
+
+      let totalElapsed = 0;
+      const stepEls = [];
+
+      wf.steps.forEach((step, i) => {
+        const stepEl = document.createElement('div');
+        stepEl.className = 'tdt-step';
+        stepEl.style.animationDelay = (i * 0.04) + 's';
+        stepEl.innerHTML = `
+          <span class="tdt-mark">○</span>
+          <span class="tdt-text">${step.label}</span>
+          <span class="tdt-time"></span>
+        `;
+        timelineEl.appendChild(stepEl);
+        stepEls.push({ el: stepEl, step });
+      });
+
+      // Animate each step
+      let i = 0;
+      function nextStep() {
+        if (i > 0) {
+          const prev = stepEls[i - 1];
+          prev.el.classList.remove('active');
+          prev.el.classList.add('done');
+          prev.el.querySelector('.tdt-mark').textContent = '✓';
+          prev.el.querySelector('.tdt-time').textContent = `+${prev.step.time}ms`;
+        }
+        if (i >= stepEls.length) {
+          // Done — show answer
+          showAnswer();
+          return;
+        }
+        const cur = stepEls[i];
+        cur.el.classList.add('active');
+        cur.el.querySelector('.tdt-mark').innerHTML = '<span class="tdt-spinner"></span>';
+        setTimeout(() => {
+          i++;
+          nextStep();
+        }, cur.step.time);
+      }
+      nextStep();
+    }
+
+    function showAnswer() {
+      const wf = workflows[selectedMode];
+      const html = `
+        <div class="tdr-content">${wf.answer}</div>
+        <div class="tdr-meta">
+          <span>Mode: <strong>${wf.meta.mode}</strong></span>
+          <span>Time: <strong>${wf.meta.time}</strong></span>
+          <span>Tokens: <strong>${wf.meta.tokens}</strong></span>
+          <span>Verified: <strong>${wf.meta.verify}</strong></span>
+        </div>
+      `;
+      resultEl.innerHTML = '';
+      // Fade-in
+      resultEl.style.opacity = '0';
+      resultEl.innerHTML = html;
+      setTimeout(() => { resultEl.style.transition = 'opacity 0.4s ease'; resultEl.style.opacity = '1'; }, 50);
+
+      running = false;
+      runBtn.disabled = false;
+      runBtn.textContent = '▶ Run workflow';
+      modeBtns.forEach(b => b.disabled = false);
+    }
   })();
 </script>
 </body>
