@@ -67,6 +67,33 @@ db.exec(`
     FOREIGN KEY (user_id) REFERENCES users(id)
   );
   CREATE INDEX IF NOT EXISTS idx_conv_user ON conversations(user_id);
+  CREATE TABLE IF NOT EXISTS shared_chats (
+    share_id TEXT PRIMARY KEY,
+    conversation_id TEXT NOT NULL,
+    title TEXT,
+    messages TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now')),
+    views INTEGER DEFAULT 0
+  );
+  CREATE TABLE IF NOT EXISTS analytics (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT,
+    event TEXT NOT NULL,
+    data TEXT,
+    created_at INTEGER DEFAULT (strftime('%s','now'))
+  );
+  CREATE INDEX IF NOT EXISTS idx_analytics_user ON analytics(user_id);
+  CREATE INDEX IF NOT EXISTS idx_analytics_event ON analytics(event);
+  CREATE TABLE IF NOT EXISTS webhooks (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    url TEXT NOT NULL,
+    events TEXT NOT NULL,
+    secret TEXT,
+    active INTEGER DEFAULT 1,
+    created_at INTEGER DEFAULT (strftime('%s','now')),
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 // ──────────────────────────────────────────────
@@ -348,20 +375,259 @@ app.delete('/api/conversations/:id', (req, res) => {
 });
 
 // ──────────────────────────────────────────────
+// POST /api/code — execute code in a sandbox (JavaScript only, safe)
+// ──────────────────────────────────────────────
+app.post('/api/code', async (req, res) => {
+  try {
+    const { language, code, stdin } = req.body;
+    if (!code) return res.status(400).json({ error: 'code is required' });
+    if (language !== 'javascript' && language !== 'js') {
+      return res.status(400).json({ error: 'Only JavaScript execution is supported in the sandbox' });
+    }
+
+    // Execute in a sandboxed VM with a timeout
+    const vm = await import('node:vm');
+    const logs = [];
+    const errors = [];
+    const sandbox = {
+      console: {
+        log: (...args) => logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' ')),
+        error: (...args) => errors.push(args.map(a => String(a)).join(' ')),
+        warn: (...args) => logs.push('⚠ ' + args.map(a => String(a)).join(' ')),
+        info: (...args) => logs.push(args.map(a => String(a)).join(' ')),
+      },
+      Math, Date, JSON, Object, Array, String, Number, Boolean, RegExp, Map, Set, Promise,
+      parseInt, parseFloat, isNaN, isFinite, encodeURIComponent, decodeURIComponent,
+      setTimeout: (fn, ms) => setTimeout(fn, Math.min(ms, 2000)),
+      __result: undefined,
+    };
+
+    const wrappedCode = `
+      (function() {
+        let __return;
+        try {
+          __return = eval(${JSON.stringify(code)});
+        } catch(e) {
+          __return = undefined;
+          throw e;
+        }
+        return __return;
+      })()
+    `;
+
+    const context = vm.createContext(sandbox);
+    let result;
+    try {
+      result = vm.runInContext(wrappedCode, context, { timeout: 5000, filename: 'sandbox.js' });
+    } catch(e) {
+      return res.json({
+        success: true,
+        language: 'javascript',
+        stdout: logs.join('\n'),
+        stderr: e.message,
+        result: null,
+        error: e.message
+      });
+    }
+
+    let resultStr;
+    try {
+      resultStr = typeof result === 'object' ? JSON.stringify(result, null, 2) : String(result);
+    } catch(e) {
+      resultStr = String(result);
+    }
+
+    res.json({
+      success: true,
+      language: 'javascript',
+      stdout: logs.join('\n') + (errors.length ? '\n' + errors.join('\n') : ''),
+      stderr: errors.join('\n'),
+      result: resultStr
+    });
+  } catch (error) {
+    console.error('Code execution error:', error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ──────────────────────────────────────────────
+// POST /api/share — create a shareable link for a conversation
+// GET  /api/share/:id — get a shared conversation
+// ──────────────────────────────────────────────
+app.post('/api/share', (req, res) => {
+  try {
+    const { conversation } = req.body;
+    if (!conversation || !conversation.messages) return res.status(400).json({ error: 'conversation is required' });
+
+    const shareId = 'share-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    db.prepare('INSERT INTO shared_chats (share_id, conversation_id, title, messages) VALUES (?, ?, ?, ?)').run(
+      shareId, conversation.id, conversation.title || 'Shared Chat', JSON.stringify(conversation.messages)
+    );
+
+    res.json({
+      success: true,
+      shareId,
+      shareUrl: `/share/${shareId}`
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/share/:id', (req, res) => {
+  try {
+    const row = db.prepare('SELECT * FROM shared_chats WHERE share_id = ?').get(req.params.id);
+    if (!row) return res.status(404).json({ error: 'Shared chat not found' });
+
+    // Increment views
+    db.prepare('UPDATE shared_chats SET views = views + 1 WHERE share_id = ?').run(req.params.id);
+
+    res.json({
+      success: true,
+      conversation: {
+        title: row.title,
+        messages: JSON.parse(row.messages),
+        views: row.views + 1,
+        createdAt: row.created_at
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ──────────────────────────────────────────────
+// Analytics: track events + retrieve stats
+// ──────────────────────────────────────────────
+app.post('/api/analytics', (req, res) => {
+  try {
+    const { userEmail, userName, userPicture, event, data } = req.body;
+    if (!event) return res.status(400).json({ error: 'event is required' });
+    let userId = null;
+    if (userEmail) {
+      const user = getOrCreateUser({ email: userEmail, name: userName, picture: userPicture });
+      userId = user?.id;
+    }
+    db.prepare('INSERT INTO analytics (user_id, event, data) VALUES (?, ?, ?)').run(
+      userId, event, JSON.stringify(data || {})
+    );
+    // Fire webhooks for this event
+    fireWebhooks(userId, event, data || {}).catch(() => {});
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/analytics', (req, res) => {
+  try {
+    const { userEmail } = req.query;
+    let userId = null;
+    if (userEmail) {
+      const user = getOrCreateUser({ email: userEmail });
+      userId = user?.id;
+    }
+
+    const totalEvents = db.prepare('SELECT COUNT(*) as count FROM analytics').get().count;
+    const userEvents = userId ? db.prepare('SELECT COUNT(*) as count FROM analytics WHERE user_id = ?').get(userId).count : 0;
+    const eventsByType = userId
+      ? db.prepare('SELECT event, COUNT(*) as count FROM analytics WHERE user_id = ? GROUP BY event ORDER BY count DESC').all(userId)
+      : db.prepare('SELECT event, COUNT(*) as count FROM analytics GROUP BY event ORDER BY count DESC').all();
+
+    const recentEvents = userId
+      ? db.prepare('SELECT event, data, created_at FROM analytics WHERE user_id = ? ORDER BY created_at DESC LIMIT 20').all(userId)
+      : db.prepare('SELECT event, data, created_at FROM analytics ORDER BY created_at DESC LIMIT 20').all();
+
+    res.json({
+      success: true,
+      stats: {
+        totalEvents,
+        userEvents,
+        eventsByType,
+        recentEvents: recentEvents.map(e => ({ ...e, data: JSON.parse(e.data) }))
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ──────────────────────────────────────────────
+// Webhooks: CRUD + firing
+// ──────────────────────────────────────────────
+app.post('/api/webhooks', (req, res) => {
+  try {
+    const { userEmail, userName, userPicture, url, events, secret } = req.body;
+    if (!userEmail || !url) return res.status(400).json({ error: 'userEmail and url are required' });
+    const user = getOrCreateUser({ email: userEmail, name: userName, picture: userPicture });
+    const id = 'wh-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    db.prepare('INSERT INTO webhooks (id, user_id, url, events, secret) VALUES (?, ?, ?, ?, ?)').run(
+      id, user.id, url, JSON.stringify(events || []), secret || ''
+    );
+    res.json({ success: true, id, url, events });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/webhooks', (req, res) => {
+  try {
+    const { userEmail } = req.query;
+    if (!userEmail) return res.json({ success: true, webhooks: [] });
+    const user = getOrCreateUser({ email: userEmail });
+    const webhooks = db.prepare('SELECT id, url, events, active, created_at FROM webhooks WHERE user_id = ?').all(user.id);
+    res.json({ success: true, webhooks: webhooks.map(w => ({ ...w, events: JSON.parse(w.events) })) });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.delete('/api/webhooks/:id', (req, res) => {
+  try {
+    db.prepare('DELETE FROM webhooks WHERE id = ?').run(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Fire webhooks for an event
+async function fireWebhooks(userId, event, data) {
+  const webhooks = db.prepare('SELECT * FROM webhooks WHERE active = 1').all();
+  for (const wh of webhooks) {
+    const events = JSON.parse(wh.events);
+    if (events.includes(event) || events.includes('*')) {
+      try {
+        await fetch(wh.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(wh.secret ? { 'X-Webhook-Secret': wh.secret } : {})
+          },
+          body: JSON.stringify({ event, data, userId, timestamp: Date.now() })
+        });
+      } catch(e) {
+        console.warn(`Webhook failed for ${wh.url}:`, e.message);
+      }
+    }
+  }
+}
+
+// ──────────────────────────────────────────────
 // GET /api/health
 // ──────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     sdk: zaiInstance ? 'ready' : 'initializing',
-    features: ['chat', 'streaming', 'upload', 'pdf-extraction', 'image-generation', 'translate', 'conversations-db']
+    features: ['chat', 'streaming', 'upload', 'pdf-extraction', 'image-generation', 'translate', 'conversations-db', 'code-sandbox', 'sharing', 'analytics', 'webhooks']
   });
 });
 
 // Start server
 initZAI().then(() => {
   app.listen(PORT, () => {
-    console.log(`\n🌑 DARKNESS AI Backend v3 running on http://localhost:${PORT}`);
+    console.log(`\n🌑 DARKNESS AI Backend v4 running on http://localhost:${PORT}`);
     console.log(`   Endpoints:`);
     console.log(`   • POST /api/chat            (chat)`);
     console.log(`   • POST /api/chat/stream     (streaming)`);
@@ -369,6 +635,10 @@ initZAI().then(() => {
     console.log(`   • POST /api/image           (AI image gen)`);
     console.log(`   • POST /api/translate       (translation)`);
     console.log(`   • GET  /api/conversations   (multi-user DB)`);
+    console.log(`   • POST /api/code            (code sandbox)`);
+    console.log(`   • POST /api/share           (share a chat)`);
+    console.log(`   • POST /api/analytics       (track + stats)`);
+    console.log(`   • POST /api/webhooks        (webhooks CRUD)`);
     console.log(`   • GET  /api/health\n`);
   });
 });

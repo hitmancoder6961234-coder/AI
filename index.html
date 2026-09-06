@@ -3479,6 +3479,97 @@
   .chat-item .chat-item-delete:hover { background: rgba(248,113,113,0.15); color: #fca5a5; }
   .chat-item .chat-item-delete svg { width: 13px; height: 13px; }
 
+  /* ===== ANALYTICS DASHBOARD ===== */
+  .analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+  .analytics-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 20px;
+    text-align: center;
+    transition: all 0.22s ease;
+  }
+  .analytics-card:hover { transform: translateY(-3px); border-color: var(--border-strong); }
+  .ac-icon {
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: color-mix(in srgb, var(--ac-color, var(--blue)) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--ac-color, var(--blue)) 30%, transparent);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 14px;
+  }
+  .ac-value { font-size: 32px; font-weight: 800; letter-spacing: -0.03em; color: #fff; line-height: 1; }
+  .ac-label { margin-top: 6px; font-size: 12.5px; color: var(--text-dim); }
+
+  .analytics-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 24px;
+  }
+  .analytics-detail {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px 24px;
+  }
+  .analytics-detail h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+  .analytics-placeholder { color: var(--text-faint); font-size: 13px; text-align: center; padding: 24px 0; }
+  .analytics-events-list { display: flex; flex-direction: column; gap: 6px; }
+  .analytics-event-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .analytics-event-name { font-family: 'JetBrains Mono', monospace; color: #d8c4f8; }
+  .analytics-event-count { font-weight: 700; color: var(--green); }
+  .analytics-recent-list { display: flex; flex-direction: column; gap: 6px; max-height: 300px; overflow-y: auto; }
+  .analytics-recent-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 12px;
+  }
+  .analytics-recent-event { font-family: 'JetBrains Mono', monospace; color: #d8c4f8; font-weight: 600; }
+  .analytics-recent-time { color: var(--text-faint); margin-left: auto; font-size: 11px; }
+  .analytics-actions { text-align: center; }
+  .analytics-note { font-size: 12px; color: var(--text-faint); margin-top: 10px; }
+
+  /* Webhook list items */
+  .webhook-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .webhook-url { flex: 1; font-family: 'JetBrains Mono', monospace; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .webhook-events { font-size: 11px; color: var(--cyan); font-family: 'JetBrains Mono', monospace; }
+  .webhook-delete {
+    padding: 4px 10px;
+    border-radius: 6px;
+    background: rgba(248,113,113,0.1);
+    border: 1px solid rgba(248,113,113,0.3);
+    color: #fca5a5;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.14s ease;
+  }
+  .webhook-delete:hover { background: rgba(248,113,113,0.2); }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 860px) {
     /* Sidebar collapses on mobile */
@@ -3515,6 +3606,7 @@
     .settings-nav-item { white-space: nowrap; }
     .settings-content { padding: 20px; }
     .command-palette { max-width: calc(100vw - 40px); }
+    .analytics-detail-grid { grid-template-columns: 1fr; }
   }
   @media (max-width: 540px) {
     .footer-inner { grid-template-columns: 1fr; }
@@ -3579,6 +3671,10 @@
     <a href="#" class="sidebar-item" data-page="chat">
       <span class="si-icon">💬</span>
       <span class="si-label">AI Assistant</span>
+    </a>
+    <a href="#" class="sidebar-item" data-page="analytics">
+      <span class="si-icon">📊</span>
+      <span class="si-label">Usage</span>
     </a>
     <a href="#" class="sidebar-item" data-page="workflow">
       <span class="si-icon">📋</span>
@@ -4947,6 +5043,60 @@
   </div>
 </section>
 
+<!-- ===== ANALYTICS DASHBOARD ===== -->
+<section class="feature-section app-page" id="analytics" data-page="analytics">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow" style="color: var(--green);">Usage Analytics</span>
+      <h2>Track everything. Understand how you use DARKNESS.</h2>
+      <p>Real-time analytics powered by your backend. See events by type, recent activity, and total usage — all tracked securely and privately on your own server.</p>
+    </div>
+
+    <div class="analytics-grid">
+      <div class="analytics-card reveal">
+        <div class="ac-icon" style="--ac-color: var(--blue);">📊</div>
+        <div class="ac-value" id="analyticsTotal">—</div>
+        <div class="ac-label">Total events</div>
+      </div>
+      <div class="analytics-card reveal">
+        <div class="ac-icon" style="--ac-color: var(--purple);">👤</div>
+        <div class="ac-value" id="analyticsUser">—</div>
+        <div class="ac-label">Your events</div>
+      </div>
+      <div class="analytics-card reveal">
+        <div class="ac-icon" style="--ac-color: var(--magenta);">💬</div>
+        <div class="ac-value" id="analyticsChats">—</div>
+        <div class="ac-label">Messages sent</div>
+      </div>
+      <div class="analytics-card reveal">
+        <div class="ac-icon" style="--ac-color: var(--cyan);">🎨</div>
+        <div class="ac-value" id="analyticsImages">—</div>
+        <div class="ac-label">Images generated</div>
+      </div>
+    </div>
+
+    <div class="analytics-detail-grid">
+      <div class="analytics-detail reveal">
+        <h3>Events by type</h3>
+        <div id="analyticsEventsList" class="analytics-events-list">
+          <div class="analytics-placeholder">Connect your backend to see analytics</div>
+        </div>
+      </div>
+      <div class="analytics-detail reveal">
+        <h3>Recent activity</h3>
+        <div id="analyticsRecentList" class="analytics-recent-list">
+          <div class="analytics-placeholder">No recent activity</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="analytics-actions reveal">
+      <button class="btn btn-primary" id="refreshAnalytics">Refresh</button>
+      <p class="analytics-note">Analytics require the backend to be running. Go to Settings → General → AI Backend URL to configure.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ===== CTA ===== -->
 <section class="cta app-page active" data-page="home">
   <h2 class="reveal">Ready to build something <span class="grad" style="background: linear-gradient(135deg, var(--blue), var(--purple), var(--magenta)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">extraordinary</span>?</h2>
@@ -5020,6 +5170,7 @@
         <button class="settings-nav-item" data-settings-tab="data">🗄️ Data controls</button>
         <button class="settings-nav-item" data-settings-tab="account">👤 Account</button>
         <button class="settings-nav-item" data-settings-tab="shortcuts">⌨️ Shortcuts</button>
+        <button class="settings-nav-item" data-settings-tab="webhooks">🔔 Webhooks</button>
       </nav>
     </div>
 
@@ -5215,6 +5366,35 @@
             <div class="shortcut-row"><span>Bold (in markdown)</span><kbd>⌘ B</kbd></div>
             <div class="shortcut-row"><span>Italic (in markdown)</span><kbd>⌘ I</kbd></div>
           </div>
+        </div>
+      </div>
+
+      <!-- Webhooks -->
+      <div class="settings-panel" data-settings-panel="webhooks">
+        <h3>Webhooks</h3>
+        <p style="color:var(--text-dim);font-size:13.5px;margin-bottom:18px;">Receive HTTP POST requests when events happen. Build integrations, notifications, or automations.</p>
+
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Webhook URL</div>
+            <div class="setting-desc">Where should we send the events?</div>
+          </div>
+          <input type="text" class="setting-text-input" id="webhookUrl" placeholder="https://example.com/webhook" style="width:240px;" />
+        </div>
+        <div class="setting-textarea">
+          <label>Events to listen for (comma-separated)</label>
+          <input type="text" id="webhookEvents" placeholder="chat_sent, image_generated, code_executed, *" />
+          <div style="font-size:11.5px;color:var(--text-faint);margin-top:6px;">Use <code>*</code> to receive all events.</div>
+        </div>
+        <div class="setting-textarea">
+          <label>Secret (optional, sent as X-Webhook-Secret header)</label>
+          <input type="text" id="webhookSecret" placeholder="your-secret-key" />
+        </div>
+        <button class="setting-action-btn" id="addWebhookBtn" style="background:linear-gradient(135deg,var(--purple),var(--violet));color:#fff;margin-bottom:24px;">+ Add Webhook</button>
+
+        <h4 style="font-size:14px;font-weight:600;margin-bottom:10px;">Your webhooks</h4>
+        <div id="webhooksList">
+          <div class="analytics-placeholder">No webhooks configured</div>
         </div>
       </div>
     </div>
@@ -5676,8 +5856,13 @@
       }},
       { cmd: '/export', icon: '📥', desc: 'Export this conversation as JSON', action: () => { exportChat(); }},
       { cmd: '/import', icon: '📤', desc: 'Import a conversation from JSON', action: () => { importChat(); }},
+      { cmd: '/code', icon: '▶️', desc: 'Run JavaScript code in a sandbox', action: () => {
+        const code = prompt('Enter JavaScript code to run:');
+        if (code) runCode('javascript', code);
+      }},
+      { cmd: '/share', icon: '🔗', desc: 'Create a shareable link for this chat', action: () => { shareChat(); }},
       { cmd: '/help', icon: '❓', desc: 'Show available commands', action: () => {
-        appendAIMessage('**Available slash commands:**\n\n- `/clear` — Clear current conversation\n- `/new` — Start a new chat\n- `/mode auto|fast|think|deep|coding|ppt` — Switch AI mode\n- `/image` — Generate an image from text\n- `/translate` — Translate text to another language\n- `/export` — Export this conversation as JSON\n- `/import` — Import a conversation from JSON\n- `/help` — Show this help\n\nYou can also just type your question normally.', true);
+        appendAIMessage('**Available slash commands:**\n\n- `/clear` — Clear current conversation\n- `/new` — Start a new chat\n- `/mode auto|fast|think|deep|coding|ppt` — Switch AI mode\n- `/image` — Generate an image from text\n- `/translate` — Translate text to another language\n- `/code` — Run JavaScript in a sandbox\n- `/export` — Export this conversation as JSON\n- `/import` — Import a conversation from JSON\n- `/share` — Create a shareable link for this chat\n- `/help` — Show this help\n\nYou can also just type your question normally.', true);
       }},
     ];
 
@@ -5688,6 +5873,7 @@
         appendAIMessage('⚠️ Image generation requires the AI backend.\n\nGo to **Settings → General → AI Backend URL** and enter your backend URL.', true);
         return;
       }
+      trackEvent('image_generated', { prompt: prompt.slice(0, 50) });
       // Show generating message
       const msg = document.createElement('div');
       msg.className = 'chat-msg chat-msg-ai';
@@ -5816,6 +6002,182 @@
         reader.readAsText(file);
       });
       input.click();
+    }
+
+    // ── Code execution (sandbox) ──
+    async function runCode(language, code) {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) {
+        appendAIMessage('⚠️ Code execution requires the AI backend.\n\nGo to **Settings → General → AI Backend URL** and enter your backend URL.', true);
+        return;
+      }
+      // Show the code being run
+      appendUserMessage(`/code (${language}):\n\`\`\`${language}\n${code}\n\`\`\``, false);
+      trackEvent('code_executed', { language });
+
+      // Show running message
+      const msg = document.createElement('div');
+      msg.className = 'chat-msg chat-msg-ai';
+      msg.innerHTML = `
+        <div class="chat-msg-avatar"></div>
+        <div class="chat-msg-body">
+          <div class="chat-msg-sender">Darkness AI</div>
+          <div class="chat-msg-content"><span class="chat-thinking"><span class="chat-thinking-dots"><span></span><span></span><span></span></span> Running code…</span></div>
+        </div>
+      `;
+      chatMessages.appendChild(msg);
+      scrollChat();
+
+      try {
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/code', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ language, code })
+        });
+        const data = await res.json();
+        const contentEl = msg.querySelector('.chat-msg-content');
+        if (data.success) {
+          let html = '<p>▶️ <strong>Code execution result:</strong></p>';
+          if (data.stdout) html += `<div class="chat-code-block"><div class="chat-code-head"><span class="chat-code-lang">stdout</span></div><pre><code>${escapeHtml(data.stdout)}</code></pre></div>`;
+          if (data.stderr) html += `<div class="chat-code-block" style="border-color:rgba(248,113,113,0.3);"><div class="chat-code-head" style="background:rgba(248,113,113,0.08);"><span class="chat-code-lang" style="color:var(--red);">stderr</span></div><pre><code>${escapeHtml(data.stderr)}</code></pre></div>`;
+          if (data.result && data.result !== 'undefined') html += `<p style="margin-top:8px;"><strong>Result:</strong> <code>${escapeHtml(data.result)}</code></p>`;
+          if (!data.stdout && !data.stderr && (!data.result || data.result === 'undefined')) html += '<p style="color:var(--text-dim);font-size:13px;">(No output)</p>';
+          contentEl.innerHTML = html;
+          addMessageActions(contentEl, data.stdout || data.result || '');
+        } else {
+          contentEl.innerHTML = '⚠️ Execution failed: ' + (data.error || 'Unknown error');
+        }
+      } catch(e) {
+        msg.querySelector('.chat-msg-content').innerHTML = '⚠️ Execution failed: ' + e.message;
+      }
+    }
+
+    // ── Share chat ──
+    async function shareChat() {
+      const conv = getCurrentConversation();
+      if (!conv || conv.messages.length === 0) {
+        appendAIMessage('⚠️ No messages to share. Start a conversation first.', true);
+        return;
+      }
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) {
+        // Generate a local share link (data URL)
+        const data = btoa(JSON.stringify(conv));
+        const shareUrl = location.origin + location.pathname + '#share=' + data;
+        showShareModal(shareUrl, true);
+        return;
+      }
+      try {
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/share', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversation: conv })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const shareUrl = location.origin + location.pathname + '#share=' + data.shareId;
+          showShareModal(shareUrl, false);
+          trackEvent('chat_shared', { shareId: data.shareId });
+        } else {
+          appendAIMessage('⚠️ Share failed: ' + (data.error || 'Unknown error'), true);
+        }
+      } catch(e) {
+        appendAIMessage('⚠️ Share failed: ' + e.message, true);
+      }
+    }
+    function showShareModal(url, isLocal) {
+      const modal = document.createElement('div');
+      modal.className = 'modal-overlay active';
+      modal.style.zIndex = '400';
+      modal.innerHTML = `
+        <div class="modal" style="max-width:500px;padding:28px;text-align:center;">
+          <div style="font-size:48px;margin-bottom:16px;">🔗</div>
+          <h3 style="font-size:20px;font-weight:800;margin-bottom:8px;">Chat shared!</h3>
+          <p style="color:var(--text-dim);font-size:13.5px;margin-bottom:20px;">${isLocal ? 'Local share link (works on this browser only):' : 'Anyone with this link can view the conversation:'}</p>
+          <div style="display:flex;gap:8px;margin-bottom:20px;">
+            <input type="text" value="${url}" readonly style="flex:1;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:#fff;font-family:'JetBrains Mono',monospace;font-size:12px;outline:none;" id="shareUrlInput" />
+            <button class="btn btn-primary" id="copyShareBtn">Copy</button>
+          </div>
+          <button class="btn btn-ghost" id="closeShareBtn">Close</button>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      const urlInput = modal.querySelector('#shareUrlInput');
+      modal.querySelector('#copyShareBtn').addEventListener('click', () => {
+        urlInput.select();
+        navigator.clipboard?.writeText(url);
+        const btn = modal.querySelector('#copyShareBtn');
+        btn.textContent = '✓ Copied';
+        setTimeout(() => btn.textContent = 'Copy', 1500);
+      });
+      modal.querySelector('#closeShareBtn').addEventListener('click', () => modal.remove());
+      modal.addEventListener('click', (e) => { if (e.target === modal) modal.remove(); });
+    }
+
+    // ── Load shared chat from URL hash ──
+    async function loadSharedChat() {
+      const hash = location.hash;
+      if (!hash.startsWith('#share=')) return false;
+      const shareData = hash.slice(7);
+      // Try to load from backend first (shareId)
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (apiUrl && shareData.startsWith('share-')) {
+        try {
+          const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/share/' + shareData);
+          const data = await res.json();
+          if (data.success) {
+            const conv = {
+              id: 'shared-' + Date.now(),
+              title: data.conversation.title + ' (shared)',
+              messages: data.conversation.messages
+            };
+            const convs = loadConversations();
+            convs.unshift(conv);
+            saveConversations(convs);
+            currentConversation = conv;
+            renderChatSidebar();
+            renderMessages();
+            appendAIMessage(`📥 **Loaded shared chat:** ${data.conversation.title}\n\n*${data.conversation.views} views*`, true);
+            history.replaceState(null, '', location.pathname);
+            return true;
+          }
+        } catch(e) {}
+      }
+      // Try local share (base64)
+      try {
+        const conv = JSON.parse(atob(shareData));
+        conv.id = 'shared-' + Date.now();
+        conv.title = (conv.title || 'Shared') + ' (shared)';
+        const convs = loadConversations();
+        convs.unshift(conv);
+        saveConversations(convs);
+        currentConversation = conv;
+        renderChatSidebar();
+        renderMessages();
+        history.replaceState(null, '', location.pathname);
+        return true;
+      } catch(e) { return false; }
+    }
+
+    // ── Analytics tracking ──
+    async function trackEvent(event, data) {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) return;
+      const userJson = sessionStorage.getItem('darkness-user');
+      const payload = { event, data: data || {} };
+      if (userJson) {
+        try {
+          const user = JSON.parse(userJson);
+          payload.userEmail = user.email;
+          payload.userName = user.name;
+          payload.userPicture = user.picture;
+        } catch(e) {}
+      }
+      fetch(apiUrl.replace(/\/$/, '') + '/api/analytics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      }).catch(() => {});
     }
     function setMode(mode) {
       currentMode = mode;
@@ -5967,6 +6329,7 @@
 
       appendUserMessage(text, true);
       conv.messages.push({ role: 'user', content: text });
+      trackEvent('chat_sent', { mode: currentMode });
       // Auto-title from first message
       if (conv.title === 'New Chat') {
         conv.title = text.slice(0, 40) + (text.length > 40 ? '…' : '');
@@ -6232,24 +6595,28 @@
       chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // Initialize: try backend DB first, fall back to localStorage, then create
+    // Initialize: check for shared chat in URL, then load conversations
     (async () => {
-      const backendConvs = await loadConversationsFromBackend();
-      if (backendConvs && backendConvs.length > 0) {
-        // Merge backend conversations with local (prefer backend)
-        saveConversations(backendConvs);
-        currentConversation = backendConvs[0];
-        renderMessages();
-      } else {
-        const existing = loadConversations();
-        if (existing.length > 0) {
-          currentConversation = existing[0];
+      // Check for shared chat in URL first
+      const shared = await loadSharedChat();
+      if (!shared) {
+        const backendConvs = await loadConversationsFromBackend();
+        if (backendConvs && backendConvs.length > 0) {
+          saveConversations(backendConvs);
+          currentConversation = backendConvs[0];
           renderMessages();
         } else {
-          createConversation();
+          const existing = loadConversations();
+          if (existing.length > 0) {
+            currentConversation = existing[0];
+            renderMessages();
+          } else {
+            createConversation();
+          }
         }
       }
       renderChatSidebar();
+      trackEvent('session_started', { userAgent: navigator.userAgent.slice(0, 50) });
     })();
   })();
 
@@ -7019,6 +7386,155 @@
     // Note: Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A, Ctrl+Z, Ctrl+Shift+Z (redo),
     // Ctrl+B (bold), Ctrl+I (italic) all work natively in textareas/inputs.
     // No custom handler needed — the browser handles them.
+  })();
+
+  // ===== ANALYTICS DASHBOARD =====
+  (function() {
+    const refreshBtn = document.getElementById('refreshAnalytics');
+
+    async function loadAnalytics() {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) {
+        document.getElementById('analyticsTotal').textContent = '—';
+        document.getElementById('analyticsUser').textContent = '—';
+        document.getElementById('analyticsChats').textContent = '—';
+        document.getElementById('analyticsImages').textContent = '—';
+        document.getElementById('analyticsEventsList').innerHTML = '<div class="analytics-placeholder">Connect your backend in Settings to see analytics</div>';
+        document.getElementById('analyticsRecentList').innerHTML = '<div class="analytics-placeholder">No backend connected</div>';
+        return;
+      }
+      const userJson = sessionStorage.getItem('darkness-user');
+      let userEmail = '';
+      if (userJson) { try { userEmail = JSON.parse(userJson).email; } catch(e) {} }
+
+      try {
+        const res = await fetch(`${apiUrl.replace(/\/$/, '')}/api/analytics?userEmail=${encodeURIComponent(userEmail)}`);
+        const data = await res.json();
+        if (data.success) {
+          const s = data.stats;
+          document.getElementById('analyticsTotal').textContent = s.totalEvents;
+          document.getElementById('analyticsUser').textContent = s.userEvents;
+          const chatCount = s.eventsByType.find(e => e.event === 'chat_sent')?.count || 0;
+          const imgCount = s.eventsByType.find(e => e.event === 'image_generated')?.count || 0;
+          document.getElementById('analyticsChats').textContent = chatCount;
+          document.getElementById('analyticsImages').textContent = imgCount;
+
+          // Events by type
+          const eventsList = document.getElementById('analyticsEventsList');
+          if (s.eventsByType.length === 0) {
+            eventsList.innerHTML = '<div class="analytics-placeholder">No events yet</div>';
+          } else {
+            eventsList.innerHTML = s.eventsByType.map(e => `
+              <div class="analytics-event-row">
+                <span class="analytics-event-name">${e.event}</span>
+                <span class="analytics-event-count">${e.count}</span>
+              </div>
+            `).join('');
+          }
+
+          // Recent activity
+          const recentList = document.getElementById('analyticsRecentList');
+          if (s.recentEvents.length === 0) {
+            recentList.innerHTML = '<div class="analytics-placeholder">No recent activity</div>';
+          } else {
+            recentList.innerHTML = s.recentEvents.map(e => {
+              const time = new Date(e.created_at * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              return `<div class="analytics-recent-item">
+                <span class="analytics-recent-event">${e.event}</span>
+                <span class="analytics-recent-time">${time}</span>
+              </div>`;
+            }).join('');
+          }
+        }
+      } catch(e) {
+        document.getElementById('analyticsEventsList').innerHTML = `<div class="analytics-placeholder">Cannot reach backend: ${e.message}</div>`;
+      }
+    }
+
+    refreshBtn?.addEventListener('click', loadAnalytics);
+    // Auto-load when the analytics page becomes active
+    document.querySelectorAll('.sidebar-item[data-page="analytics"]').forEach(item => {
+      item.addEventListener('click', () => setTimeout(loadAnalytics, 100));
+    });
+  })();
+
+  // ===== WEBHOOKS =====
+  (function() {
+    const addBtn = document.getElementById('addWebhookBtn');
+    const urlInput = document.getElementById('webhookUrl');
+    const eventsInput = document.getElementById('webhookEvents');
+    const secretInput = document.getElementById('webhookSecret');
+    const list = document.getElementById('webhooksList');
+
+    async function loadWebhooks() {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) {
+        list.innerHTML = '<div class="analytics-placeholder">Connect your backend to manage webhooks</div>';
+        return;
+      }
+      const userJson = sessionStorage.getItem('darkness-user');
+      if (!userJson) {
+        list.innerHTML = '<div class="analytics-placeholder">Sign in with Google to manage webhooks</div>';
+        return;
+      }
+      try {
+        const user = JSON.parse(userJson);
+        const res = await fetch(`${apiUrl.replace(/\/$/, '')}/api/webhooks?userEmail=${encodeURIComponent(user.email)}`);
+        const data = await res.json();
+        if (data.success && data.webhooks.length > 0) {
+          list.innerHTML = data.webhooks.map(w => `
+            <div class="webhook-item">
+              <span class="webhook-url">${w.url}</span>
+              <span class="webhook-events">${(w.events || []).join(', ')}</span>
+              <button class="webhook-delete" data-id="${w.id}">Delete</button>
+            </div>
+          `).join('');
+          list.querySelectorAll('.webhook-delete').forEach(btn => {
+            btn.addEventListener('click', async () => {
+              await fetch(apiUrl.replace(/\/$/, '') + '/api/webhooks/' + btn.getAttribute('data-id'), { method: 'DELETE' });
+              loadWebhooks();
+            });
+          });
+        } else {
+          list.innerHTML = '<div class="analytics-placeholder">No webhooks configured</div>';
+        }
+      } catch(e) {
+        list.innerHTML = `<div class="analytics-placeholder">Cannot reach backend</div>`;
+      }
+    }
+
+    addBtn?.addEventListener('click', async () => {
+      const apiUrl = localStorage.getItem('darkness-api-url') || '';
+      if (!apiUrl) { alert('Configure your backend URL in Settings → General first.'); return; }
+      const userJson = sessionStorage.getItem('darkness-user');
+      if (!userJson) { alert('Sign in with Google first.'); return; }
+      const url = urlInput.value.trim();
+      const events = eventsInput.value.trim().split(',').map(e => e.trim()).filter(Boolean);
+      const secret = secretInput.value.trim();
+      if (!url || events.length === 0) { alert('URL and events are required.'); return; }
+      try {
+        const user = JSON.parse(userJson);
+        const res = await fetch(apiUrl.replace(/\/$/, '') + '/api/webhooks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userEmail: user.email, userName: user.name, userPicture: user.picture, url, events, secret })
+        });
+        const data = await res.json();
+        if (data.success) {
+          urlInput.value = '';
+          eventsInput.value = '';
+          secretInput.value = '';
+          loadWebhooks();
+        } else {
+          alert('Failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch(e) { alert('Failed: ' + e.message); }
+    });
+
+    // Load webhooks when the webhooks tab is opened
+    document.querySelectorAll('.settings-nav-item[data-settings-tab="webhooks"]').forEach(tab => {
+      tab.addEventListener('click', () => setTimeout(loadWebhooks, 100));
+    });
   })();
 </script>
 </body>
