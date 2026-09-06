@@ -9,6 +9,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- Google Identity Services (official Google Sign-In SDK) -->
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   /* ===== RESET & BASE ===== */
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -2930,6 +2932,440 @@
     box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.3), 0 4px 12px -4px rgba(168, 85, 247, 0.4);
   }
 
+  /* ===== MODAL OVERLAY ===== */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal {
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    box-shadow: 0 24px 80px -20px rgba(0,0,0,0.8);
+    max-height: 90vh;
+    overflow: hidden;
+    animation: modalIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .modal-close {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    color: var(--text-dim);
+    display: inline-flex; align-items: center; justify-content: center;
+    transition: all 0.16s ease;
+  }
+  .modal-close svg { width: 18px; height: 18px; }
+  .modal-close:hover { background: rgba(255,255,255,0.06); color: #fff; }
+
+  /* ===== SETTINGS MODAL (ChatGPT-style) ===== */
+  .settings-modal {
+    width: 100%;
+    max-width: 760px;
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    height: 600px;
+  }
+  .settings-sidebar {
+    border-right: 1px solid var(--border);
+    background: rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+  }
+  .settings-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-header h2 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .settings-nav {
+    flex: 1;
+    padding: 12px 10px;
+    overflow-y: auto;
+  }
+  .settings-nav-item {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%;
+    padding: 9px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--text-dim);
+    text-align: left;
+    transition: all 0.16s ease;
+    margin-bottom: 2px;
+    border: 1px solid transparent;
+  }
+  .settings-nav-item:hover { background: rgba(255,255,255,0.04); color: #fff; }
+  .settings-nav-item.active {
+    background: rgba(168, 85, 247, 0.12);
+    border-color: rgba(168, 85, 247, 0.25);
+    color: #fff;
+  }
+
+  .settings-content {
+    overflow-y: auto;
+    padding: 28px 32px;
+  }
+  .settings-content h3 {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 24px;
+  }
+  .settings-panel { display: none; }
+  .settings-panel.active { display: block; animation: fadeIn 0.25s ease; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .setting-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-info { flex: 1; min-width: 0; }
+  .setting-label { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 2px; }
+  .setting-desc { font-size: 12.5px; color: var(--text-dim); line-height: 1.45; }
+
+  /* Segmented control */
+  .segmented {
+    display: inline-flex;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+  .segmented button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    font-weight: 500;
+    transition: all 0.16s ease;
+    white-space: nowrap;
+  }
+  .segmented button:hover { color: #fff; }
+  .segmented button.active {
+    background: rgba(168, 85, 247, 0.2);
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.3);
+  }
+
+  /* Toggle switch */
+  .toggle { position: relative; display: inline-block; width: 38px; height: 22px; flex-shrink: 0; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .toggle-slider::before {
+    content: '';
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all 0.2s ease;
+  }
+  .toggle input:checked + .toggle-slider {
+    background: rgba(168, 85, 247, 0.4);
+    border-color: rgba(168, 85, 247, 0.6);
+  }
+  .toggle input:checked + .toggle-slider::before {
+    transform: translateX(16px);
+    background: #fff;
+  }
+
+  .setting-textarea {
+    margin: 18px 0;
+  }
+  .setting-textarea label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .setting-textarea input,
+  .setting-textarea textarea,
+  .setting-select {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: #fff;
+    font-family: inherit;
+    font-size: 13.5px;
+    outline: none;
+    transition: border-color 0.2s ease;
+  }
+  .setting-textarea input:focus,
+  .setting-textarea textarea:focus,
+  .setting-select:focus {
+    border-color: rgba(168, 85, 247, 0.5);
+  }
+  .setting-textarea textarea { resize: vertical; min-height: 70px; }
+  .setting-select { width: auto; min-width: 140px; cursor: pointer; }
+
+  .setting-action-btn {
+    padding: 7px 14px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    color: #fff;
+    font-size: 12.5px;
+    font-weight: 600;
+    transition: all 0.16s ease;
+    white-space: nowrap;
+  }
+  .setting-action-btn:hover { background: rgba(255,255,255,0.1); }
+  .setting-action-btn.setting-danger { color: #fca5a5; border-color: rgba(248, 113, 113, 0.3); }
+  .setting-action-btn.setting-danger:hover { background: rgba(248, 113, 113, 0.1); }
+
+  /* Account info */
+  .account-info { margin-bottom: 20px; }
+  .account-placeholder {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .account-placeholder-icon { font-size: 28px; }
+  .account-placeholder-title { font-size: 14px; font-weight: 600; color: #fff; }
+  .account-placeholder-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Shortcuts list */
+  .shortcuts-list { display: flex; flex-direction: column; gap: 24px; }
+  .shortcut-group-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .shortcut-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 7px 0;
+    font-size: 13.5px;
+    color: var(--text-dim);
+  }
+  .shortcut-row kbd {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--text-dim);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+  }
+
+  /* ===== GOOGLE SIGN-IN ===== */
+  .google-btn-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 36px;
+  }
+  .google-btn-wrap iframe { border-radius: 8px !important; }
+  /* Fallback custom Google button (if GIS hasn't loaded yet) */
+  .google-fallback-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: #fff;
+    color: #1f1f1f;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: 'Roboto', 'Inter', sans-serif;
+    border: 1px solid #dadce0;
+    transition: all 0.18s ease;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .google-fallback-btn:hover { background: #f8f9fa; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .google-fallback-btn svg { width: 16px; height: 16px; }
+
+  /* ===== SIGNED-IN USER ===== */
+  .sidebar-user { position: relative; }
+  .user-avatar-btn {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%;
+    padding: 7px 10px;
+    border-radius: 8px;
+    color: var(--text-dim);
+    transition: all 0.16s ease;
+  }
+  .user-avatar-btn:hover { background: rgba(255,255,255,0.04); }
+  .user-avatar-btn img {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+  .user-name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .user-avatar-btn svg { width: 12px; height: 12px; color: var(--text-faint); }
+
+  .user-menu {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 0; right: 0;
+    background: var(--bg-elev);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    box-shadow: 0 -12px 40px -8px rgba(0,0,0,0.6);
+    overflow: hidden;
+    z-index: 250;
+  }
+  .user-menu.open { display: block; animation: modalIn 0.2s ease; }
+  .user-menu-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .user-menu-header img {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+  }
+  .user-menu-name { font-size: 13.5px; font-weight: 600; color: #fff; }
+  .user-menu-email { font-size: 11.5px; color: var(--text-dim); margin-top: 2px; }
+  .user-menu-item {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-dim);
+    text-align: left;
+    transition: all 0.14s ease;
+  }
+  .user-menu-item:hover { background: rgba(255,255,255,0.04); color: #fff; }
+  .user-menu-item kbd {
+    margin-left: auto;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+  }
+  .user-menu-item.user-menu-danger { color: #fca5a5; }
+  .user-menu-divider { height: 1px; background: var(--border); }
+
+  /* ===== COMMAND PALETTE ===== */
+  .command-palette {
+    width: 100%;
+    max-width: 600px;
+    height: auto;
+    max-height: 480px;
+    display: flex;
+    flex-direction: column;
+  }
+  .cp-input-wrap {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .cp-search-icon { width: 18px; height: 18px; color: var(--text-dim); flex-shrink: 0; }
+  .cp-input-wrap input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+  }
+  .cp-input-wrap input::placeholder { color: var(--text-faint); }
+  .cp-esc {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 2px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .cp-results {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+  .cp-section-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    padding: 10px 10px 6px;
+  }
+  .cp-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+  .cp-item:hover, .cp-item.selected {
+    background: rgba(168, 85, 247, 0.12);
+    color: #fff;
+  }
+  .cp-item-icon { font-size: 16px; width: 22px; text-align: center; }
+  .cp-item-label { flex: 1; }
+  .cp-item-kbd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  /* Footer kbd hint */
+  .footer-kbd {
+    margin-left: auto;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-faint);
+  }
+  .sidebar-footer-btn {
+    display: flex; align-items: center; gap: 8px;
+  }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 860px) {
     /* Sidebar collapses on mobile */
@@ -2959,6 +3395,13 @@
     .tct-row { grid-template-columns: 1fr 1fr; gap: 8px; }
     .tct-row .tct-cell:nth-child(4), .tct-row .tct-cell:nth-child(5) { display: none; }
     .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
+    /* Settings modal collapses on mobile */
+    .settings-modal { grid-template-columns: 1fr; height: auto; max-height: 90vh; }
+    .settings-sidebar { border-right: none; border-bottom: 1px solid var(--border); }
+    .settings-nav { display: flex; gap: 4px; overflow-x: auto; padding: 10px; }
+    .settings-nav-item { white-space: nowrap; }
+    .settings-content { padding: 20px; }
+    .command-palette { max-width: calc(100vw - 40px); }
   }
   @media (max-width: 540px) {
     .footer-inner { grid-template-columns: 1fr; }
@@ -3043,13 +3486,42 @@
   </nav>
 
   <div class="sidebar-footer">
-    <button class="sidebar-footer-btn">
+    <button class="sidebar-footer-btn" id="settingsBtn">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
       Settings
+      <kbd class="footer-kbd">⌘,</kbd>
     </button>
-    <div class="sidebar-auth">
-      <button class="btn btn-ghost btn-sm">Sign in</button>
-      <button class="btn btn-primary btn-sm">Get Started</button>
+    <!-- Signed-out state: Google Sign-In button -->
+    <div class="sidebar-auth" id="authSignedOut">
+      <div id="googleSignInButton" class="google-btn-wrap"></div>
+    </div>
+    <!-- Signed-in state: avatar + menu -->
+    <div class="sidebar-user" id="authSignedIn" style="display:none;">
+      <button class="user-avatar-btn" id="userMenuBtn">
+        <img id="userAvatar" alt="" />
+        <span class="user-name" id="userName">User</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="user-menu" id="userMenu">
+        <div class="user-menu-header">
+          <img id="userMenuAvatar" alt="" />
+          <div>
+            <div class="user-menu-name" id="userMenuName">User</div>
+            <div class="user-menu-email" id="userMenuEmail">user@example.com</div>
+          </div>
+        </div>
+        <button class="user-menu-item" id="openSettingsFromMenu">
+          <span>⚙️</span> Settings
+        </button>
+        <button class="user-menu-item" id="showShortcutsFromMenu">
+          <span>⌨️</span> Keyboard shortcuts
+          <kbd>⌘/</kbd>
+        </button>
+        <div class="user-menu-divider"></div>
+        <button class="user-menu-item user-menu-danger" id="signOutBtn">
+          <span>🚪</span> Sign out
+        </button>
+      </div>
     </div>
   </div>
 </aside>
@@ -4413,6 +4885,222 @@
     <span>Built from a single prompt · Powered by multi-agent AI</span>
   </div>
 </footer>
+
+<!-- ===== SETTINGS MODAL (ChatGPT-style) ===== -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal settings-modal">
+    <div class="settings-sidebar">
+      <div class="settings-header">
+        <h2>Settings</h2>
+        <button class="modal-close" data-close="settingsModal" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <nav class="settings-nav">
+        <button class="settings-nav-item active" data-settings-tab="general">⚙️ General</button>
+        <button class="settings-nav-item" data-settings-tab="personalization">✨ Personalization</button>
+        <button class="settings-nav-item" data-settings-tab="data">🗄️ Data controls</button>
+        <button class="settings-nav-item" data-settings-tab="account">👤 Account</button>
+        <button class="settings-nav-item" data-settings-tab="shortcuts">⌨️ Shortcuts</button>
+      </nav>
+    </div>
+
+    <div class="settings-content">
+      <!-- General -->
+      <div class="settings-panel active" data-settings-panel="general">
+        <h3>General</h3>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Theme</div>
+            <div class="setting-desc">Choose the appearance of DARKNESS.</div>
+          </div>
+          <div class="segmented" id="themeSelector">
+            <button data-theme="dark" class="active">🌙 Dark</button>
+            <button data-theme="light">☀️ Light</button>
+            <button data-theme="system">🖥️ System</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Send on Enter</div>
+            <div class="setting-desc">Press Enter to send, Shift+Enter for newline.</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="sendOnEnter" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Font size</div>
+            <div class="setting-desc">Adjust the text size of the interface.</div>
+          </div>
+          <div class="segmented" id="fontSizeSelector">
+            <button data-size="small">Small</button>
+            <button data-size="medium" class="active">Medium</button>
+            <button data-size="large">Large</button>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Show mode tabs on home</div>
+            <div class="setting-desc">Display the Fast / Think / Deep Think / Coding / PPT tabs.</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="showModeTabs" checked><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <!-- Personalization -->
+      <div class="settings-panel" data-settings-panel="personalization">
+        <h3>Personalization</h3>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Custom instructions</div>
+            <div class="setting-desc">Tell DARKNESS how to respond to you.</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="customInstructionsToggle"><span class="toggle-slider"></span></label>
+        </div>
+        <div class="setting-textarea">
+          <label>What would you like DARKNESS to call you?</label>
+          <input type="text" id="userNameInput" placeholder="Your name or nickname" />
+        </div>
+        <div class="setting-textarea">
+          <label>How would you like DARKNESS to respond?</label>
+          <textarea id="customInstructions" rows="4" placeholder="e.g. Keep answers concise and technical. Use TypeScript examples."></textarea>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Response style</div>
+            <div class="setting-desc">Default tone of responses.</div>
+          </div>
+          <select class="setting-select" id="responseStyle">
+            <option value="balanced">Balanced</option>
+            <option value="concise">Concise</option>
+            <option value="detailed">Detailed</option>
+            <option value="friendly">Friendly</option>
+          </select>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Technical level</div>
+            <div class="setting-desc">Adjust terminology depth.</div>
+          </div>
+          <select class="setting-select" id="techLevel">
+            <option value="auto">Auto-detect</option>
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Data controls -->
+      <div class="settings-panel" data-settings-panel="data">
+        <h3>Data controls</h3>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Chat history &amp; training</div>
+            <div class="setting-desc">Save chats and allow them to improve models.</div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="chatHistory" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Export data</div>
+            <div class="setting-desc">Download your account data.</div>
+          </div>
+          <button class="setting-action-btn" id="exportData">Export</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Clear all chats</div>
+            <div class="setting-desc">Permanently delete all conversations.</div>
+          </div>
+          <button class="setting-action-btn setting-danger" id="clearChats">Delete</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Delete account</div>
+            <div class="setting-desc">Permanently delete your account and all data.</div>
+          </div>
+          <button class="setting-action-btn setting-danger" id="deleteAccount">Delete</button>
+        </div>
+      </div>
+
+      <!-- Account -->
+      <div class="settings-panel" data-settings-panel="account">
+        <h3>Account</h3>
+        <div class="account-info" id="accountInfo">
+          <div class="account-placeholder">
+            <div class="account-placeholder-icon">👤</div>
+            <div>
+              <div class="account-placeholder-title">Not signed in</div>
+              <div class="account-placeholder-sub">Sign in with Google to sync your settings and chats.</div>
+            </div>
+            <div id="googleSignInButtonAccount" class="google-btn-wrap"></div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Plan</div>
+            <div class="setting-desc">You are on the Free plan.</div>
+          </div>
+          <button class="setting-action-btn">Upgrade</button>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Email</div>
+            <div class="setting-desc" id="accountEmail">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Shortcuts -->
+      <div class="settings-panel" data-settings-panel="shortcuts">
+        <h3>Keyboard shortcuts</h3>
+        <div class="shortcuts-list">
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">General</div>
+            <div class="shortcut-row"><span>Open command palette</span><kbd>⌘ K</kbd></div>
+            <div class="shortcut-row"><span>Show keyboard shortcuts</span><kbd>⌘ /</kbd></div>
+            <div class="shortcut-row"><span>Open settings</span><kbd>⌘ ,</kbd></div>
+            <div class="shortcut-row"><span>Toggle sidebar</span><kbd>⌘ B</kbd></div>
+            <div class="shortcut-row"><span>New chat</span><kbd>⌘ ⇧ O</kbd></div>
+            <div class="shortcut-row"><span>Close modal / menu</span><kbd>Esc</kbd></div>
+          </div>
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">Chat</div>
+            <div class="shortcut-row"><span>Send message</span><kbd>Enter</kbd></div>
+            <div class="shortcut-row"><span>New line</span><kbd>Shift ⏎</kbd></div>
+            <div class="shortcut-row"><span>Focus chat input</span><kbd>/</kbd></div>
+            <div class="shortcut-row"><span>Stop generating</span><kbd>⌘ .</kbd></div>
+          </div>
+          <div class="shortcut-group">
+            <div class="shortcut-group-title">Editing</div>
+            <div class="shortcut-row"><span>Copy</span><kbd>⌘ C</kbd></div>
+            <div class="shortcut-row"><span>Paste</span><kbd>⌘ V</kbd></div>
+            <div class="shortcut-row"><span>Cut</span><kbd>⌘ X</kbd></div>
+            <div class="shortcut-row"><span>Select all</span><kbd>⌘ A</kbd></div>
+            <div class="shortcut-row"><span>Undo</span><kbd>⌘ Z</kbd></div>
+            <div class="shortcut-row"><span>Redo</span><kbd>⌘ ⇧ Z</kbd></div>
+            <div class="shortcut-row"><span>Bold (in markdown)</span><kbd>⌘ B</kbd></div>
+            <div class="shortcut-row"><span>Italic (in markdown)</span><kbd>⌘ I</kbd></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== COMMAND PALETTE (Ctrl+K) ===== -->
+<div class="modal-overlay" id="commandPalette">
+  <div class="modal command-palette">
+    <div class="cp-input-wrap">
+      <svg class="cp-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="cpInput" placeholder="Search pages, actions, or ask anything…" autocomplete="off" />
+      <kbd class="cp-esc">Esc</kbd>
+    </div>
+    <div class="cp-results" id="cpResults"></div>
+  </div>
+</div>
+
 </main>
 
 <script>
@@ -5303,6 +5991,470 @@ What would you like to do? Just describe it in plain language — I'll figure ou
         }
       });
     });
+  })();
+
+  // ===== SETTINGS MODAL =====
+  (function() {
+    const settingsBtn = document.getElementById('settingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const openSettingsFromMenu = document.getElementById('openSettingsFromMenu');
+    const navItems = document.querySelectorAll('.settings-nav-item');
+    const panels = document.querySelectorAll('.settings-panel');
+    const closeBtns = document.querySelectorAll('[data-close]');
+
+    function openSettings(tab) {
+      settingsModal.classList.add('active');
+      if (tab) switchTab(tab);
+    }
+    function closeSettings() { settingsModal.classList.remove('active'); }
+
+    settingsBtn?.addEventListener('click', () => openSettings());
+    openSettingsFromMenu?.addEventListener('click', () => {
+      document.getElementById('userMenu')?.classList.remove('open');
+      openSettings();
+    });
+
+    function switchTab(tabName) {
+      navItems.forEach(n => n.classList.toggle('active', n.getAttribute('data-settings-tab') === tabName));
+      panels.forEach(p => p.classList.toggle('active', p.getAttribute('data-settings-panel') === tabName));
+    }
+    navItems.forEach(n => {
+      n.addEventListener('click', () => switchTab(n.getAttribute('data-settings-tab')));
+    });
+
+    // Close handlers
+    closeBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const target = document.getElementById(btn.getAttribute('data-close'));
+        target?.classList.remove('active');
+      });
+    });
+    // Click outside to close
+    [settingsModal, document.getElementById('commandPalette')].forEach(m => {
+      m?.addEventListener('click', (e) => { if (e.target === m) m.classList.remove('active'); });
+    });
+
+    // Theme selector
+    const themeSelector = document.getElementById('themeSelector');
+    themeSelector?.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        themeSelector.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        const theme = b.getAttribute('data-theme');
+        document.body.setAttribute('data-theme', theme);
+        localStorage.setItem('darkness-theme', theme);
+      });
+    });
+
+    // Font size selector
+    const fontSizeSelector = document.getElementById('fontSizeSelector');
+    fontSizeSelector?.querySelectorAll('button').forEach(b => {
+      b.addEventListener('click', () => {
+        fontSizeSelector.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        document.body.setAttribute('data-font-size', b.getAttribute('data-size'));
+        localStorage.setItem('darkness-font-size', b.getAttribute('data-size'));
+      });
+    });
+
+    // Show mode tabs toggle
+    const showModeTabs = document.getElementById('showModeTabs');
+    showModeTabs?.addEventListener('change', () => {
+      const modeTabs = document.getElementById('modeTabs');
+      if (modeTabs) modeTabs.style.display = showModeTabs.checked ? '' : 'none';
+      localStorage.setItem('darkness-show-mode-tabs', showModeTabs.checked ? '1' : '0');
+    });
+
+    // Save custom instructions on blur
+    ['userNameInput', 'customInstructions', 'responseStyle', 'techLevel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) {
+        const saved = localStorage.getItem('darkness-' + id);
+        if (saved) el.value = saved;
+        el.addEventListener('change', () => localStorage.setItem('darkness-' + id, el.value));
+      }
+    });
+
+    // Data controls
+    document.getElementById('exportData')?.addEventListener('click', () => {
+      const data = {
+        settings: {
+          theme: localStorage.getItem('darkness-theme') || 'dark',
+          fontSize: localStorage.getItem('darkness-font-size') || 'medium',
+          responseStyle: localStorage.getItem('darkness-responseStyle') || 'balanced',
+          techLevel: localStorage.getItem('darkness-techLevel') || 'auto',
+          userName: localStorage.getItem('darkness-userNameInput') || '',
+          customInstructions: localStorage.getItem('darkness-customInstructions') || ''
+        },
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = 'darkness-data.json'; a.click();
+      URL.revokeObjectURL(url);
+    });
+    document.getElementById('clearChats')?.addEventListener('click', () => {
+      if (confirm('Delete all chats? This cannot be undone.')) {
+        alert('All chats cleared (demo).');
+      }
+    });
+    document.getElementById('deleteAccount')?.addEventListener('click', () => {
+      if (confirm('Delete your account? This is permanent.')) {
+        localStorage.clear();
+        sessionStorage.clear();
+        location.reload();
+      }
+    });
+
+    // Restore saved preferences
+    const savedTheme = localStorage.getItem('darkness-theme');
+    if (savedTheme) {
+      themeSelector?.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-theme') === savedTheme);
+      });
+      document.body.setAttribute('data-theme', savedTheme);
+    }
+    const savedFontSize = localStorage.getItem('darkness-font-size');
+    if (savedFontSize) {
+      fontSizeSelector?.querySelectorAll('button').forEach(b => {
+        b.classList.toggle('active', b.getAttribute('data-size') === savedFontSize);
+      });
+      document.body.setAttribute('data-font-size', savedFontSize);
+    }
+    if (localStorage.getItem('darkness-show-mode-tabs') === '0') {
+      const mt = document.getElementById('modeTabs');
+      if (mt) mt.style.display = 'none';
+      if (showModeTabs) showModeTabs.checked = false;
+    }
+  })();
+
+  // ===== GOOGLE SIGN-IN =====
+  (function() {
+    // IMPORTANT: Replace this with your real Google OAuth Client ID
+    // Get one at: https://console.cloud.google.com/apis/credentials
+    // Add your deployed URL (https://hitmancoder6961234-coder.github.io/AI/)
+    // to "Authorized JavaScript origins"
+    const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+
+    const authSignedOut = document.getElementById('authSignedOut');
+    const authSignedIn = document.getElementById('authSignedIn');
+    const sidebarBtnContainer = document.getElementById('googleSignInButton');
+    const accountBtnContainer = document.getElementById('googleSignInButtonAccount');
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    const userMenu = document.getElementById('userMenu');
+    const signOutBtn = document.getElementById('signOutBtn');
+    const showShortcutsFromMenu = document.getElementById('showShortcutsFromMenu');
+
+    function renderGoogleButton(container) {
+      if (!container) return;
+      if (GOOGLE_CLIENT_ID.startsWith('YOUR_')) {
+        // Fallback: custom Google-style button that explains setup needed
+        container.innerHTML = `
+          <button class="google-fallback-btn" onclick="alert('To enable real Google Sign-In:\\n\\n1. Go to https://console.cloud.google.com/apis/credentials\\n2. Create an OAuth 2.0 Client ID (type: Web application)\\n3. Add this URL to Authorized JavaScript origins:\\n   ${location.origin}\\n4. Open index.html and replace YOUR_GOOGLE_CLIENT_ID with your Client ID\\n\\nThe button and verification flow are already wired — just paste your ID.')">
+            <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571c.003-.002 6.19 5.238 6.19 5.238C36.971 36.852 44 31.131 44 24C44 22.659 43.862 21.35 43.611 20.083z"/></svg>
+            Sign in with Google
+          </button>`;
+        return;
+      }
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleCredentialResponse
+        });
+        window.google.accounts.id.renderButton(container, {
+          theme: 'filled_black',
+          size: 'medium',
+          shape: 'pill',
+          text: 'signin_with',
+          locale: 'en'
+        });
+      }
+    }
+
+    function handleCredentialResponse(response) {
+      // Decode the JWT credential (officially documented approach for client-side)
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      // payload: { sub, name, email, picture, given_name, family_name }
+      const user = {
+        name: payload.name,
+        email: payload.email,
+        picture: payload.picture
+      };
+      sessionStorage.setItem('darkness-user', JSON.stringify(user));
+      applySignedInState(user);
+    }
+
+    function applySignedInState(user) {
+      authSignedOut.style.display = 'none';
+      authSignedIn.style.display = 'block';
+      document.getElementById('userName').textContent = user.name;
+      document.getElementById('userAvatar').src = user.picture;
+      document.getElementById('userMenuName').textContent = user.name;
+      document.getElementById('userMenuEmail').textContent = user.email;
+      document.getElementById('userMenuAvatar').src = user.picture;
+      // Update account panel
+      const accountInfo = document.getElementById('accountInfo');
+      if (accountInfo) {
+        accountInfo.innerHTML = `
+          <div class="account-placeholder">
+            <img src="${user.picture}" alt="" style="width:48px;height:48px;border-radius:50%;" />
+            <div style="flex:1">
+              <div class="account-placeholder-title">${user.name}</div>
+              <div class="account-placeholder-sub">${user.email}</div>
+            </div>
+          </div>`;
+      }
+      document.getElementById('accountEmail').textContent = user.email;
+    }
+
+    function signOut() {
+      sessionStorage.removeItem('darkness-user');
+      if (window.google && window.google.accounts) {
+        window.google.accounts.id.disableAutoSelect();
+      }
+      authSignedOut.style.display = '';
+      authSignedIn.style.display = 'none';
+      location.reload();
+    }
+
+    // Wire up
+    userMenuBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      userMenu.classList.toggle('open');
+    });
+    document.addEventListener('click', (e) => {
+      if (!userMenu?.contains(e.target) && !userMenuBtn?.contains(e.target)) {
+        userMenu?.classList.remove('open');
+      }
+    });
+    signOutBtn?.addEventListener('click', signOut);
+    showShortcutsFromMenu?.addEventListener('click', () => {
+      userMenu.classList.remove('open');
+      document.getElementById('settingsModal').classList.add('active');
+      document.querySelectorAll('.settings-nav-item').forEach(n => {
+        n.classList.toggle('active', n.getAttribute('data-settings-tab') === 'shortcuts');
+      });
+      document.querySelectorAll('.settings-panel').forEach(p => {
+        p.classList.toggle('active', p.getAttribute('data-settings-panel') === 'shortcuts');
+      });
+    });
+
+    // Render Google buttons (retry until GIS script loads)
+    function tryRender(retries) {
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        renderGoogleButton(sidebarBtnContainer);
+        renderGoogleButton(accountBtnContainer);
+      } else if (retries > 0) {
+        setTimeout(() => tryRender(retries - 1), 300);
+      } else {
+        // GIS failed to load — show fallback button
+        renderGoogleButton(sidebarBtnContainer);
+        renderGoogleButton(accountBtnContainer);
+      }
+    }
+    tryRender(20);
+
+    // Restore session
+    const savedUser = sessionStorage.getItem('darkness-user');
+    if (savedUser) {
+      try { applySignedInState(JSON.parse(savedUser)); } catch (e) {}
+    }
+  })();
+
+  // ===== COMMAND PALETTE (Ctrl+K) =====
+  (function() {
+    const cp = document.getElementById('commandPalette');
+    const cpInput = document.getElementById('cpInput');
+    const cpResults = document.getElementById('cpResults');
+
+    const commands = [
+      { icon: '🏠', label: 'Home', section: 'Navigation', action: () => switchToPage('home') },
+      { icon: '⚡', label: 'Capabilities', section: 'Navigation', action: () => switchToPage('capabilities') },
+      { icon: '🔀', label: 'Multi-AI Orchestrator', section: 'Navigation', action: () => switchToPage('orchestrator') },
+      { icon: '🧠', label: 'Think Modes', section: 'Navigation', action: () => switchToPage('think') },
+      { icon: '💬', label: 'AI Assistant', section: 'Navigation', action: () => switchToPage('chat') },
+      { icon: '📋', label: 'Workflow', section: 'Navigation', action: () => switchToPage('workflow') },
+      { icon: '🎯', label: 'Idea Engine', section: 'Navigation', action: () => switchToPage('engine') },
+      { icon: '🐙', label: 'GitHub Push', section: 'Navigation', action: () => switchToPage('github') },
+      { icon: '📊', label: 'PPT Studio', section: 'Navigation', action: () => switchToPage('ppt') },
+      { icon: '⚙️', label: 'Open Settings', section: 'Actions', action: () => openSettings() },
+      { icon: '⌨️', label: 'Keyboard shortcuts', section: 'Actions', action: () => openSettings('shortcuts') },
+      { icon: '➕', label: 'New Chat', section: 'Actions', action: () => switchToPage('home') },
+    ];
+
+    function switchToPage(page) {
+      const pages = document.querySelectorAll('.app-page');
+      pages.forEach(p => p.classList.toggle('active', p.getAttribute('data-page') === page));
+      document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.classList.toggle('active', item.getAttribute('data-page') === page);
+      });
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      closeCp();
+    }
+    function openSettings(tab) {
+      const m = document.getElementById('settingsModal');
+      m.classList.add('active');
+      if (tab) {
+        document.querySelectorAll('.settings-nav-item').forEach(n => {
+          n.classList.toggle('active', n.getAttribute('data-settings-tab') === tab);
+        });
+        document.querySelectorAll('.settings-panel').forEach(p => {
+          p.classList.toggle('active', p.getAttribute('data-settings-panel') === tab);
+        });
+      }
+      closeCp();
+    }
+
+    function openCp() {
+      cp.classList.add('active');
+      cpInput.value = '';
+      renderResults('');
+      setTimeout(() => cpInput.focus(), 50);
+    }
+    function closeCp() { cp.classList.remove('active'); }
+
+    function renderResults(query) {
+      const q = query.toLowerCase().trim();
+      const filtered = q ? commands.filter(c => c.label.toLowerCase().includes(q)) : commands;
+      const sections = {};
+      filtered.forEach(c => {
+        if (!sections[c.section]) sections[c.section] = [];
+        sections[c.section].push(c);
+      });
+      let html = '';
+      Object.keys(sections).forEach(s => {
+        html += `<div class="cp-section-title">${s}</div>`;
+        sections[s].forEach(c => {
+          html += `<div class="cp-item" data-label="${c.label}"><span class="cp-item-icon">${c.icon}</span><span class="cp-item-label">${c.label}</span></div>`;
+        });
+      });
+      if (!filtered.length) {
+        html = '<div class="cp-section-title">No results</div><div style="padding:20px;text-align:center;color:var(--text-faint);font-size:13px;">Try a different search term.</div>';
+      }
+      cpResults.innerHTML = html;
+      cpResults.querySelectorAll('.cp-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const cmd = commands.find(c => c.label === item.getAttribute('data-label'));
+          cmd?.action();
+        });
+      });
+    }
+
+    cpInput?.addEventListener('input', () => renderResults(cpInput.value));
+    // Expose for keyboard shortcut
+    window.__openCommandPalette = openCp;
+    window.__closeCommandPalette = closeCp;
+  })();
+
+  // ===== KEYBOARD SHORTCUTS =====
+  (function() {
+    function isTyping(e) {
+      const t = e.target;
+      return t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+    }
+    function isMac() { return navigator.platform.toUpperCase().indexOf('MAC') >= 0; }
+
+    document.addEventListener('keydown', (e) => {
+      const mod = isMac() ? e.metaKey : e.ctrlKey;
+
+      // Ctrl/Cmd + K → Command Palette
+      if (mod && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        if (window.__openCommandPalette) window.__openCommandPalette();
+        return;
+      }
+      // Ctrl/Cmd + , → Settings
+      if (mod && e.key === ',') {
+        e.preventDefault();
+        document.getElementById('settingsModal')?.classList.add('active');
+        return;
+      }
+      // Ctrl/Cmd + / → Show shortcuts
+      if (mod && e.key === '/') {
+        e.preventDefault();
+        const m = document.getElementById('settingsModal');
+        m?.classList.add('active');
+        document.querySelectorAll('.settings-nav-item').forEach(n => {
+          n.classList.toggle('active', n.getAttribute('data-settings-tab') === 'shortcuts');
+        });
+        document.querySelectorAll('.settings-panel').forEach(p => {
+          p.classList.toggle('active', p.getAttribute('data-settings-panel') === 'shortcuts');
+        });
+        return;
+      }
+      // Ctrl/Cmd + Shift + O → New chat (go home)
+      if (mod && e.shiftKey && e.key.toLowerCase() === 'o') {
+        e.preventDefault();
+        document.querySelectorAll('.app-page').forEach(p => p.classList.toggle('active', p.getAttribute('data-page') === 'home'));
+        document.querySelectorAll('.sidebar-item').forEach(i => i.classList.toggle('active', i.getAttribute('data-page') === 'home'));
+        window.scrollTo({ top: 0, behavior: 'instant' });
+        return;
+      }
+      // Ctrl/Cmd + B → Toggle sidebar (desktop: collapse; mobile: open)
+      if (mod && e.key.toLowerCase() === 'b' && !isTyping(e)) {
+        e.preventDefault();
+        const sidebar = document.getElementById('appSidebar');
+        const main = document.querySelector('.app-main');
+        if (window.innerWidth <= 860) {
+          sidebar.classList.toggle('open');
+          document.getElementById('sidebarOverlay').classList.toggle('active', sidebar.classList.contains('open'));
+        } else {
+          const collapsed = sidebar.style.transform === 'translateX(-100%)';
+          sidebar.style.transform = collapsed ? '' : 'translateX(-100%)';
+          main.style.marginLeft = collapsed ? '' : '0';
+        }
+        return;
+      }
+      // Ctrl/Cmd + . → Stop generating (demo)
+      if (mod && e.key === '.') {
+        e.preventDefault();
+        // Would stop streaming in a real app
+        const sendBtn = document.getElementById('chatSendBtn');
+        if (sendBtn && sendBtn.disabled) {
+          // Stop demo: re-enable
+          sendBtn.disabled = false;
+        }
+        return;
+      }
+      // Escape → close topmost modal/menu/sidebar
+      if (e.key === 'Escape') {
+        const modals = document.querySelectorAll('.modal-overlay.active');
+        if (modals.length) {
+          modals[modals.length - 1].classList.remove('active');
+          return;
+        }
+        const userMenu = document.getElementById('userMenu');
+        if (userMenu?.classList.contains('open')) { userMenu.classList.remove('open'); return; }
+        const sidebar = document.getElementById('appSidebar');
+        if (sidebar.classList.contains('open')) {
+          sidebar.classList.remove('open');
+          document.getElementById('sidebarOverlay').classList.remove('active');
+          return;
+        }
+        return;
+      }
+      // / (when not typing) → focus chat input
+      if (e.key === '/' && !isTyping(e) && !mod) {
+        const activePage = document.querySelector('.app-page.active');
+        const chatInput = activePage?.querySelector('#chatInput') || document.getElementById('chatInput');
+        if (chatInput && activePage?.getAttribute('data-page') === 'chat') {
+          e.preventDefault();
+          chatInput.focus();
+          return;
+        }
+        // Or focus home prompt
+        const prompt = document.getElementById('prompt');
+        if (prompt && document.querySelector('.hero.app-page.active')) {
+          e.preventDefault();
+          prompt.focus();
+        }
+      }
+    });
+
+    // Note: Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A, Ctrl+Z, Ctrl+Shift+Z (redo),
+    // Ctrl+B (bold), Ctrl+I (italic) all work natively in textareas/inputs.
+    // No custom handler needed — the browser handles them.
   })();
 </script>
 </body>
