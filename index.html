@@ -621,6 +621,469 @@
     font-size: 13px; color: var(--text-faint);
   }
 
+  /* ===== FEATURE SECTIONS (GitHub Push / PPT Studio) ===== */
+  .feature-section { position: relative; }
+  .feature-section-alt {
+    background: linear-gradient(180deg, transparent, rgba(236, 72, 153, 0.035) 30%, transparent 70%);
+  }
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.05fr;
+    gap: 56px;
+    align-items: start;
+  }
+  .feature-grid-reverse { grid-template-columns: 1.05fr 1fr; }
+  .feature-left h3 {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 12px;
+  }
+  .feature-intro {
+    color: var(--text-dim);
+    font-size: 16px;
+    line-height: 1.6;
+    margin-bottom: 28px;
+  }
+  .feature-intro strong { color: #fff; font-weight: 600; }
+  .feature-intro code {
+    background: rgba(255,255,255,0.06);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: #c4a8ff;
+  }
+
+  .feature-list {
+    list-style: none;
+    display: grid;
+    gap: 14px;
+    margin-bottom: 28px;
+  }
+  .feature-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all 0.22s ease;
+  }
+  .feature-list li:hover {
+    border-color: var(--border-strong);
+    transform: translateX(3px);
+    background: rgba(255,255,255,0.04);
+  }
+  .fl-icon {
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    background: color-mix(in srgb, var(--fl-color, var(--blue)) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--fl-color, var(--blue)) 30%, transparent);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--fl-color, var(--blue));
+    flex-shrink: 0;
+  }
+  .fl-icon svg { width: 18px; height: 18px; }
+  .feature-list strong { display: block; color: #fff; font-weight: 600; font-size: 14.5px; margin-bottom: 3px; }
+  .feature-list span { color: var(--text-dim); font-size: 13.5px; line-height: 1.5; display: block; }
+  .feature-list code {
+    background: rgba(168, 85, 247, 0.12);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #d8c4f8;
+  }
+
+  /* Auto-push toggle */
+  .auto-push-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 18px;
+    background: rgba(251, 146, 60, 0.05);
+    border: 1px solid rgba(251, 146, 60, 0.2);
+    border-radius: 12px;
+  }
+  .apt-label strong { display: block; color: #fff; font-size: 14px; font-weight: 600; }
+  .apt-label span { display: block; color: var(--text-dim); font-size: 12.5px; margin-top: 2px; }
+  .apt-switch {
+    width: 42px; height: 24px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid var(--border);
+    position: relative;
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: all 0.22s ease;
+  }
+  .apt-knob {
+    position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all 0.22s ease;
+  }
+
+  /* Mockup container */
+  .mockup {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 24px 60px -20px rgba(0,0,0,0.5);
+  }
+  .mockup::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(168, 85, 247, 0.10), transparent 45%),
+      radial-gradient(circle at 85% 90%, rgba(0, 212, 255, 0.08), transparent 45%);
+    pointer-events: none;
+  }
+  .mockup-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    position: relative;
+  }
+  .mockup-head .dots { display: flex; gap: 6px; }
+  .mockup-head .dots span { width: 10px; height: 10px; border-radius: 50%; }
+  .mockup-head .dots span:nth-child(1) { background: #ff5f57; }
+  .mockup-head .dots span:nth-child(2) { background: #febc2e; }
+  .mockup-head .dots span:nth-child(3) { background: #28c840; }
+  .mockup-head .title {
+    font-size: 12px; color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .mockup-body {
+    padding: 22px;
+    position: relative;
+  }
+  .mockup-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 22px 0;
+  }
+
+  /* GitHub form */
+  .gh-form { display: grid; gap: 8px; }
+  .gh-label {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-top: 6px;
+  }
+  .gh-label:first-child { margin-top: 0; }
+  .gh-input {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    font-size: 13.5px;
+    color: #e8eaf2;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .gh-input svg { width: 16px; height: 16px; color: var(--text-dim); flex-shrink: 0; }
+  .gh-input-secret em {
+    margin-left: auto;
+    font-size: 10.5px;
+    font-style: normal;
+    color: var(--green);
+    background: rgba(52, 211, 153, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+  }
+  .gh-detected {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 10px;
+  }
+  .gh-det-pill {
+    font-size: 11.5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(52, 211, 153, 0.08);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    color: #6ee7b7;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .gh-det-pill code {
+    background: none;
+    color: #fff;
+    font-weight: 600;
+  }
+  .gh-buttons {
+    display: flex; gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+  .gh-btn {
+    padding: 10px 16px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.18s ease;
+    border: 1px solid transparent;
+  }
+  .gh-btn-primary {
+    background: linear-gradient(135deg, var(--purple), var(--violet));
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.08), 0 6px 18px -6px rgba(168, 85, 247, 0.6);
+  }
+  .gh-btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(255,255,255,0.14), 0 10px 24px -6px rgba(168, 85, 247, 0.8); }
+  .gh-btn-ghost {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border);
+    color: var(--text-dim);
+  }
+  .gh-btn-ghost:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: var(--border-strong); }
+
+  /* Push timeline */
+  .push-timeline { display: grid; gap: 8px; }
+  .pt-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .pt-step {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 4px;
+    font-size: 13.5px;
+    color: var(--text-faint);
+  }
+  .pt-step.done { color: var(--text-dim); }
+  .pt-step.active { color: #fff; }
+  .pt-mark {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    color: var(--text-faint);
+  }
+  .pt-step.done .pt-mark {
+    background: rgba(52, 211, 153, 0.12);
+    border-color: rgba(52, 211, 153, 0.4);
+    color: var(--green);
+  }
+  .pt-step.active .pt-mark {
+    background: rgba(168, 85, 247, 0.15);
+    border-color: rgba(168, 85, 247, 0.5);
+  }
+  .pt-spinner {
+    width: 12px; height: 12px;
+    border: 2px solid rgba(168, 85, 247, 0.3);
+    border-top-color: var(--purple);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+
+  /* GitHub success card */
+  .gh-success {
+    padding: 18px;
+    background: linear-gradient(135deg, rgba(52, 211, 153, 0.08), rgba(168, 85, 247, 0.05));
+    border: 1px solid rgba(52, 211, 153, 0.25);
+    border-radius: 12px;
+  }
+  .gh-success-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .gh-success-icon { font-size: 18px; }
+  .gh-success-head strong { color: #fff; font-size: 14.5px; font-weight: 600; }
+  .gh-success-meta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 16px;
+    margin-bottom: 14px;
+  }
+  .gh-success-meta div {
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .gh-success-meta span {
+    font-size: 10.5px;
+    color: var(--text-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+  .gh-success-meta code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    color: #fff;
+  }
+  .gh-success-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* PPT slide grid */
+  .slide-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+  .slide-thumb {
+    aspect-ratio: 16 / 10;
+    background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 10px 11px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    overflow: hidden;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  .slide-thumb:hover {
+    border-color: rgba(236, 72, 153, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px -8px rgba(236, 72, 153, 0.4);
+  }
+  .slide-thumb.slide-title {
+    background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(236, 72, 153, 0.1));
+    border-color: rgba(168, 85, 247, 0.3);
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+  .st-tag {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--magenta);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .slide-title .st-tag { color: #c4a8ff; }
+  .st-title { font-size: 13px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+  .st-sub { font-size: 9.5px; color: var(--text-dim); }
+  .st-bullets {
+    list-style: none;
+    display: grid; gap: 3px;
+    font-size: 9.5px;
+    color: var(--text-dim);
+    line-height: 1.3;
+  }
+  .st-bullets li::before { content: '·'; color: var(--magenta); margin-right: 4px; font-weight: 700; }
+  .st-diagram {
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+    flex: 1;
+  }
+  .st-node {
+    padding: 3px 7px;
+    border-radius: 5px;
+    background: color-mix(in srgb, var(--sn-color, var(--blue)) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--sn-color, var(--blue)) 30%, transparent);
+    color: var(--sn-color, var(--blue));
+    font-size: 9.5px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .st-arrow { font-size: 10px; color: var(--text-faint); }
+  .st-chips {
+    display: flex; flex-wrap: wrap; gap: 3px;
+    align-content: flex-start;
+    flex: 1;
+  }
+  .st-chips span {
+    font-size: 8.5px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(0, 212, 255, 0.1);
+    color: #67e8f9;
+    border: 1px solid rgba(0, 212, 255, 0.2);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+  }
+  .st-stat {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--green);
+    text-align: center;
+    line-height: 1;
+    margin-top: 4px;
+  }
+  .st-stat-lbl {
+    font-size: 9px;
+    color: var(--text-dim);
+    text-align: center;
+  }
+
+  /* Quality check grid */
+  .quality-check { }
+  .qc-title {
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+  }
+  .qc-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .qc-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .qc-item.pass .qc-mark {
+    color: var(--green);
+    font-weight: 800;
+  }
+
+  /* PPT actions */
+  .ppt-actions {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+
+  /* PPT content chips */
+  .ppt-content-grid {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 24px;
+  }
+  .ppt-chip {
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    background: rgba(236, 72, 153, 0.08);
+    border: 1px solid rgba(236, 72, 153, 0.2);
+    color: #f9a8d4;
+    font-weight: 500;
+    transition: all 0.18s ease;
+  }
+  .ppt-chip:hover {
+    background: rgba(236, 72, 153, 0.15);
+    border-color: rgba(236, 72, 153, 0.4);
+    color: #fff;
+    transform: translateY(-1px);
+  }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 860px) {
     .nav-links, .nav-cta .btn-ghost { display: none; }
@@ -629,6 +1092,9 @@
     .hero { padding: 70px 20px 40px; }
     .container { padding: 70px 20px; }
     .engine-grid { grid-template-columns: 1fr; gap: 32px; }
+    .feature-grid, .feature-grid-reverse { grid-template-columns: 1fr; gap: 36px; }
+    .slide-grid { grid-template-columns: repeat(2, 1fr); }
+    .gh-success-meta { grid-template-columns: 1fr; }
     .footer-inner { grid-template-columns: 1fr 1fr; gap: 32px; }
   }
   @media (max-width: 540px) {
@@ -664,9 +1130,9 @@
       <li><a href="#capabilities">Capabilities</a></li>
       <li><a href="#workflow">Workflow</a></li>
       <li><a href="#engine">Idea Engine</a></li>
-      <li><a href="#templates">Templates</a></li>
+      <li><a href="#github">GitHub Push</a></li>
+      <li><a href="#ppt">PPT Studio</a></li>
       <li><a href="#pricing">Pricing</a></li>
-      <li><a href="#docs">Docs</a></li>
     </ul>
     <div class="nav-cta">
       <button class="btn btn-ghost">Sign in</button>
@@ -784,6 +1250,16 @@
         <div class="step-num">09</div>
         <h3>Deploy</h3>
         <p>Ship to staging or production with one click. Version control and rollback are built in.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--violet);">
+        <div class="step-num">10</div>
+        <h3>Push to GitHub</h3>
+        <p>After final approval, push the finished project directly to your repository — no Git commands, no ZIP files.</p>
+      </div>
+      <div class="step reveal" style="--step-color: var(--magenta);">
+        <div class="step-num">11</div>
+        <h3>Create PPT</h3>
+        <p>Generate a premium, projector-ready presentation from your project — anytime, permanently available.</p>
       </div>
     </div>
   </div>
@@ -917,8 +1393,8 @@
     <div class="lbl">Specialized AI agents</div>
   </div>
   <div class="stat reveal">
-    <div class="num">9</div>
-    <div class="lbl">Steps from idea to deploy</div>
+    <div class="num">11</div>
+    <div class="lbl">Steps from idea to ship</div>
   </div>
   <div class="stat reveal">
     <div class="num">∞</div>
@@ -929,6 +1405,337 @@
     <div class="lbl">Lines of code you write</div>
   </div>
 </div>
+
+<!-- ===== GITHUB DIRECT PUSH ===== -->
+<section class="feature-section" id="github">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow" style="color: var(--violet);">Final Delivery · Optional</span>
+      <h2>Push to GitHub. No Git, no terminal, no ZIP files.</h2>
+      <p>Once your project is built, tested, and approved — push it straight to your repository. DARKNESS handles validation, security scanning, commits, and verification. You just paste a URL.</p>
+    </div>
+
+    <div class="feature-grid">
+      <!-- LEFT: explanation -->
+      <div class="feature-left reveal">
+        <h3>How it works</h3>
+        <p class="feature-intro">
+          GitHub is a <strong>final optional step</strong> — shown only after the project is complete.
+          It never appears during planning, coding, testing, or debugging.
+        </p>
+
+        <ul class="feature-list">
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--violet);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+            </span>
+            <div>
+              <strong>Smart repository detection</strong>
+              <span>Paste a URL — owner and repo name are auto-extracted and validated before any auth happens.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--green);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </span>
+            <div>
+              <strong>Automatic security scan</strong>
+              <span>API keys, tokens, <code>.env</code> files, and credentials are blocked before push — with one-click auto-fix to environment variables.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--orange);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+            </span>
+            <div>
+              <strong>Branch management</strong>
+              <span>Push to <code>main</code>, pick an existing branch, or create a new one like <code>ai-build-v1</code> for safer AI-generated changes.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--red);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+            </span>
+            <div>
+              <strong>Conflict-safe pushes</strong>
+              <span>Remote changes are never silently overwritten. Conflicts trigger a clear review with Pull, Branch, or Cancel options.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--blue);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            </span>
+            <div>
+              <strong>Credentials never exposed</strong>
+              <span>Tokens are handled server-side only. Never logged, never sent to AI models, never committed, never visible in frontend code.</span>
+            </div>
+          </li>
+        </ul>
+
+        <div class="auto-push-toggle">
+          <div class="apt-label">
+            <strong>Automatically push successful builds</strong>
+            <span>OFF by default · only triggers when tests + security pass</span>
+          </div>
+          <div class="apt-switch" aria-label="Auto-push toggle">
+            <div class="apt-knob"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: mockup -->
+      <div class="feature-right reveal">
+        <div class="mockup">
+          <div class="mockup-head">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <span class="title">github · connect &amp; push</span>
+          </div>
+          <div class="mockup-body">
+            <!-- Connection form -->
+            <div class="gh-form">
+              <label class="gh-label">Repository URL</label>
+              <div class="gh-input">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+                <span>https://github.com/username/my-project</span>
+              </div>
+
+              <label class="gh-label">GitHub Access Token</label>
+              <div class="gh-input gh-input-secret">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                <span>••••••••••••••••••••••••</span>
+                <em>server-side only</em>
+              </div>
+
+              <div class="gh-detected">
+                <span class="gh-det-pill">✓ Provider: GitHub</span>
+                <span class="gh-det-pill">Owner: <code>username</code></span>
+                <span class="gh-det-pill">Repo: <code>my-project</code></span>
+              </div>
+
+              <div class="gh-buttons">
+                <button class="gh-btn gh-btn-primary">Connect &amp; Push</button>
+                <button class="gh-btn gh-btn-ghost">Test Connection</button>
+              </div>
+            </div>
+
+            <div class="mockup-divider"></div>
+
+            <!-- Push progress timeline -->
+            <div class="push-timeline">
+              <div class="pt-title">Push progress</div>
+              <div class="pt-step done">
+                <span class="pt-mark">✓</span>
+                <span class="pt-text">Connected to repository</span>
+              </div>
+              <div class="pt-step done">
+                <span class="pt-mark">✓</span>
+                <span class="pt-text">Repository verified</span>
+              </div>
+              <div class="pt-step done">
+                <span class="pt-mark">✓</span>
+                <span class="pt-text">Project validated</span>
+              </div>
+              <div class="pt-step done">
+                <span class="pt-mark">✓</span>
+                <span class="pt-text">Security scan completed · 0 secrets</span>
+              </div>
+              <div class="pt-step active">
+                <span class="pt-mark pt-spinner"></span>
+                <span class="pt-text">Pushing changes…</span>
+              </div>
+              <div class="pt-step">
+                <span class="pt-mark">○</span>
+                <span class="pt-text">Verifying GitHub</span>
+              </div>
+            </div>
+
+            <div class="mockup-divider"></div>
+
+            <!-- Success card -->
+            <div class="gh-success">
+              <div class="gh-success-head">
+                <span class="gh-success-icon">🎉</span>
+                <strong>Successfully pushed to GitHub</strong>
+              </div>
+              <div class="gh-success-meta">
+                <div><span>Repository</span><code>username/my-project</code></div>
+                <div><span>Branch</span><code>main</code></div>
+                <div><span>Commit</span><code>a8f31c2</code></div>
+                <div><span>Files</span><code>47 changed</code></div>
+              </div>
+              <div class="gh-success-actions">
+                <button class="gh-btn gh-btn-primary">Open GitHub</button>
+                <button class="gh-btn gh-btn-ghost">Copy Link</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PPT STUDIO ===== -->
+<section class="feature-section feature-section-alt" id="ppt">
+  <div class="container">
+    <div class="section-head reveal">
+      <span class="section-eyebrow" style="color: var(--magenta);">Permanent Feature · Always Available</span>
+      <h2>PPT Studio. Premium presentations from any project.</h2>
+      <p>Generate a projector-ready <code>.pptx</code> from your project, website, research, or uploaded docs — with 4K images, clean layouts, and a built-in quality check. Always accessible, even after GitHub push.</p>
+    </div>
+
+    <div class="feature-grid feature-grid-reverse">
+      <!-- LEFT: mockup -->
+      <div class="feature-right reveal">
+        <div class="mockup mockup-ppt">
+          <div class="mockup-head">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <span class="title">ppt-studio · slide preview</span>
+          </div>
+          <div class="mockup-body">
+            <!-- Slide thumbnails -->
+            <div class="slide-grid">
+              <div class="slide-thumb slide-title">
+                <div class="st-tag">Title</div>
+                <div class="st-title">Project Name</div>
+                <div class="st-sub">Built with DARKNESS</div>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Problem</div>
+                <ul class="st-bullets">
+                  <li>Manual dev is slow</li>
+                  <li>Testing is effort-heavy</li>
+                  <li>Tools are fragmented</li>
+                </ul>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Architecture</div>
+                <div class="st-diagram">
+                  <span class="st-node" style="--sn-color: var(--blue);">UI</span>
+                  <span class="st-arrow">→</span>
+                  <span class="st-node" style="--sn-color: var(--cyan);">API</span>
+                  <span class="st-arrow">→</span>
+                  <span class="st-node" style="--sn-color: var(--purple);">DB</span>
+                </div>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Features</div>
+                <ul class="st-bullets">
+                  <li>Auth &amp; roles</li>
+                  <li>Dashboard</li>
+                  <li>Payments</li>
+                  <li>Analytics</li>
+                </ul>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Tech Stack</div>
+                <div class="st-chips">
+                  <span>Next.js</span><span>Prisma</span><span>tRPC</span><span>Tailwind</span>
+                </div>
+              </div>
+              <div class="slide-thumb">
+                <div class="st-tag">Results</div>
+                <div class="st-stat">98%</div>
+                <div class="st-stat-lbl">tests passing</div>
+              </div>
+            </div>
+
+            <div class="mockup-divider"></div>
+
+            <!-- Quality check -->
+            <div class="quality-check">
+              <div class="qc-title">Quality check · auto-fix on fail</div>
+              <div class="qc-grid">
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Text overflow</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Image resolution</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Alignment</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Font size</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Spacing</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Slide consistency</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Diagrams</div>
+                <div class="qc-item pass"><span class="qc-mark">✓</span> Projector readability</div>
+              </div>
+            </div>
+
+            <div class="mockup-divider"></div>
+
+            <!-- Output actions -->
+            <div class="ppt-actions">
+              <button class="gh-btn gh-btn-primary">⬇ Download PPTX</button>
+              <button class="gh-btn gh-btn-ghost">Edit</button>
+              <button class="gh-btn gh-btn-ghost">Regenerate</button>
+              <button class="gh-btn gh-btn-ghost">Change Theme</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: explanation -->
+      <div class="feature-left reveal">
+        <h3>What PPT Studio generates</h3>
+        <p class="feature-intro">
+          A premium, international-level presentation — only including slides relevant to your project.
+          No forced sections, no overloaded slides, no tiny text.
+        </p>
+
+        <div class="ppt-content-grid">
+          <span class="ppt-chip">Title Slide</span>
+          <span class="ppt-chip">Introduction</span>
+          <span class="ppt-chip">Problem Statement</span>
+          <span class="ppt-chip">Objectives</span>
+          <span class="ppt-chip">Target Users</span>
+          <span class="ppt-chip">Existing System</span>
+          <span class="ppt-chip">Proposed System</span>
+          <span class="ppt-chip">Features</span>
+          <span class="ppt-chip">Architecture</span>
+          <span class="ppt-chip">Workflow</span>
+          <span class="ppt-chip">Mind Map</span>
+          <span class="ppt-chip">Tech Stack</span>
+          <span class="ppt-chip">Database</span>
+          <span class="ppt-chip">UI Screenshots</span>
+          <span class="ppt-chip">Implementation</span>
+          <span class="ppt-chip">Testing</span>
+          <span class="ppt-chip">Results</span>
+          <span class="ppt-chip">Advantages</span>
+          <span class="ppt-chip">Limitations</span>
+          <span class="ppt-chip">Future Scope</span>
+          <span class="ppt-chip">Conclusion</span>
+          <span class="ppt-chip">References</span>
+        </div>
+
+        <ul class="feature-list">
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--magenta);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </span>
+            <div>
+              <strong>Projector-optimized</strong>
+              <span>Large readable fonts, strong visual hierarchy, high contrast, 4K images (min 3840×2160). No blurry slides on the big screen.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--green);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </span>
+            <div>
+              <strong>Auto-fix quality check</strong>
+              <span>If a slide fails overflow, alignment, or resolution checks — the AI fixes it and re-runs the check. Loop until perfect.</span>
+            </div>
+          </li>
+          <li>
+            <span class="fl-icon" style="--fl-color: var(--blue);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M2 12h20"/></svg>
+            </span>
+            <div>
+              <strong>Versioned &amp; permanent</strong>
+              <span>PPT v1, v2, v3… saved inside your project with full history. Compare, restore, or regenerate any version — anytime.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- ===== CTA ===== -->
 <section class="cta">
@@ -956,7 +1763,8 @@
         <li><a href="#capabilities">Capabilities</a></li>
         <li><a href="#workflow">Workflow</a></li>
         <li><a href="#engine">Idea Engine</a></li>
-        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#github">GitHub Push</a></li>
+        <li><a href="#ppt">PPT Studio</a></li>
       </ul>
     </div>
     <div class="footer-col">
@@ -1036,6 +1844,18 @@
     links.style.background = show ? 'rgba(5,6,10,0.98)' : '';
     links.style.padding = show ? '16px 20px' : '';
     links.style.borderBottom = show ? '1px solid var(--border)' : '';
+  });
+
+  // Auto-push toggle (interactive demo)
+  const aptSwitch = document.querySelector('.apt-switch');
+  const aptKnob = document.querySelector('.apt-knob');
+  let aptOn = false;
+  aptSwitch?.addEventListener('click', () => {
+    aptOn = !aptOn;
+    aptSwitch.style.background = aptOn ? 'rgba(168, 85, 247, 0.4)' : 'rgba(255,255,255,0.08)';
+    aptSwitch.style.borderColor = aptOn ? 'rgba(168, 85, 247, 0.6)' : 'var(--border)';
+    aptKnob.style.left = aptOn ? '22px' : '2px';
+    aptKnob.style.background = aptOn ? '#fff' : 'var(--text-dim)';
   });
 </script>
 </body>
