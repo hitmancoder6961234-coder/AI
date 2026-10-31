@@ -1,0 +1,39 @@
+# Run Darkness AI on any Docker host (your own server, a VPS, a laptop).
+#
+#   cp .env.example .env      # then fill it in (never commit .env)
+#   docker compose up -d --build
+#
+# The container listens on 127.0.0.1 only. Put a TLS reverse proxy (Caddy, Traefik, nginx) in front —
+# see deploy/server/Caddyfile.example. Do not publish port 3000 to the internet directly.
+
+services:
+  app:
+    build: .
+    image: darkness-ai:latest
+    container_name: darkness-ai
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      PRIVACY_STRICT: "true"
+      CLARITY_STORAGE_ROOT: /data
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
+    ports:
+      - "127.0.0.1:${HOST_PORT:-3000}:3000"
+    volumes:
+      - darkness-data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    pids_limit: 512
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  darkness-data:

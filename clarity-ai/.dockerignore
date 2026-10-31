@@ -1,0 +1,16 @@
+node_modules
+dist
+data
+.git
+.github
+.env
+.env.*
+!.env.example
+.secrets
+*.pem
+*.key
+id_*
+*.log
+tests
+docs
+deploy

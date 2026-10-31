@@ -1,0 +1,100 @@
+<svg viewBox="0 0 400 400" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Soft shadow -->
+    <radialGradient id="robotShadow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#0f172a" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#0f172a" stop-opacity="0"/>
+    </radialGradient>
+    
+    <!-- Head 3D gradient -->
+    <radialGradient id="headGrad" cx="35%" cy="25%" r="75%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="45%" stop-color="#f1f5f9"/>
+      <stop offset="85%" stop-color="#cbd5e1"/>
+      <stop offset="100%" stop-color="#94a3b8"/>
+    </radialGradient>
+
+    <!-- Body 3D gradient -->
+    <radialGradient id="bodyGrad" cx="40%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="50%" stop-color="#e2e8f0"/>
+      <stop offset="90%" stop-color="#94a3b8"/>
+      <stop offset="100%" stop-color="#64748b"/>
+    </radialGradient>
+
+    <!-- Visor screen gradient -->
+    <linearGradient id="visorGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+
+    <!-- Glowing blue eyes & mouth -->
+    <filter id="blueGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Floor shadow -->
+  <ellipse cx="200" cy="360" rx="65" ry="14" fill="url(#robotShadow)"/>
+
+  <!-- Antenna -->
+  <line x1="200" y1="110" x2="200" y2="75" stroke="#334155" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="200" cy="65" r="12" fill="#1e293b"/>
+  <circle cx="197" cy="62" r="4" fill="#60a5fa" opacity="0.6"/>
+
+  <!-- Left Ear -->
+  <ellipse cx="115" cy="180" rx="14" ry="22" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/>
+  <ellipse cx="115" cy="180" rx="8" ry="14" fill="#334155"/>
+
+  <!-- Right Ear -->
+  <ellipse cx="285" cy="180" rx="14" ry="22" fill="#cbd5e1" stroke="#94a3b8" stroke-width="2"/>
+  <ellipse cx="285" cy="180" rx="8" ry="14" fill="#334155"/>
+
+  <!-- Head -->
+  <circle cx="200" cy="180" r="85" fill="url(#headGrad)" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- Visor Screen -->
+  <rect x="142" y="140" width="116" height="80" rx="28" fill="url(#visorGrad)" stroke="#1e293b" stroke-width="3"/>
+  
+  <!-- Visor Reflection -->
+  <path d="M 152 150 Q 200 144 248 150 Q 240 170 248 180 Q 200 156 152 180 Z" fill="#ffffff" opacity="0.12"/>
+
+  <style>
+    @keyframes blink {
+      0%, 96%, 98%, 100% { transform: scaleY(1); }
+      97% { transform: scaleY(0.1); }
+    }
+    .robot-eye {
+      transform-origin: 50% 50%;
+      animation: blink 4s infinite;
+    }
+  </style>
+  <!-- Eyes & Smile (Glowing Blue) -->
+  <g filter="url(#blueGlow)">
+    <!-- Left Eye -->
+    <rect class="robot-eye" x="170" y="166" width="10" height="26" rx="5" fill="#38bdf8" style="transform-origin: 175px 179px;" />
+    <!-- Right Eye -->
+    <rect class="robot-eye" x="220" y="166" width="10" height="26" rx="5" fill="#38bdf8" style="transform-origin: 225px 179px;" />
+    <!-- Smile -->
+    <path d="M 188 200 Q 200 212 212 200" fill="none" stroke="#38bdf8" stroke-width="4.5" stroke-linecap="round"/>
+  </g>
+
+  <!-- Body -->
+  <path d="M 140 270 Q 140 235 200 235 Q 260 235 260 270 Q 275 320 200 325 Q 125 320 140 270 Z" fill="url(#bodyGrad)" stroke="#cbd5e1" stroke-width="2"/>
+
+  <!-- Body Chest Divider / Seam -->
+  <path d="M 143 285 Q 200 295 257 285" fill="none" stroke="#94a3b8" stroke-width="1.5" opacity="0.6"/>
+
+  <!-- Left Arm (down) -->
+  <path d="M 142 270 Q 115 285 125 315" fill="none" stroke="#334155" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="125" cy="320" r="12" fill="url(#headGrad)" stroke="#94a3b8" stroke-width="2"/>
+
+  <!-- Right Arm (waving up) -->
+  <path d="M 258 270 Q 290 260 305 235" fill="none" stroke="#334155" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="310" cy="225" r="12" fill="url(#headGrad)" stroke="#94a3b8" stroke-width="2"/>
+  <!-- Hand fingers -->
+  <line x1="316" y1="219" x2="324" y2="213" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+  <line x1="312" y1="216" x2="318" y2="208" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+  <line x1="320" y1="223" x2="328" y2="219" stroke="#334155" stroke-width="3" stroke-linecap="round"/>
+</svg>

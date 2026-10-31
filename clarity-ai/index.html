@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-density="comfortable">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <title>Darkness AI</title>
+    <meta name="description" content="A private, multi-model AI workspace: chat, knowledge, projects, documents and a working agent." />
+    <meta property="og:title" content="Darkness AI" />
+    <meta property="og:description" content="Light from the dark — a private, multi-model AI workspace." />
+    <meta property="og:image" content="/brand/darkness-title.png" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/icon-48.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#08080f" />
+    <meta name="apple-mobile-web-app-title" content="Darkness AI" />
+    <meta name="application-name" content="Darkness AI" />
+
+    <link rel="stylesheet" href="/css/tokens.css" />
+    <link rel="stylesheet" href="/css/base.css" />
+    <link rel="stylesheet" href="/css/layout.css" />
+    <link rel="stylesheet" href="/css/components.css" />
+    <link rel="stylesheet" href="/css/pages.css" />
+    <link rel="stylesheet" href="/css/artifacts.css" />
+    <link rel="stylesheet" href="/css/code-viewer.css" />
+    <link rel="stylesheet" href="/css/speech-reader.css" />
+    <link rel="stylesheet" href="/atmosphere/atmosphere.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/mhchem.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+
+
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+      (function() {
+        try {
+          if (window.innerWidth >= 1024 && localStorage.getItem('clarity_sidebar_rail') === 'true') {
+            document.addEventListener('DOMContentLoaded', function() {
+              var sb = document.getElementById('sidebar');
+              if (sb) sb.classList.add('is-rail');
+            });
+          }
+        } catch(e) {}
+      })();
+    </script>
+  </head>
+
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <div class="auth-root" id="authRoot" hidden></div>
+
+    <div class="app" id="app" hidden>
+      <!-- ================= SIDEBAR ================= -->
+      <aside class="sidebar" id="sidebar" aria-label="Sidebar">
+        <div class="sidebar__head">
+          <a class="brand" href="#/" id="sidebarBrand" data-nav-home aria-expanded="true" aria-controls="sidebar">
+            <span class="brand__mark" aria-hidden="true">
+              <img class="brand__mark-img" src="/brand/darkness-logo.svg" alt="Darkness AI" />
+            </span>
+            <span class="brand__name">Darkness</span>
+          </a>
+
+            <button class="btn btn--ghost btn--icon-sm sidebar__collapse" id="sidebarCollapse" type="button" title="Collapse sidebar (Ctrl+B)" data-tooltip="Collapse sidebar (Ctrl+B)" aria-label="Collapse sidebar (Ctrl+B)" aria-expanded="true" aria-controls="sidebar">
+            <span class="sr-only">Collapse sidebar</span>
+            <svg class="icon sidebar__collapse-icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 3v18"/><path d="m14 9 3 3-3 3"/></svg>
+          </button>
+        </div>
+
+        <div class="sidebar__scroll" id="sidebarScroll">
+          <div class="chat-sidebar__new" style="padding: 0 var(--s-3) var(--s-2);">
+            <button class="btn btn--primary btn--sm w-full" id="sidebarNewChat" type="button" data-tooltip="New chat (Ctrl+N)" title="New chat (Ctrl+N)" aria-label="New chat (Ctrl+N)">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" style="width:16px;height:16px;flex:none;"><path d="M12 5v14M5 12h14"/></svg>
+              <span>New chat</span>
+            </button>
+          </div>
+
+          <nav class="nav" id="primaryNav" aria-label="Main"></nav>
+
+          <div class="nav-section">
+            <div class="nav-section__head">
+              <span class="nav-section__title">Recent</span>
+              <a class="nav-section__link" href="#/history">All</a>
+            </div>
+            <div class="sidebar-search" style="padding: 4px 0 8px 0;">
+              <div class="sidebar-search__wrapper" style="position: relative; display: flex; align-items: center;">
+                <svg class="icon sidebar-search__icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="position: absolute; left: 8px; color: var(--ink-muted); pointer-events: none;"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input type="text" id="sidebarSearchInput" class="sidebar-search__input" placeholder="Search chats..." aria-label="Search chats by title or content" style="width: 100%; padding: 5px 22px 5px 26px; font-size: 12px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface-muted); color: var(--ink); outline: none; transition: border-color 0.15s ease, background 0.15s ease;" />
+                <button type="button" id="sidebarSearchClear" class="sidebar-search__clear" aria-label="Clear search" title="Clear search" style="position: absolute; right: 4px; display: none; background: transparent; border: none; padding: 2px; color: var(--ink-muted); cursor: pointer;"><svg class="icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+              </div>
+            </div>
+            <ul class="recent" id="recentList"></ul>
+          </div>
+        </div>
+
+        <div class="sidebar__foot">
+          <nav class="nav" id="secondaryNav" aria-label="Secondary" style="margin-bottom: 8px;"></nav>
+
+          <div class="sidebar-profile-container" style="position: relative; border-top: 1px solid var(--line); padding-top: 12px; margin-top: 8px; display: flex; align-items: center;">
+            <!-- Authenticated user: profile chip dropdown trigger -->
+            <button class="user-chip" id="userMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false" title="Account Details & Sign Out" style="width: 100%; display: flex; align-items: center; gap: 10px; background: transparent; border: 1px solid var(--line); padding: 8px 10px; border-radius: var(--r-md); cursor: pointer; text-align: left; color: var(--ink); transition: background 0.15s ease;">
+              <span class="avatar avatar--sm user-chip__avatar" id="userMenuAvatar" aria-hidden="true" style="border-radius: 50%; width: 34px; height: 34px; min-width: 34px; min-height: 34px; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--accent-soft); border: 1px solid var(--line); flex-shrink: 0;">
+                <img id="userMenuAvatarImg" src="" alt="" style="display:none; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="if(this.parentElement){this.parentElement.classList.add('avatar--fallback');const ini=this.parentElement.querySelector('.avatar__initials');if(ini)ini.style.display='flex';}" />
+                <span class="avatar__initials" id="userMenuInitial" style="font-weight: 700; font-size: 13px; color: var(--accent); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%;"></span>
+              </span>
+              <div class="sidebar-profile-text" style="display: flex; flex-direction: column; min-width: 0; flex: 1;">
+                <span id="sidebarProfileName" style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink);">Profile</span>
+                <span id="sidebarProfileEmail" style="font-size: 11px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">User Email</span>
+              </div>
+            </button>
+
+            <div class="dropdown-menu user-menu" id="userMenu" role="menu" hidden style="position: absolute; bottom: calc(100% + 8px); left: 0; right: auto; width: 220px; min-width: 220px; max-width: 220px; z-index: 10000; box-shadow: var(--shadow-float); border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+              <!-- User Info Header -->
+              <div style="display: flex; flex-direction: column; padding: 2px 4px; border-bottom: 1px solid var(--line); padding-bottom: 8px;">
+                <span id="userMenuName" style="font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">User Profile</span>
+                <span id="userMenuEmailFull" style="font-size: 11px; color: var(--ink-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">user@example.com</span>
+              </div>
+
+              <!-- Density Scale Selector -->
+              <div style="display: flex; flex-direction: column; gap: 6px; padding: 0 4px;">
+                <span style="font-size: 11px; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.05em;">Display Density</span>
+                <div style="display: flex; background: var(--surface-muted); padding: 3px; border-radius: 8px; border: 1px solid var(--line); gap: 2px; align-items: center; justify-content: space-between; width: 100%;">
+                  <button type="button" class="btn btn--xs density-btn" data-density-val="compact" style="flex: 1; min-height: 24px; font-size: 11px; padding: 0 4px; border: none; border-radius: 6px; font-weight: 500; text-align: center; justify-content: center; background: transparent; color: var(--ink-muted); height: 24px; min-width: unset; box-shadow: none;">Compact</button>
+                  <button type="button" class="btn btn--xs density-btn" data-density-val="comfortable" style="flex: 1; min-height: 24px; font-size: 11px; padding: 0 4px; border: none; border-radius: 6px; font-weight: 500; text-align: center; justify-content: center; background: transparent; color: var(--ink-muted); height: 24px; min-width: unset; box-shadow: none;">Comfortable</button>
+                  <button type="button" class="btn btn--xs density-btn" data-density-val="spacious" style="flex: 1; min-height: 24px; font-size: 11px; padding: 0 4px; border: none; border-radius: 6px; font-weight: 500; text-align: center; justify-content: center; background: transparent; color: var(--ink-muted); height: 24px; min-width: unset; box-shadow: none;">Spacious</button>
+                </div>
+              </div>
+
+              <hr style="border: none; border-top: 1px solid var(--line); margin: 2px 0;" />
+
+              <!-- Logout -->
+              <button class="menu__item menu__item--danger" type="button" role="menuitem" data-user-action="logout" style="width: 100%; border: none; background: transparent; cursor: pointer; text-align: left; display: flex; align-items: center; gap: 8px; padding: 8px 10px; font-size: 13px; color: var(--danger); border-radius: 6px;">
+                <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+                <span>Sign out</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <div class="scrim" id="scrim" hidden></div>
+
+      <!-- ================= MAIN ================= -->
+      <div class="shell">
+        <header class="topbar" style="display: none !important;">
+          <!-- Kept hidden for JS selector backward compatibility -->
+          <button class="btn btn--ghost btn--icon-sm topbar__burger" id="topbarBurger" type="button" title="Open navigation" aria-label="Open navigation" style="display: none !important;">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+          </button>
+          <div class="crumbs" style="display: none !important;">
+            <span class="crumbs__root">Darkness</span>
+            <span class="crumbs__ctx" id="crumbContext"></span>
+          </div>
+          <div class="topbar__right" style="display: none !important;">
+            <button id="themeToggleBtn" style="display: none !important;"></button>
+          </div>
+        </header>
+
+        <!-- Floating burger button for mobile immersive mode -->
+        <button class="btn btn--ghost btn--icon-sm floating-burger d-mobile-only" id="floatingBurger" type="button" title="Open navigation" aria-label="Open navigation" style="position: fixed; top: 12px; left: 12px; z-index: 1000;">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+
+        <div class="body">
+          <main class="main" id="main" tabindex="-1"></main>
+          <aside class="source-panel" id="sourcePanel" aria-label="Source preview" aria-hidden="true"></aside>
+        </div>
+      </div>
+    </div>
+
+    <div class="toasts" id="toasts" role="region" aria-label="Notifications"></div>
+    <div class="modal-root" id="modalRoot"></div>
+
+    <!-- Dynamic backgrounds + light (classic | blood moon | deep water). Self-contained, served from /public. -->
+    <script src="/atmosphere/atmosphere.js" defer></script>
+
+    <!-- Vite bundled entry (modules only; js/app.js owns the DOMContentLoaded bootstrap) -->
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

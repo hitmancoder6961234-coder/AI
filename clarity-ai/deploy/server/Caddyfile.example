@@ -1,0 +1,26 @@
+# TLS reverse proxy for a self-hosted Darkness AI (docker compose binds the app to 127.0.0.1:3000).
+# Caddy obtains and renews Let's Encrypt certificates automatically.
+#
+#   sudo cp Caddyfile.example /etc/caddy/Caddyfile   (replace the domain)
+#   sudo systemctl reload caddy
+#
+# If you use Traefik or nginx instead, the requirements are the same: terminate TLS, forward to
+# 127.0.0.1:3000, pass X-Forwarded-For / X-Forwarded-Proto, and do not buffer text/event-stream.
+
+ai.example.com {
+	encode zstd gzip
+
+	reverse_proxy 127.0.0.1:3000 {
+		flush_interval -1          # stream chat + agent tokens immediately
+		header_up X-Forwarded-Proto {scheme}
+	}
+
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+	}
+
+	request_body {
+		max_size 50MB
+	}
+}

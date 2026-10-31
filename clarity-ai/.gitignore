@@ -1,0 +1,73 @@
+# Environment and secrets
+.env
+.dev.vars
+.env.local
+.env.*.local
+.env.production
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Database
+data/
+!/js/data/
+!/js/data/nav.js
+*.db
+*.db-wal
+*.db-shm
+
+# Uploads and generated files
+server/uploads/
+uploads/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if ever added)
+node_modules/
+
+# Build artifacts
+*.log
+.wrangler/
+node_modules/
+dist/
+
+
+# Darkness AI: secrets and local artefacts - never commit
+.secrets/
+.env
+.env.*
+!.env.example
+id_ed25519*
+id_rsa*
+*.p12
+*.pfx
+ca.pem
+*.tfstate
+*.tfstate.*
+.terraform/
+.vercel
+node_modules/
+tests/.tmp/

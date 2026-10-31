@@ -1,0 +1,432 @@
+/* ============================================================
+   Clarity design tokens
+   Semantic theme tokens for Light, Dark, and System (auto) modes.
+   ============================================================ */
+
+:root {
+  /* Type */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Sizes */
+  --fs-h1: 25px;
+  --fs-h2: 20px;
+  --fs-h3: 17.5px;
+  --fs-body: 16px;
+  --fs-small: 13.5px;
+  --fs-xs: 12px;
+  --lh-base: 1.65;
+  --lh-heading: 1.3;
+  --lh-code: 1.6;
+
+  /* Radii */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 8px;
+  --r-card: 10px;
+  --r-panel: 12px;
+  --r-pill: 999px;
+
+  /* Spacing scale */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+
+  /* Elevation */
+  --shadow-soft: 0 1px 2px rgba(9, 9, 11, 0.04), 0 1px 3px rgba(9, 9, 11, 0.04);
+  --shadow-lift: 0 1px 2px rgba(9, 9, 11, 0.04), 0 8px 24px -12px rgba(9, 9, 11, 0.14);
+  --shadow-float: 0 24px 56px -24px rgba(9, 9, 11, 0.22), 0 1px 2px rgba(9, 9, 11, 0.05);
+
+  /* Motion */
+  --t-fast: 120ms;
+  --t-base: 180ms;
+  --t-slow: 220ms;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Layout */
+  --sidebar-w: 272px;
+  --sidebar-rail-w: 72px;
+  --topbar-h: 60px;
+  --panel-w: 400px;
+
+  /* Preference-driven */
+  --answer-scale: 1;
+}
+
+/* ---------------------------- Density (Typography & Spacing Scale) ---------------------------- */
+
+/* Compact Mode */
+html[data-density="compact"] {
+  --fs-h1: 21px;
+  --fs-h2: 17.5px;
+  --fs-h3: 15px;
+  --fs-body: 14.5px;
+  --fs-small: 12px;
+  --fs-xs: 11px;
+  --lh-base: 1.5;
+  --lh-code: 1.45;
+
+  --s-1: 3px;
+  --s-2: 6px;
+  --s-3: 9px;
+  --s-4: 12px;
+  --s-5: 15px;
+  --s-6: 18px;
+  --s-7: 24px;
+  --s-8: 30px;
+}
+
+/* Comfortable Mode (Default) */
+html[data-density="comfortable"] {
+  --fs-h1: 25px;
+  --fs-h2: 20px;
+  --fs-h3: 17.5px;
+  --fs-body: 16px;
+  --fs-small: 13.5px;
+  --fs-xs: 12px;
+  --lh-base: 1.65;
+  --lh-code: 1.6;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-7: 32px;
+  --s-8: 40px;
+}
+
+/* Spacious Mode */
+html[data-density="spacious"] {
+  --fs-h1: 29px;
+  --fs-h2: 24px;
+  --fs-h3: 20px;
+  --fs-body: 18px;
+  --fs-small: 15.5px;
+  --fs-xs: 13.5px;
+  --lh-base: 1.75;
+  --lh-code: 1.7;
+
+  --s-1: 5px;
+  --s-2: 10px;
+  --s-3: 15px;
+  --s-4: 20px;
+  --s-5: 25px;
+  --s-6: 30px;
+  --s-7: 38px;
+  --s-8: 48px;
+}
+
+/* ---------------------------- Light (default) ---------------------------- */
+
+:root,
+html[data-theme="light"] {
+  color-scheme: light;
+
+  /* Surfaces */
+  --canvas: #F9FAFB;
+  --surface: #FFFFFF;
+  --surface-muted: #F3F4F6;
+  --surface-hover: #E5E7EB;
+  --surface-elev: #FFFFFF;
+
+  /* Lines */
+  --line: #E5E7EB;
+  --line-strong: #D1D5DB;
+  --line-faint: #F1F2F4;
+
+  /* Ink */
+  --ink: #111827;
+  --ink-soft: #1F2937;
+  --ink-muted: #4B5563;
+  --ink-faint: #6B7280;
+
+  /* Accent (indigo) */
+  --accent: #79D3ED;
+  --accent-hover: #5ABFDA;
+  --accent-soft: #E6F8FC;
+  --accent-ink: #0F172A;
+
+  /* Status */
+  --success: #15803D;
+  --success-soft: #DCFCE7;
+  --warning: #B45309;
+  --warning-soft: #FEF3C7;
+  --danger: #B91C1C;
+  --danger-soft: #FEE2E2;
+
+  --ring: #4F46E5;
+  --highlight: #FEF3C7;
+  --scrim: rgba(17, 24, 39, 0.28);
+
+  /* Tooltip (light popover) */
+  --tooltip-bg: #111827;
+  --tooltip-ink: #FFFFFF;
+  --tooltip-border: transparent;
+  --tooltip-arrow: #111827;
+
+  /* Chat composer */
+  --composer-bg: #F3F4F6;
+  --composer-border: #D1D5DB;
+  --bubble-user-bg: #E6F8FC;
+  --bubble-user-ink: #0C4A5C;
+  --bubble-user-border: #A3E5F5;
+  --bubble-ai-bg: #FFFFFF;
+  --bubble-ai-ink: #111827;
+  --bubble-ai-border: #E5E7EB;
+
+  /* Code / Editor / Viewer Tokens */
+  --code-cell-bg: #FFFFFF;
+  --code-cell-header-bg: #F3F4F6;
+  --code-cell-border: #E5E7EB;
+  --code-cell-ink: #1F2328;
+  --code-cell-muted: #656D76;
+  --code-gutter-bg: #F8FAFC;
+  --code-gutter-border: #E2E8F0;
+  --code-gutter-ink: #6E7781;
+  --code-line-active: #EBF5FF;
+  --code-line-hover: #F6F8FA;
+  --code-active-tab-bg: #FFFFFF;
+  --code-active-tab-ink: #0969DA;
+  --code-tab-border: #D0D7DE;
+
+  /* Syntax Tokens (Light Palette - VS Code Light+) */
+  --code-token-comment: #008000;
+  --code-token-punctuation: #24292F;
+  --code-token-keyword: #0000FF;
+  --code-token-control: #AF00DB;
+  --code-token-string: #A31515;
+  --code-token-function: #795E26;
+  --code-token-number: #098658;
+  --code-token-operator: #24292F;
+  --code-token-class: #267F99;
+  --code-token-type: #267F99;
+  --code-token-property: #001080;
+  --code-token-tag: #800000;
+  --code-token-attr-name: #E50000;
+  --code-token-attr-value: #A31515;
+  --code-token-variable: #001080;
+  --code-token-constant: #0070C1;
+  --code-token-regex: #811F3F;
+  --code-token-selector: #800000;
+
+  /* Semantic Answer & Callout Tokens (Light Mode) */
+  --answer-success: #16A34A;
+  --answer-success-bg: rgba(22, 163, 74, 0.08);
+  --answer-success-border: rgba(22, 163, 74, 0.28);
+  --answer-info: #0284C7;
+  --answer-info-bg: rgba(2, 132, 199, 0.08);
+  --answer-info-border: rgba(2, 132, 199, 0.28);
+  --answer-warning: #D97706;
+  --answer-warning-bg: rgba(217, 119, 6, 0.08);
+  --answer-warning-border: rgba(217, 119, 6, 0.28);
+  --answer-danger: #DC2626;
+  --answer-danger-bg: rgba(220, 38, 38, 0.08);
+  --answer-danger-border: rgba(220, 38, 38, 0.28);
+  --answer-formula: #7C3AED;
+  --answer-formula-bg: rgba(124, 58, 237, 0.06);
+  --answer-formula-border: rgba(124, 58, 237, 0.25);
+  --answer-example: #4F46E5;
+  --answer-example-bg: rgba(79, 70, 229, 0.06);
+  --answer-example-border: rgba(79, 70, 229, 0.25);
+  --answer-card-bg: #FFFFFF;
+  --answer-card-border: #E5E7EB;
+
+  /* Graph stage tokens */
+  --graph-bg: #FFFFFF;
+  --graph-dot: #CBD5E1;
+  --graph-node-color: #0F172A;
+  --graph-parent-bg: rgba(248, 250, 252, 0.85);
+  --graph-parent-border: #CBD5E1;
+  --graph-parent-color: #475569;
+  --graph-edge-color: #94A3B8;
+  --graph-edge-arrow: #64748B;
+  --graph-edge-label-bg: #FFFFFF;
+  --graph-edge-label-border: #CBD5E1;
+  --graph-edge-label-color: #475569;
+}
+
+/* ---------------------------- Dark ---------------------------- */
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces */
+  --canvas: #09090B;
+  --surface: #111113;
+  --surface-muted: #151518;
+  --surface-hover: #1F1F24;
+  --surface-elev: #1B1B20;
+
+  /* Lines */
+  --line: #27272A;
+  --line-strong: #3F3F46;
+  --line-faint: #18181B;
+
+  --ink: #F5F5F5;
+  --ink-soft: #E4E4E7;
+  --ink-muted: #A1A1AA;
+  --ink-faint: #71717A;
+
+  --accent: #7C3AED;
+  --accent-hover: #8B5CF6;
+  --accent-soft: rgba(124, 58, 237, 0.15);
+  --accent-ink: #FFFFFF;
+  --secondary-accent: #06B6D4;
+
+  --success: #22C55E;
+  --success-soft: rgba(34, 197, 94, 0.12);
+  --warning: #F59E0B;
+  --warning-soft: rgba(245, 158, 11, 0.12);
+  --danger: #EF4444;
+  --danger-soft: rgba(239, 68, 68, 0.12);
+
+  --ring: #8B5CF6;
+  --highlight: rgba(245, 158, 11, 0.2);
+  --scrim: rgba(0, 0, 0, 0.75);
+
+  --tooltip-bg: #27272A;
+  --tooltip-ink: #F5F5F5;
+  --tooltip-border: #3F3F46;
+  --tooltip-arrow: #27272A;
+
+  --composer-bg: #111113;
+  --composer-border: #27272A;
+  --bubble-user-bg: rgba(124, 58, 237, 0.2);
+  --bubble-user-ink: #F5F5F5;
+  --bubble-user-border: rgba(124, 58, 237, 0.4);
+  --bubble-ai-bg: #151518;
+  --bubble-ai-ink: #F5F5F5;
+  --bubble-ai-border: #27272A;
+
+  /* Code / Editor / Viewer Tokens (Dark Mode) */
+  --code-cell-bg: #111113;
+  --code-cell-header-bg: #151518;
+  --code-cell-border: #27272A;
+  --code-cell-ink: #F5F5F5;
+  --code-cell-muted: #A1A1AA;
+  --code-gutter-bg: #111113;
+  --code-gutter-border: #27272A;
+  --code-gutter-ink: #71717A;
+  --code-line-active: rgba(124, 58, 237, 0.12);
+  --code-line-hover: rgba(255, 255, 255, 0.04);
+  --code-active-tab-bg: #1B1B20;
+  --code-active-tab-ink: #FFFFFF;
+  --code-tab-border: #27272A;
+
+  /* Syntax Tokens (Dark+ Palette) */
+  --code-token-comment: #6A9955;
+  --code-token-punctuation: #E4E4E7;
+  --code-token-keyword: #C586C0;
+  --code-token-control: #C586C0;
+  --code-token-string: #CE9178;
+  --code-token-function: #DCDCAA;
+  --code-token-number: #B5CEA8;
+  --code-token-operator: #E4E4E7;
+  --code-token-class: #4EC9B0;
+  --code-token-type: #4EC9B0;
+  --code-token-property: #9CDCFE;
+  --code-token-tag: #569CD6;
+  --code-token-attr-name: #9CDCFE;
+  --code-token-attr-value: #CE9178;
+  --code-token-variable: #9CDCFE;
+  --code-token-constant: #4FC1FF;
+  --code-token-regex: #D16969;
+  --code-token-selector: #D7BA7D;
+
+  /* Semantic Answer & Callout Tokens (Dark Mode) */
+  --answer-success: #22C55E;
+  --answer-success-bg: rgba(34, 197, 94, 0.1);
+  --answer-success-border: rgba(34, 197, 94, 0.3);
+  --answer-info: #06B6D4;
+  --answer-info-bg: rgba(6, 182, 212, 0.1);
+  --answer-info-border: rgba(6, 182, 212, 0.3);
+  --answer-warning: #F59E0B;
+  --answer-warning-bg: rgba(245, 158, 11, 0.1);
+  --answer-warning-border: rgba(245, 158, 11, 0.3);
+  --answer-danger: #EF4444;
+  --answer-danger-bg: rgba(239, 68, 68, 0.1);
+  --answer-danger-border: rgba(239, 68, 68, 0.3);
+  --answer-formula: #A78BFA;
+  --answer-formula-bg: rgba(167, 139, 250, 0.08);
+  --answer-formula-border: rgba(167, 139, 250, 0.28);
+  --answer-example: #818CF8;
+  --answer-example-bg: rgba(129, 140, 248, 0.08);
+  --answer-example-border: rgba(129, 140, 248, 0.28);
+  --answer-card-bg: #151518;
+  --answer-card-border: #27272A;
+
+  /* Graph stage tokens */
+  --graph-bg: #09090B;
+  --graph-dot: rgba(255, 255, 255, 0.06);
+  --graph-node-color: #F5F5F5;
+  --graph-parent-bg: rgba(21, 21, 24, 0.8);
+  --graph-parent-border: #27272A;
+  --graph-parent-color: #A1A1AA;
+  --graph-edge-color: #3F3F46;
+  --graph-edge-arrow: #71717A;
+  --graph-edge-label-bg: #111113;
+  --graph-edge-label-border: #27272A;
+  --graph-edge-label-color: #E4E4E7;
+}
+
+/* System mode — let the OS preference drive light/dark at the html attribute.
+   We still provide neutral defaults so the very first paint isn't broken. */
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme="system"] {
+    color-scheme: dark;
+
+    --canvas: #0f0f12;
+    --surface: #18181c;
+    --surface-muted: #22232a;
+    --surface-hover: #2a2b32;
+    --surface-elev: #1d1d22;
+
+    --line: #2a2b33;
+    --line-strong: #3a3b44;
+    --line-faint: #232329;
+
+    --ink: #f4f4f6;
+    --ink-soft: #d8d9de;
+    --ink-muted: #a4a5af;
+    --ink-faint: #7a7b86;
+
+    --accent: #79D3ED;
+    --accent-hover: #A5E4F5;
+    --accent-soft: #082F3B;
+    --accent-ink: #0F172A;
+
+    --success: #4ade80;
+    --success-soft: #14321f;
+    --warning: #fbbf24;
+    --warning-soft: #3a2b0e;
+    --danger: #f87171;
+    --danger-soft: #3a1d1d;
+
+    --ring: #8b83ff;
+    --highlight: #4a4022;
+    --scrim: rgba(0, 0, 0, 0.62);
+
+    --tooltip-bg: #f4f4f6;
+    --tooltip-ink: #15161a;
+    --tooltip-border: transparent;
+    --tooltip-arrow: #f4f4f6;
+
+    --composer-bg: #1d1d22;
+    --composer-border: #30313a;
+    --bubble-user-bg: #0C3642;
+    --bubble-user-ink: #E6F8FC;
+    --bubble-user-border: #145D72;
+    --bubble-ai-bg: #18181c;
+    --bubble-ai-ink: #ededf2;
+    --bubble-ai-border: #2a2b33;
+  }
+}
