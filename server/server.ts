@@ -6350,7 +6350,7 @@ ${vq.answer}
               imageBuffer = Buffer.from(base64Data, "base64");
             } else if (imgSrc.startsWith("/uploads/") || imgSrc.startsWith("uploads/")) {
               const cleanPath = imgSrc.startsWith("/") ? imgSrc.slice(1) : imgSrc;
-              const fullPath = path.join(process.cwd(), "public", cleanPath);
+              const fullPath = path.join(process.cwd(), "web", "public", cleanPath);
               if (fs.existsSync(fullPath)) {
                 imageBuffer = fs.readFileSync(fullPath);
               }
@@ -6801,7 +6801,7 @@ CRITICAL FORMATTING: Do NOT output raw asterisks (* or **) in text unless needed
 
       console.log(`[Studio Image Gen] Prompt: ${String(promptText).length} chars | AspectRatio: ${aspectRatio || "16:9"} | Studio: ${targetStudio || "general"}`);
 
-      const uploadsDir = path.join(process.cwd(), "public", "uploads");
+      const uploadsDir = path.join(process.cwd(), "web", "public", "uploads");
       if (!fs.existsSync(uploadsDir)) {
         fs.mkdirSync(uploadsDir, { recursive: true });
       }
@@ -8077,7 +8077,7 @@ PRESERVATION DISCIPLINE:
                   });
                 } else if (imgUri.startsWith("/uploads/") || imgUri.startsWith("uploads/")) {
                   const cleanPath = imgUri.startsWith("/") ? imgUri.slice(1) : imgUri;
-                  const localPath = path.join(process.cwd(), "public", cleanPath);
+                  const localPath = path.join(process.cwd(), "web", "public", cleanPath);
                   if (fs.existsSync(localPath)) {
                     slide.addImage({
                       path: localPath,

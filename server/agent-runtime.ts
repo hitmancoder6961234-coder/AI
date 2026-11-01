@@ -21,7 +21,7 @@ import { analyzeProject, ExtractedFile } from "./project-analyzer.js";
 import { searchKnowledge, assembleContext } from "./knowledge-engine.js";
 import { searchUserMultiDocumentRag, buildMultiDocumentKnowledgePrompt } from "./rag-engine.js";
 import { ProjectIntentClassifier, ProjectUnderstandingEngine } from "./project-understanding-engine.js";
-import { AnswerEngine, UnifiedIntent } from "./src/answer-engine.js";
+import { AnswerEngine, UnifiedIntent } from "../web/src/answer-engine.js";
 import { UniversalExplanationEngine } from "./study-learning-engine.js";
 import {
   generateProfessionalMermaidDiagram,

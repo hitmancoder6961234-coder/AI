@@ -1,0 +1,22 @@
+{
+  "name": "darkness-ai",
+  "version": "1.0.0",
+  "description": "DARKNESS AI — Multi-agent AI platform backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "better-sqlite3": "^13.0.3",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jszip": "^3.10.1",
+    "multer": "^2.3.0",
+    "pdf-parse": "^1.1.4",
+    "z-ai-web-dev-sdk": "^0.0.18"
+  }
+}

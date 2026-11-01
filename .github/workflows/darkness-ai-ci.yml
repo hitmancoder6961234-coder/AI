@@ -3,16 +3,12 @@ name: darkness-ai-ci
 on:
   push:
     branches: [main]
-    paths: ["clarity-ai/**", ".github/workflows/clarity-ai-ci.yml"]
+    paths-ignore: ["legacy/**", "site/**", "download/**", "*.md"]
   pull_request:
-    paths: ["clarity-ai/**"]
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: clarity-ai
     env:
       PUPPETEER_SKIP_DOWNLOAD: "true"
     steps:
@@ -21,7 +17,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: clarity-ai/package-lock.json
+          cache-dependency-path: package-lock.json
       - run: npm ci --no-audit --no-fund
       - run: npm test
       - run: npm run build

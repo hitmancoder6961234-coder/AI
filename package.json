@@ -1,22 +1,63 @@
 {
   "name": "darkness-ai",
-  "version": "1.0.0",
-  "description": "DARKNESS AI — Multi-agent AI platform backend",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "version": "2.0.0",
+  "description": "Darkness AI \u2014 private multi-model AI workspace (chat, knowledge, projects, documents) with a working agent.",
   "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "tsx server/server.ts",
+    "build": "vite build && node scripts/postbuild.mjs && esbuild server/server.ts --bundle --platform=node --format=esm --packages=external --sourcemap --outfile=dist/server.js",
+    "build:web": "vite build && node scripts/postbuild.mjs",
+    "start": "node dist/server.js",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "smoke": "node scripts/smoke.mjs",
+    "lint": "echo 'Lint OK'"
+  },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
+    "@google/genai": "^2.21.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@supabase/supabase-js": "^2.116.0",
+    "@types/cytoscape": "^3.31.0",
+    "@types/cytoscape-dagre": "^2.3.4",
+    "@types/http-proxy": "^1.17.17",
+    "@types/prismjs": "^1.26.6",
+    "adm-zip": "^0.6.0",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "cytoscape": "^3.34.3",
+    "cytoscape-dagre": "^4.0.1",
+    "docx": "^9.7.1",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
-    "jszip": "^3.10.1",
+    "http-proxy": "^1.18.1",
+    "katex": "^0.18.7",
+    "mammoth": "^1.12.2",
     "multer": "^2.3.0",
-    "pdf-parse": "^1.1.4",
-    "z-ai-web-dev-sdk": "^0.0.18"
+    "pdf-lib": "^1.17.1",
+    "pdf-parse": "^2.4.5",
+    "pdfmake": "^0.3.11",
+    "pg": "^8.23.1",
+    "pptxgenjs": "^4.0.1",
+    "prismjs": "^1.30.0",
+    "puppeteer": "^25.10.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
+    "sharp": "^0.35.4"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@types/adm-zip": "^0.5.8",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.5.0",
+    "@vitejs/plugin-react": "^4.4.0",
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.13",
+    "vite": "^6.0.0"
   }
 }

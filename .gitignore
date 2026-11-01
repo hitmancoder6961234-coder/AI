@@ -1,45 +1,85 @@
-# Dependencies
-node_modules/
-
-# Environment variables (NEVER commit secrets)
+# Environment and secrets
 .env
+.dev.vars
 .env.local
 .env.*.local
+.env.production
+*.pem
+*.key
 
-# Skills (internal tooling, not part of the project)
-skills/
-
-# Tool results & temporary artifacts
-tool-results/
-
-# User uploads (transient)
-upload/
-
-# Build outputs
-.next/
-out/
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
 dist/
 build/
+*.egg
 
-# Logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+# Database
+data/
+!/js/data/
+!/js/data/nav.js
+*.db
+*.db-wal
+*.db-shm
 
-# OS files
-.DS_Store
-Thumbs.db
+# Uploads and generated files
+server/uploads/
+uploads/
 
-# IDE files
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
+*~
 
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-*.db-wal
-*.db-shm
+# OS
+.DS_Store
+Thumbs.db
+
+# Node (if ever added)
+node_modules/
+
+# Build artifacts
+*.log
+.wrangler/
+node_modules/
+dist/
+
+
+# Darkness AI: secrets and local artefacts - never commit
+.secrets/
+.env
+.env.*
+!.env.example
+id_ed25519*
+id_rsa*
+*.p12
+*.pfx
+ca.pem
+*.tfstate
+*.tfstate.*
+.terraform/
+.vercel
+node_modules/
+tests/.tmp/
+
+# Original Darkness entries
+skills/
+tool-results/
+upload/
+.next/
+out/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

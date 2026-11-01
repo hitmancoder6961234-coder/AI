@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import crypto from "node:crypto";
 
-import { _resetVaultForTests, open, seal, vaultEnabled } from "../security/vault.js";
-import { rateLimit, redact } from "../security/privacy.js";
-import { evaluateExpression, ALL_TOOLS } from "../agent/tools.js";
-import { buildSystemPrompt, parseModelJson, runAgent } from "../agent/core.js";
-import { isPrivateAddress, safeFetch, validateUrl } from "../agent/safe-fetch.js";
-import type { ChatMsg, LLM } from "../agent/providers.js";
+import { _resetVaultForTests, open, seal, vaultEnabled } from "../server/security/vault.js";
+import { rateLimit, redact } from "../server/security/privacy.js";
+import { evaluateExpression, ALL_TOOLS } from "../server/agent/tools.js";
+import { buildSystemPrompt, parseModelJson, runAgent } from "../server/agent/core.js";
+import { isPrivateAddress, safeFetch, validateUrl } from "../server/agent/safe-fetch.js";
+import type { ChatMsg, LLM } from "../server/agent/providers.js";
 
 // ---- vault -------------------------------------------------------------------------------------
 

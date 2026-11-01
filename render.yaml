@@ -1,27 +1,56 @@
-# Render Blueprint — DARKNESS AI Backend
-# https://render.com/docs/blueprint-spec
-# 
-# How to deploy:
-# 1. Push this repo to GitHub (already done)
-# 2. Go to https://dashboard.render.com/blueprints
-# 3. Click "New Blueprint" and select your GitHub repo (hitmancoder6961234-coder/AI)
-# 4. Render will detect this render.yaml and create the service automatically
-# 5. Once deployed, copy the URL (e.g., https://darkness-ai.onrender.com)
-# 6. Open DARKNESS → Settings → General → AI Backend URL
-# 7. Paste the Render URL and click "Test"
+# Render Blueprint — Darkness AI backend (API + built web UI).
+#
+# This replaces the older "darkness-ai-backend" blueprint (kept in legacy/render.original.yaml).
+#   Render dashboard → New → Blueprint → pick the repo (blueprint file: render.yaml)
+#
+# Secrets (sync: false) are entered once in the dashboard and never stored in git.
 
 services:
   - type: web
-    name: darkness-ai-backend
+    name: darkness-ai
     runtime: node
-    plan: free  # Change to 'starter' for production
-    region: oregon  # or singapore / frankfurt — pick closest to your users
-    buildCommand: npm install
-    startCommand: node server.js
+    region: singapore            # pick the region closest to your users
+    plan: starter                # a persistent disk needs a paid plan; see "free tier" note in DEPLOY.md
+    buildCommand: PUPPETEER_SKIP_DOWNLOAD=true npm ci --no-audit --no-fund && npm run build
+    startCommand: npm start
     healthCheckPath: /api/health
     autoDeploy: true
+    disk:
+      name: darkness-data
+      mountPath: /var/data
+      sizeGB: 5
     envVars:
+      - key: NODE_VERSION
+        value: "22"
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000  # Render assigns this automatically, but set a default
+      - key: PUPPETEER_SKIP_DOWNLOAD
+        value: "true"
+      - key: PRIVACY_STRICT
+        value: "true"
+      - key: PRIVACY_CSP
+        value: report-only          # switch to "enforce" after checking the browser console on your domain
+      - key: DARKNESS_STORAGE_ROOT
+        value: /var/data
+      - key: TRUST_PROXY_HOPS
+        value: "2"                  # Render's proxy + Vercel's proxy. Use 1 if users hit Render directly.
+      - key: CORS_ORIGINS
+        sync: false                 # e.g. https://your-app.vercel.app (leave empty when the UI is served by this service)
+      - key: PRIVACY_ENCRYPTION_KEY
+        sync: false                 # generate with scripts/new-secrets.ps1
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: AGENT_PROVIDER
+        sync: false                 # optional: gemini | anthropic | openai | openrouter | groq | together | mistral
+      - key: AIVEN_PG_URI
+        sync: false                 # from the Aiven console (Service URI)
+      - key: AIVEN_CA_CERT
+        sync: false                 # Aiven project CA certificate (PEM text)
