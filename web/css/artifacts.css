@@ -2,7 +2,7 @@
    Artifacts & Asset Preview Panel Styles (Universal Engine)
    ============================================================ */
 
-#clarityArtifactPreviewContainer {
+#darknessArtifactPreviewContainer {
   position: fixed;
   top: 0;
   right: 0;
@@ -79,7 +79,7 @@ body.is-resizing-artifact .artifact-preview-resizer .resizer-handle {
 }
 
 /* Full-screen & Expanded Preview Mode */
-#clarityArtifactPreviewContainer.is-fullscreen,
+#darknessArtifactPreviewContainer.is-fullscreen,
 .artifact-preview-panel.is-expanded-fullscreen {
   position: fixed !important;
   top: 0 !important;
@@ -130,21 +130,21 @@ body:has(.is-fullscreen) .sidebar,
 body:has(.is-fullscreen) .app-header,
 body:has(.is-fullscreen) #appHeader,
 body:has(.is-fullscreen) .topbar,
-body:has(.is-fullscreen) .clarity-topbar,
+body:has(.is-fullscreen) .darkness-topbar,
 body:has(.is-expanded-fullscreen) .app-sidebar,
 body:has(.is-expanded-fullscreen) #appSidebar,
 body:has(.is-expanded-fullscreen) .sidebar,
 body:has(.is-expanded-fullscreen) .app-header,
 body:has(.is-expanded-fullscreen) #appHeader,
 body:has(.is-expanded-fullscreen) .topbar,
-body:has(.is-expanded-fullscreen) .clarity-topbar,
+body:has(.is-expanded-fullscreen) .darkness-topbar,
 body.has-fullscreen .app-sidebar,
 body.has-fullscreen #appSidebar,
 body.has-fullscreen .sidebar,
 body.has-fullscreen .app-header,
 body.has-fullscreen #appHeader,
 body.has-fullscreen .topbar,
-body.has-fullscreen .clarity-topbar {
+body.has-fullscreen .darkness-topbar {
   z-index: 0 !important;
   pointer-events: none !important;
 }
@@ -155,7 +155,7 @@ body.has-fullscreen .clarity-topbar {
 
 /* Mobile responsive */
 @media (max-width: 768px) {
-  #clarityArtifactPreviewContainer {
+  #darknessArtifactPreviewContainer {
     width: 100vw !important;
     left: 0;
   }

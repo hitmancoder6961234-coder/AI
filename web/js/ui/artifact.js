@@ -1,14 +1,14 @@
 /**
- * Clarity Universal AI File & Asset Generation Engine — UI Module
+ * Darkness Universal AI File & Asset Generation Engine — UI Module
  * Handles Artifact Cards, Resizable Preview Panel with Draggable Divider,
  * Multi-format previewers (Code, DOCX, XLSX, PPTX, PDF, CSV, SVG),
  * and workspace application.
  */
 
 (function () {
-  window.Clarity = window.Clarity || {};
+  window.Darkness = window.Darkness || {};
 
-  const PREVIEW_WIDTH_KEY = "clarity_artifact_preview_width";
+  const PREVIEW_WIDTH_KEY = "darkness_artifact_preview_width";
   let activeArtifact = null;
   let isDraggingDivider = false;
   let startX = 0;
@@ -236,15 +236,15 @@
         e.preventDefault();
         e.stopPropagation();
         const filePath = btn.getAttribute("data-art-file");
-        const projectId = btn.getAttribute("data-project-id") || window.Clarity.currentProjectId;
+        const projectId = btn.getAttribute("data-project-id") || window.Darkness.currentProjectId;
         if (!filePath) return;
 
-        if (window.Clarity.jumpToFile) {
-          window.Clarity.jumpToFile(filePath, 1, projectId);
+        if (window.Darkness.jumpToFile) {
+          window.Darkness.jumpToFile(filePath, 1, projectId);
         } else if (projectId) {
           window.location.hash = `#/project/${projectId}?file=${encodeURIComponent(filePath)}&line=1`;
         } else {
-          window.Clarity.toast.show(`File located at ${filePath}`, "info");
+          window.Darkness.toast.show(`File located at ${filePath}`, "info");
         }
       };
       btn.addEventListener("click", btn._artOpenFileHandler);
@@ -258,14 +258,14 @@
         e.stopPropagation();
         const id = btn.getAttribute("data-art-id");
         try {
-          const data = await window.Clarity.api.get(`/api/artifacts/${id}`);
+          const data = await window.Darkness.api.get(`/api/artifacts/${id}`);
           if (data && data.artifact) {
             openPreview(data.artifact);
           } else {
-            window.Clarity.toast.show("Artifact not found", "danger");
+            window.Darkness.toast.show("Artifact not found", "danger");
           }
         } catch (err) {
-          window.Clarity.toast.show("Failed to load artifact: " + (err.message || ""), "danger");
+          window.Darkness.toast.show("Failed to load artifact: " + (err.message || ""), "danger");
         }
       };
       btn.addEventListener("click", btn._artHandler);
@@ -281,8 +281,8 @@
         btn.disabled = true;
         btn.textContent = "Applying...";
         try {
-          const res = await window.Clarity.api.post(`/api/artifacts/${id}/apply`, {});
-          window.Clarity.toast.show(res.message || "File applied to project workspace!", "success");
+          const res = await window.Darkness.api.post(`/api/artifacts/${id}/apply`, {});
+          window.Darkness.toast.show(res.message || "File applied to project workspace!", "success");
           btn.textContent = "✓ Applied";
           btn.classList.add("btn--outline");
           // Refresh artifact card if present
@@ -300,7 +300,7 @@
         } catch (err) {
           btn.disabled = false;
           btn.textContent = "Apply to Workspace";
-          window.Clarity.toast.show("Failed to apply file: " + (err.message || ""), "danger");
+          window.Darkness.toast.show("Failed to apply file: " + (err.message || ""), "danger");
         }
       };
       btn.addEventListener("click", btn._artApplyHandler);
@@ -318,13 +318,13 @@
           <button class="btn btn--outline" type="button" data-modal-close="true">Cancel</button>
           <button class="btn btn--danger" id="confirmDeleteArtBtn" type="button">Delete Asset</button>
         `;
-        window.Clarity.modal.open('Delete Asset?', modalBody, modalActions);
+        window.Darkness.modal.open('Delete Asset?', modalBody, modalActions);
 
         document.getElementById('confirmDeleteArtBtn')?.addEventListener('click', async () => {
-          window.Clarity.modal.close();
+          window.Darkness.modal.close();
           try {
-            await window.Clarity.api.del(`/api/artifacts/${id}`);
-            window.Clarity.toast.show("Asset deleted", "success");
+            await window.Darkness.api.del(`/api/artifacts/${id}`);
+            window.Darkness.toast.show("Asset deleted", "success");
             const card = document.getElementById(`art_${id}`);
             if (card) card.remove();
             if (activeArtifact && activeArtifact.id === id) {
@@ -332,7 +332,7 @@
             }
             window.dispatchEvent(new CustomEvent("artifact:deleted", { detail: { id } }));
           } catch (err) {
-            window.Clarity.toast.show("Failed to delete asset: " + (err.message || ""), "danger");
+            window.Darkness.toast.show("Failed to delete asset: " + (err.message || ""), "danger");
           }
         }, { once: true });
       };
@@ -344,18 +344,18 @@
   // Resizable Preview Panel with Draggable Divider
   // ---------------------------------------------------------------------------
   function ensurePreviewContainer() {
-    let container = document.getElementById("clarityArtifactPreviewContainer");
+    let container = document.getElementById("darknessArtifactPreviewContainer");
     if (!container) {
       container = document.createElement("div");
-      container.id = "clarityArtifactPreviewContainer";
+      container.id = "darknessArtifactPreviewContainer";
       container.style.display = "none";
       container.innerHTML = `
-        <div id="clarityArtifactDivider" class="artifact-preview-resizer" title="Drag to resize preview">
+        <div id="darknessArtifactDivider" class="artifact-preview-resizer" title="Drag to resize preview">
           <div class="resizer-handle"></div>
         </div>
-        <div id="clarityArtifactPanel" class="artifact-preview-panel">
-          <div id="clarityArtifactHeader" class="artifact-preview-header"></div>
-          <div id="clarityArtifactBody" class="artifact-preview-body"></div>
+        <div id="darknessArtifactPanel" class="artifact-preview-panel">
+          <div id="darknessArtifactHeader" class="artifact-preview-header"></div>
+          <div id="darknessArtifactBody" class="artifact-preview-body"></div>
         </div>
       `;
       document.body.appendChild(container);
@@ -365,13 +365,13 @@
   }
 
   function setupDividerDrag() {
-    const divider = document.getElementById("clarityArtifactDivider");
+    const divider = document.getElementById("darknessArtifactDivider");
     if (!divider) return;
 
     divider.addEventListener("pointerdown", (e) => {
       isDraggingDivider = true;
       startX = e.clientX;
-      const panel = document.getElementById("clarityArtifactPanel");
+      const panel = document.getElementById("darknessArtifactPanel");
       startWidth = panel ? panel.offsetWidth : getSavedWidth();
       divider.setPointerCapture(e.pointerId);
       document.body.style.userSelect = "none";
@@ -383,7 +383,7 @@
       const deltaX = startX - e.clientX; // dragging left expands panel
       let newWidth = startWidth + deltaX;
       newWidth = Math.max(340, Math.min(window.innerWidth - 300, Math.min(960, newWidth)));
-      const panel = document.getElementById("clarityArtifactPanel");
+      const panel = document.getElementById("darknessArtifactPanel");
       if (panel) {
         panel.style.width = `${newWidth}px`;
       }
@@ -394,7 +394,7 @@
         isDraggingDivider = false;
         document.body.style.userSelect = "";
         document.body.classList.remove("is-resizing-artifact");
-        const panel = document.getElementById("clarityArtifactPanel");
+        const panel = document.getElementById("darknessArtifactPanel");
         if (panel) {
           setSavedWidth(panel.offsetWidth);
         }
@@ -408,7 +408,7 @@
   function openPreview(art) {
     activeArtifact = art;
     const container = ensurePreviewContainer();
-    const panel = document.getElementById("clarityArtifactPanel");
+    const panel = document.getElementById("darknessArtifactPanel");
     const width = getSavedWidth();
     if (panel) {
       panel.style.width = `${width}px`;
@@ -422,13 +422,13 @@
 
   function closePreview() {
     activeArtifact = null;
-    const container = document.getElementById("clarityArtifactPreviewContainer");
+    const container = document.getElementById("darknessArtifactPreviewContainer");
     if (container) container.style.display = "none";
     document.body.classList.remove("has-artifact-preview");
   }
 
   function renderPreviewHeader(art) {
-    const header = document.getElementById("clarityArtifactHeader");
+    const header = document.getElementById("darknessArtifactHeader");
     if (!header) return;
 
     const iconSvg = getFormatIcon(art.filename, art.mimeType, art.category);
@@ -482,7 +482,7 @@
     document.getElementById("artPreviewCloseBtn")?.addEventListener("click", closePreview);
 
     document.getElementById("artPreviewExpandBtn")?.addEventListener("click", () => {
-      const panel = document.getElementById("clarityArtifactPanel");
+      const panel = document.getElementById("darknessArtifactPanel");
       if (panel) {
         if (panel.classList.contains("is-expanded-fullscreen")) {
           panel.classList.remove("is-expanded-fullscreen");
@@ -497,7 +497,7 @@
     document.getElementById("artPreviewCopyBtn")?.addEventListener("click", () => {
       if (art.content) {
         navigator.clipboard.writeText(art.content).then(() => {
-          window.Clarity.toast.show("Copied to clipboard", "success");
+          window.Darkness.toast.show("Copied to clipboard", "success");
         });
       }
     });
@@ -507,20 +507,20 @@
       btn.disabled = true;
       btn.textContent = "Applying...";
       try {
-        const res = await window.Clarity.api.post(`/api/artifacts/${art.id}/apply`, {});
-        window.Clarity.toast.show(res.message || "File applied to project workspace!", "success");
+        const res = await window.Darkness.api.post(`/api/artifacts/${art.id}/apply`, {});
+        window.Darkness.toast.show(res.message || "File applied to project workspace!", "success");
         btn.textContent = "✓ Applied";
         art.appliedToProject = true;
       } catch (err) {
         btn.disabled = false;
         btn.textContent = "Apply";
-        window.Clarity.toast.show("Failed to apply file: " + (err.message || ""), "danger");
+        window.Darkness.toast.show("Failed to apply file: " + (err.message || ""), "danger");
       }
     });
   }
 
   function renderPreviewBody(art) {
-    const body = document.getElementById("clarityArtifactBody");
+    const body = document.getElementById("darknessArtifactBody");
     if (!body) return;
 
     // 0. Jupyter Notebook Previewer
@@ -561,8 +561,8 @@
     // 6. Code / Text Previewer (Default)
     renderCodeViewer(body, art);
 
-    if (window.Clarity && window.Clarity.renderKaTeX) {
-      window.Clarity.renderKaTeX(body);
+    if (window.Darkness && window.Darkness.renderKaTeX) {
+      window.Darkness.renderKaTeX(body);
     }
   }
 
@@ -599,11 +599,11 @@
       html += '<div style="background: #f9fafb; padding: 4px 10px; font-size: 11px; font-weight: 600; color: #6b7280; text-transform: uppercase; border-bottom: 1px solid #e5e7eb;">' + escapeHtml(cell.cell_type) + '</div>';
       
       if (cell.cell_type === 'markdown') {
-        const rendered = window.Clarity.markdown && window.Clarity.markdown.render ? window.Clarity.markdown.render(source) : escapeHtml(source);
+        const rendered = window.Darkness.markdown && window.Darkness.markdown.render ? window.Darkness.markdown.render(source) : escapeHtml(source);
         html += '<div style="padding: 12px; font-size: 14px; line-height: 1.6;">' + rendered + '</div>';
       } else if (cell.cell_type === 'code') {
-        const highlighted = window.Clarity.highlighter && window.Clarity.highlighter.highlightLines ? 
-            window.Clarity.highlighter.highlightLines(source, "file.py").join('\n') : escapeHtml(source);
+        const highlighted = window.Darkness.highlighter && window.Darkness.highlighter.highlightLines ? 
+            window.Darkness.highlighter.highlightLines(source, "file.py").join('\n') : escapeHtml(source);
         html += '<div style="padding: 12px; background: #0d1117; color: #c9d1d9; font-family: ui-monospace, monospace; font-size: 13px; overflow-x: auto; white-space: pre;">' + highlighted + '</div>';
         
         // Render outputs if any
@@ -636,8 +636,8 @@
     }
     
     container.innerHTML = html;
-    if (window.Clarity && window.Clarity.renderMermaid) {
-      window.Clarity.renderMermaid(container);
+    if (window.Darkness && window.Darkness.renderMermaid) {
+      window.Darkness.renderMermaid(container);
     }
   }
 
@@ -717,7 +717,7 @@
         if (fullscreenText) fullscreenText.textContent = "Exit Full Screen";
         zoom = 1.25;
         updateZoom();
-        window.Clarity?.toast?.show("Entered full screen diagram view (Press Esc to return)", "info");
+        window.Darkness?.toast?.show("Entered full screen diagram view (Press Esc to return)", "info");
       } else {
         if (canvasContainer) {
           canvasContainer.style.position = "relative";
@@ -736,8 +736,8 @@
 
     fullscreenBtn?.addEventListener("click", () => {
       const currentSvg = wrapper?.querySelector("svg");
-      if (window.Clarity?.openDiagramModalViewer && (currentSvg || svgContent)) {
-        window.Clarity.openDiagramModalViewer({
+      if (window.Darkness?.openDiagramModalViewer && (currentSvg || svgContent)) {
+        window.Darkness.openDiagramModalViewer({
           svgElement: currentSvg,
           svgString: svgContent,
           title: art.title || "Vector Architecture Diagram",
@@ -781,20 +781,20 @@
     document.getElementById("svgDownloadPngBtn")?.addEventListener("click", () => {
       const svgEl = wrapper?.querySelector("svg");
       const baseFilename = (art.filename || "architecture_diagram.svg").replace(/\.[^.]+$/, "");
-      if (svgEl && window.Clarity?.downloadPngDiagram) {
-        window.Clarity.downloadPngDiagram(svgEl, `${baseFilename}.png`);
+      if (svgEl && window.Darkness?.downloadPngDiagram) {
+        window.Darkness.downloadPngDiagram(svgEl, `${baseFilename}.png`);
       } else {
-        window.Clarity?.toast?.show("Unable to convert diagram to PNG", "warning");
+        window.Darkness?.toast?.show("Unable to convert diagram to PNG", "warning");
       }
     });
 
     document.getElementById("svgDownloadJpgBtn")?.addEventListener("click", () => {
       const svgEl = wrapper?.querySelector("svg");
       const baseFilename = (art.filename || "architecture_diagram.svg").replace(/\.[^.]+$/, "");
-      if (svgEl && window.Clarity?.downloadJpgDiagram) {
-        window.Clarity.downloadJpgDiagram(svgEl, `${baseFilename}.jpg`);
+      if (svgEl && window.Darkness?.downloadJpgDiagram) {
+        window.Darkness.downloadJpgDiagram(svgEl, `${baseFilename}.jpg`);
       } else {
-        window.Clarity?.toast?.show("Unable to convert diagram to JPG", "warning");
+        window.Darkness?.toast?.show("Unable to convert diagram to JPG", "warning");
       }
     });
 
@@ -1224,16 +1224,16 @@
     `;
   }
 
-  // Code Viewer - Clarity Code Editor
+  // Code Viewer - Darkness Code Editor
   function renderCodeViewer(container, art) {
     const content = art.content || "";
     const filename = art.filename || "file.txt";
-    const highlightedLines = window.Clarity.highlighter && window.Clarity.highlighter.highlightLines
-      ? window.Clarity.highlighter.highlightLines(content, filename)
+    const highlightedLines = window.Darkness.highlighter && window.Darkness.highlighter.highlightLines
+      ? window.Darkness.highlighter.highlightLines(content, filename)
       : content.split("\n").map(l => escapeHtml(l));
     const linesCount = highlightedLines.length;
-    const langInfo = window.Clarity.highlighter && window.Clarity.highlighter.getLanguageInfo
-      ? window.Clarity.highlighter.getLanguageInfo(filename)
+    const langInfo = window.Darkness.highlighter && window.Darkness.highlighter.getLanguageInfo
+      ? window.Darkness.highlighter.getLanguageInfo(filename)
       : { name: filename.split(".").pop().toUpperCase() || "TEXT" };
 
     container.innerHTML = `
@@ -1298,19 +1298,19 @@
     // Copy button
     document.getElementById("copyCodeContentBtn")?.addEventListener("click", () => {
       navigator.clipboard.writeText(content);
-      window.Clarity.toast.show("Code copied to clipboard", "success");
+      window.Darkness.toast.show("Code copied to clipboard", "success");
     });
 
     // Open in explorer
     document.getElementById("openInExplorerBtn")?.addEventListener("click", () => {
       const filePath = art.targetFile || filename;
-      const projectId = art.projectId || window.Clarity.currentProjectId;
-      if (window.Clarity.jumpToFile) {
-        window.Clarity.jumpToFile(filePath, 1, projectId);
+      const projectId = art.projectId || window.Darkness.currentProjectId;
+      if (window.Darkness.jumpToFile) {
+        window.Darkness.jumpToFile(filePath, 1, projectId);
       } else if (projectId) {
         window.location.hash = `#/project/${projectId}?file=${encodeURIComponent(filePath)}&line=1`;
       } else {
-        window.Clarity.toast.show(`File path: ${filePath}`, "info");
+        window.Darkness.toast.show(`File path: ${filePath}`, "info");
       }
     });
   }
@@ -1318,15 +1318,15 @@
   // Global Escape Key Listener for closing preview panel
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
-      const container = document.getElementById("clarityArtifactPreviewContainer");
+      const container = document.getElementById("darknessArtifactPreviewContainer");
       if (container && container.style.display !== "none") {
         closePreview();
       }
     }
   });
 
-  // Export module to Clarity namespace
-  window.Clarity.artifact = {
+  // Export module to Darkness namespace
+  window.Darkness.artifact = {
     renderCard,
     bindEvents,
     openPreview,

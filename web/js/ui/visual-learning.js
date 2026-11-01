@@ -1,8 +1,8 @@
-// Clarity Visual Code Learning & Execution Tracer Panel
+// Darkness Visual Code Learning & Execution Tracer Panel
 // Provides step-by-step code execution tracing, live variable memory-state tables, call stack, and interactive pedagogy stepper.
 
 (function () {
-  window.Clarity = window.Clarity || {};
+  window.Darkness = window.Darkness || {};
 
   class SimpleCodeTracer {
     /**
@@ -165,19 +165,19 @@
         this.autoPlayTimer = null;
       }
       this.isOpen = false;
-      const el = document.getElementById("clarityVisualLearningPanel");
+      const el = document.getElementById("darknessVisualLearningPanel");
       if (el) el.remove();
       document.body.classList.remove("has-visual-learning-panel");
     }
 
     render() {
-      let existing = document.getElementById("clarityVisualLearningPanel");
+      let existing = document.getElementById("darknessVisualLearningPanel");
       if (existing) existing.remove();
 
       document.body.classList.add("has-visual-learning-panel");
 
       const panel = document.createElement("div");
-      panel.id = "clarityVisualLearningPanel";
+      panel.id = "darknessVisualLearningPanel";
       panel.className = "visual-learning-panel";
 
       const lines = this.currentCode.split(/\r?\n/);
@@ -469,7 +469,7 @@
       if (!selectedCodeContext) return;
 
       this.isOpen = true;
-      const targetPid = projectId || window.Clarity?.currentProjectId || "global";
+      const targetPid = projectId || window.Darkness?.currentProjectId || "global";
 
       const isSameContext = Boolean(
         this.activeCodeContext &&
@@ -519,13 +519,13 @@
     }
 
     renderCodeContextPanel() {
-      let existing = document.getElementById("clarityVisualLearningPanel");
+      let existing = document.getElementById("darknessVisualLearningPanel");
       if (existing) existing.remove();
 
       document.body.classList.add("has-visual-learning-panel");
 
       const panel = document.createElement("div");
-      panel.id = "clarityVisualLearningPanel";
+      panel.id = "darknessVisualLearningPanel";
       panel.className = "visual-learning-panel visual-learning-panel--explanation";
 
       const sc = this.activeCodeContext || {};
@@ -607,7 +607,7 @@
       // Bind Copy Snippet button
       document.getElementById("copyCodeSnippetBtn")?.addEventListener("click", () => {
         navigator.clipboard.writeText(codeSnippet);
-        if (window.Clarity?.toast) window.Clarity.toast.show("Code snippet copied", "success");
+        if (window.Darkness?.toast) window.Darkness.toast.show("Code snippet copied", "success");
       });
 
       // Bind New Chat button
@@ -619,8 +619,8 @@
 
       // Bind Jump to Source button
       document.getElementById("vlJumpToSourceBtn")?.addEventListener("click", () => {
-        if (window.Clarity && window.Clarity.jumpToFile) {
-          window.Clarity.jumpToFile(filePath, startLine);
+        if (window.Darkness && window.Darkness.jumpToFile) {
+          window.Darkness.jumpToFile(filePath, startLine);
         }
       });
 
@@ -684,8 +684,8 @@
               </div>
             `;
           } else {
-            htmlContent = window.Clarity?.markdown?.render
-              ? window.Clarity.markdown.render(msg.content)
+            htmlContent = window.Darkness?.markdown?.render
+              ? window.Darkness.markdown.render(msg.content)
               : this._escape(msg.content);
           }
 
@@ -749,13 +749,13 @@
           const msgObj = this.activeMessages.find(m => m.id === msgId);
           if (msgObj && msgObj.content) {
             navigator.clipboard.writeText(msgObj.content);
-            if (window.Clarity?.toast) window.Clarity.toast.show("Explanation copied to clipboard", "success");
+            if (window.Darkness?.toast) window.Darkness.toast.show("Explanation copied to clipboard", "success");
           }
         };
       });
 
-      if (window.Clarity && window.Clarity.renderMermaid) {
-        window.Clarity.renderMermaid(feed);
+      if (window.Darkness && window.Darkness.renderMermaid) {
+        window.Darkness.renderMermaid(feed);
       }
     }
 
@@ -771,7 +771,7 @@
         .map(m => ({ role: m.role, content: m.content }));
 
       try {
-        const resp = await fetch((window.Clarity?.api?.base || "") + "/api/projects/" + this.activeProjectId + "/chat", {
+        const resp = await fetch((window.Darkness?.api?.base || "") + "/api/projects/" + this.activeProjectId + "/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -807,8 +807,8 @@
 
               if (fullText) {
                 msgObj.content = fullText;
-                const rendered = window.Clarity?.markdown?.render
-                  ? window.Clarity.markdown.render(fullText)
+                const rendered = window.Darkness?.markdown?.render
+                  ? window.Darkness.markdown.render(fullText)
                   : this._escape(fullText);
                 bodyEl.innerHTML = rendered;
                 this.scrollToBottom();
@@ -820,8 +820,8 @@
         if (fullText) {
           msgObj.content = fullText;
           msgObj.isStreaming = false;
-          const finalRender = window.Clarity?.markdown?.render
-            ? window.Clarity.markdown.render(fullText)
+          const finalRender = window.Darkness?.markdown?.render
+            ? window.Darkness.markdown.render(fullText)
             : this._escape(fullText);
           bodyEl.innerHTML = finalRender;
           this.bindMsgActions();
@@ -863,6 +863,6 @@
     }
   }
 
-  window.Clarity.SimpleCodeTracer = SimpleCodeTracer;
-  window.Clarity.visualLearningPanel = new VisualLearningPanel();
+  window.Darkness.SimpleCodeTracer = SimpleCodeTracer;
+  window.Darkness.visualLearningPanel = new VisualLearningPanel();
 })();

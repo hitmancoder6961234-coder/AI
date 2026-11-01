@@ -17,7 +17,7 @@ services:
     environment:
       NODE_ENV: production
       PRIVACY_STRICT: "true"
-      CLARITY_STORAGE_ROOT: /data
+      DARKNESS_STORAGE_ROOT: /data
       TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-1}
     ports:
       - "127.0.0.1:${HOST_PORT:-3000}:3000"

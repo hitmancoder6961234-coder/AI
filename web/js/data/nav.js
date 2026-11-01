@@ -1,10 +1,10 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
 /**
  * Navigation configuration.
  * Every entry here maps to a real implemented route in js/app.js.
  */
-window.Clarity.data = {
+window.Darkness.data = {
   nav: [
     { id: 'chat', label: 'Chat', href: '#/chat', icon: 'chat' },
     { id: 'home', label: 'Home', href: '#/home', icon: 'house' },

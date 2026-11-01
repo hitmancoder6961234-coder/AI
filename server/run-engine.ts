@@ -174,7 +174,7 @@ export async function checkHttpReadiness(port: number, host = "127.0.0.1"): Prom
         timeout: 2000,
         headers: {
           Accept: "text/html,application/xhtml+xml,application/json,*/*",
-          "User-Agent": "Clarity-HealthCheck/1.0",
+          "User-Agent": "Darkness-HealthCheck/1.0",
         },
       },
       (res) => {
@@ -594,7 +594,7 @@ export async function startTerminalSession(sessionId: string): Promise<TerminalS
 
   addLog(`\x1b[90m$ ${session.command}\x1b[0m\n`);
   if (session.command === "bash" || session.command === "sh") {
-    addLog(`\x1b[36m✓ Clarity Terminal Ready\x1b[0m\n\x1b[90mWorking Directory: ${session.workingDirectory}\x1b[0m\n\x1b[90mType any shell command (e.g. ls, pwd, git status) and press Enter.\x1b[0m\n\n`);
+    addLog(`\x1b[36m✓ Darkness Terminal Ready\x1b[0m\n\x1b[90mWorking Directory: ${session.workingDirectory}\x1b[0m\n\x1b[90mType any shell command (e.g. ls, pwd, git status) and press Enter.\x1b[0m\n\n`);
   }
 
   // Ensure host binding is accessible if running inside container or preview mode

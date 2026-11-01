@@ -1,5 +1,5 @@
 /**
- * CLARITY INTERNAL VISUAL GENERATION ENGINE
+ * DARKNESS INTERNAL VISUAL GENERATION ENGINE
  *
  * Implements deterministic and AI-powered internal visual asset generation.
  * Generates beautiful SVGs, Flowcharts, Math Plots, Tree Visualizations,

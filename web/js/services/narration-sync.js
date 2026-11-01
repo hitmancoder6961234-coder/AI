@@ -1,8 +1,8 @@
-// Clarity Narration Segmenter & Synchronized Highlighting Engine
+// Darkness Narration Segmenter & Synchronized Highlighting Engine
 // Maps rendered educational explanations, code blocks, and math to readable verbal segments and synchronized visual focus across Project Assistant, Home Chat, and Knowledge Chat.
 
 (function () {
-  window.Clarity = window.Clarity || {};
+  window.Darkness = window.Darkness || {};
 
   class NarrationSegmenter {
     /**
@@ -167,7 +167,7 @@
         // Fallback if no matching sub-elements found
         const text = NarrationSegmenter.cleanTextForSpeech(container.textContent || "");
         if (text) {
-          const detected = window.Clarity?.LanguageDetector?.detect(text) || { lang: "en", tag: "en-US" };
+          const detected = window.Darkness?.LanguageDetector?.detect(text) || { lang: "en", tag: "en-US" };
           segments.push({
             text,
             element: container,
@@ -276,7 +276,7 @@
         const cleaned = NarrationSegmenter.cleanTextForSpeech(raw);
 
         if (cleaned.length > 0) {
-          const detected = window.Clarity?.LanguageDetector?.detect(cleaned) || { lang: "en", tag: "en-US" };
+          const detected = window.Darkness?.LanguageDetector?.detect(cleaned) || { lang: "en", tag: "en-US" };
 
           // Split long paragraphs into sentences for responsive visual highlighting
           if (tag === "p" && cleaned.length > 160) {
@@ -284,7 +284,7 @@
             sentences.forEach((sentence) => {
               const sTrim = sentence.trim();
               if (sTrim) {
-                const sLang = window.Clarity?.LanguageDetector?.detect(sTrim) || detected;
+                const sLang = window.Darkness?.LanguageDetector?.detect(sTrim) || detected;
                 segments.push({
                   text: sTrim,
                   element: el,
@@ -312,7 +312,7 @@
 
   class NarrationSync {
     constructor() {
-      this.controller = window.Clarity.speechController;
+      this.controller = window.Darkness.speechController;
       this.currentActiveElement = null;
       this.currentCodeLineElement = null;
       this.activeMessageId = null;
@@ -364,8 +364,8 @@
           el.classList.add("narration-active-code-line");
           this.currentCodeLineElement = el;
 
-          if (window.Clarity.visualLearningPanel && typeof window.Clarity.visualLearningPanel.highlightLine === "function") {
-            window.Clarity.visualLearningPanel.highlightLine(seg.lineIndex);
+          if (window.Darkness.visualLearningPanel && typeof window.Darkness.visualLearningPanel.highlightLine === "function") {
+            window.Darkness.visualLearningPanel.highlightLine(seg.lineIndex);
           }
         }
 
@@ -432,7 +432,7 @@
               voiceSelect.innerHTML = candidateVoices.map((v) => {
                 const isSel = v.voiceURI === this.controller.activeVoiceUri || v.name === this.controller.activeVoiceUri;
                 const cleanName = v.name.replace(/Microsoft |Google |English |Hindi |Marathi /gi, "").trim() + ` (${v.lang})`;
-                return `<option value="${window.Clarity.utils.escapeHtml(v.voiceURI)}" ${isSel ? "selected" : ""}>${window.Clarity.utils.escapeHtml(cleanName)}</option>`;
+                return `<option value="${window.Darkness.utils.escapeHtml(v.voiceURI)}" ${isSel ? "selected" : ""}>${window.Darkness.utils.escapeHtml(cleanName)}</option>`;
               }).join("");
             }
           }
@@ -448,8 +448,8 @@
 
     toggleReadAloud(msgId, messageEl) {
       if (!this.controller.isSupported()) {
-        if (window.Clarity.toast) {
-          window.Clarity.toast.show("Voice narration is not supported in this browser.", "warning");
+        if (window.Darkness.toast) {
+          window.Darkness.toast.show("Voice narration is not supported in this browser.", "warning");
         }
         return;
       }
@@ -481,8 +481,8 @@
       const segments = NarrationSegmenter.segmentContainer(contentEl);
 
       if (!segments.length) {
-        if (window.Clarity.toast) {
-          window.Clarity.toast.show("No readable text found in this response.", "info");
+        if (window.Darkness.toast) {
+          window.Darkness.toast.show("No readable text found in this response.", "info");
         }
         return;
       }
@@ -504,9 +504,9 @@
       this.controller.play(msgId, segments, 0, preferredVoice);
       this._updateMessageControlState(msgId, "playing", this.controller.detectedLanguage);
 
-      if (window.Clarity.toast) {
+      if (window.Darkness.toast) {
         const langName = this.controller.detectedLanguage?.name || "English";
-        window.Clarity.toast.show(`AI Professor reading explanation in ${langName}`, "info");
+        window.Darkness.toast.show(`AI Professor reading explanation in ${langName}`, "info");
       }
     }
 
@@ -515,7 +515,7 @@
       const voices = this.controller.getVoicesForLanguage(detectedLangTag);
       const voiceOptions = voices.map((v) => {
         const cleanName = v.name.replace(/Microsoft |Google /gi, "").trim();
-        return `<option value="${window.Clarity.utils.escapeHtml(v.voiceURI)}">${window.Clarity.utils.escapeHtml(cleanName)} (${v.lang})</option>`;
+        return `<option value="${window.Darkness.utils.escapeHtml(v.voiceURI)}">${window.Darkness.utils.escapeHtml(cleanName)} (${v.lang})</option>`;
       }).join("");
 
       return `
@@ -605,6 +605,6 @@
     }
   }
 
-  window.Clarity.NarrationSegmenter = NarrationSegmenter;
-  window.Clarity.narrationSync = new NarrationSync();
+  window.Darkness.NarrationSegmenter = NarrationSegmenter;
+  window.Darkness.narrationSync = new NarrationSync();
 })();

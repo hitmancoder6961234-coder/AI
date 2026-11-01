@@ -2,7 +2,7 @@
 // Provides native SpeechSynthesis with keepalive, language detection, natural voice management, playback controls, and event dispatching.
 
 (function () {
-  window.Clarity = window.Clarity || {};
+  window.Darkness = window.Darkness || {};
 
   class LanguageDetector {
     /**
@@ -55,8 +55,8 @@
       this.supported = typeof window !== "undefined" && "speechSynthesis" in window && "SpeechSynthesisUtterance" in window;
       this.synth = this.supported ? window.speechSynthesis : null;
       this.voices = [];
-      this.selectedVoiceUri = localStorage.getItem("clarity_reader_voice") || "";
-      this.rate = parseFloat(localStorage.getItem("clarity_reader_speed") || "1.0");
+      this.selectedVoiceUri = localStorage.getItem("darkness_reader_voice") || "";
+      this.rate = parseFloat(localStorage.getItem("darkness_reader_speed") || "1.0");
       this.pitch = 1.0;
       this.state = "idle"; // "idle" | "ready" | "playing" | "paused" | "stopped"
       this.activeMessageId = null;
@@ -85,7 +85,7 @@
           this.voices = this.synth.getVoices() || [];
           this.emit("voices-changed", this.voices);
         } catch (e) {
-          console.warn("[Clarity Speech] Failed to retrieve system voices:", e);
+          console.warn("[Darkness Speech] Failed to retrieve system voices:", e);
         }
       };
 
@@ -219,7 +219,7 @@
       this.selectedVoiceUri = voiceUri;
       this.activeVoiceUri = voiceUri;
       try {
-        localStorage.setItem("clarity_reader_voice", voiceUri);
+        localStorage.setItem("darkness_reader_voice", voiceUri);
       } catch (e) {}
       this.emit("voice-change", voiceUri);
 
@@ -249,7 +249,7 @@
       const rateNum = Math.max(0.5, Math.min(2.5, parseFloat(newRate) || 1.0));
       this.rate = rateNum;
       try {
-        localStorage.setItem("clarity_reader_speed", String(rateNum));
+        localStorage.setItem("darkness_reader_speed", String(rateNum));
       } catch (e) {}
       this.emit("speed-change", rateNum);
 
@@ -300,7 +300,7 @@
           try {
             cb(...args);
           } catch (e) {
-            console.error(`[Clarity Speech] Listener error for ${event}:`, e);
+            console.error(`[Darkness Speech] Listener error for ${event}:`, e);
           }
         }
       }
@@ -355,13 +355,13 @@
      */
     play(messageId, segments, startSegmentIndex = 0, preferredVoiceUri = null) {
       if (!this.supported) {
-        console.warn("[Clarity Speech] Text-to-speech is not supported in this browser.");
+        console.warn("[Darkness Speech] Text-to-speech is not supported in this browser.");
         this.emit("unsupported");
         return false;
       }
 
       if (!segments || !segments.length) {
-        console.warn("[Clarity Speech] No readable text segments provided.");
+        console.warn("[Darkness Speech] No readable text segments provided.");
         return false;
       }
 
@@ -480,7 +480,7 @@
           if (e.error === "canceled" || e.error === "interrupted") {
             return;
           }
-          console.warn("[Clarity Speech] Speech utterance warning:", e);
+          console.warn("[Darkness Speech] Speech utterance warning:", e);
           this.emit("segment-error", e, index);
           if (this.state === "playing") {
             this._playSegment(index + 1);
@@ -490,7 +490,7 @@
         this.currentUtterance = utterance;
         this.synth.speak(utterance);
       } catch (err) {
-        console.error("[Clarity Speech] Failed to speak segment:", err);
+        console.error("[Darkness Speech] Failed to speak segment:", err);
         this.emit("error", err);
         this.stop();
       }
@@ -553,6 +553,6 @@
     }
   }
 
-  window.Clarity.LanguageDetector = LanguageDetector;
-  window.Clarity.speechController = new SpeechController();
+  window.Darkness.LanguageDetector = LanguageDetector;
+  window.Darkness.speechController = new SpeechController();
 })();

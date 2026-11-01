@@ -1,6 +1,6 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.uiTopbar = {
+window.Darkness.uiTopbar = {
   _menuBound: false,
 
   _getInitials(name) {
@@ -13,8 +13,8 @@ window.Clarity.uiTopbar = {
   },
 
   updateModelChip() {
-    if (window.Clarity.modelSelector) {
-      window.Clarity.modelSelector.renderDropdown("userMenuModelSelector");
+    if (window.Darkness.modelSelector) {
+      window.Darkness.modelSelector.renderDropdown("userMenuModelSelector");
     }
   },
 
@@ -30,15 +30,15 @@ window.Clarity.uiTopbar = {
     btn.addEventListener("click", () => {
       const current = document.documentElement.getAttribute("data-theme") || "light";
       const next = current === "dark" ? "light" : "dark";
-      window.Clarity.settings.applyTheme(next);
-      window.Clarity.toast.show("Theme switched to " + next, "success");
+      window.Darkness.settings.applyTheme(next);
+      window.Darkness.toast.show("Theme switched to " + next, "success");
       syncLabel();
     });
   },
 
   async initModelSelector() {
-    if (window.Clarity.modelSelector) {
-      await window.Clarity.modelSelector.load();
+    if (window.Darkness.modelSelector) {
+      await window.Darkness.modelSelector.load();
     }
     this._bindModelDropdown();
   },
@@ -57,7 +57,7 @@ window.Clarity.uiTopbar = {
     const avatarImgDropdown = document.getElementById("userMenuAvatarImgDropdown");
     const nameEl = document.getElementById("userMenuName");
     const emailFullLabel = document.getElementById("userMenuEmailFull");
-    const user = window.Clarity.auth && window.Clarity.auth.user;
+    const user = window.Darkness.auth && window.Darkness.auth.user;
     if (!button || !user) return;
 
     const email = user.email || "";
@@ -101,7 +101,7 @@ window.Clarity.uiTopbar = {
     applyPhoto(avatarImg, initialEl, avatarEl);
     applyPhoto(avatarImgDropdown, initialDropdown, avatarDropdown);
 
-    if (window.Clarity.uiTooltip) window.Clarity.uiTooltip.bind(button);
+    if (window.Darkness.uiTooltip) window.Darkness.uiTooltip.bind(button);
 
     if (this._menuBound) return;
     this._menuBound = true;
@@ -140,7 +140,7 @@ window.Clarity.uiTopbar = {
     // Density Selector Logic
     const densityButtons = menu.querySelectorAll(".density-btn");
     const syncDensityButtons = () => {
-      const currentDensity = window.Clarity.settings.get().density || "comfortable";
+      const currentDensity = window.Darkness.settings.get().density || "comfortable";
       densityButtons.forEach(btn => {
         const val = btn.getAttribute("data-density-val");
         if (val === currentDensity) {
@@ -163,11 +163,11 @@ window.Clarity.uiTopbar = {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
         const nextDensity = btn.getAttribute("data-density-val");
-        window.Clarity.settings.set({ density: nextDensity });
+        window.Darkness.settings.set({ density: nextDensity });
         document.documentElement.setAttribute("data-density", nextDensity);
         syncDensityButtons();
-        if (window.Clarity.toast && typeof window.Clarity.toast.show === "function") {
-          window.Clarity.toast.show(`Density scaled to ${nextDensity}`, "success");
+        if (window.Darkness.toast && typeof window.Darkness.toast.show === "function") {
+          window.Darkness.toast.show(`Density scaled to ${nextDensity}`, "success");
         }
       });
     });
@@ -196,7 +196,7 @@ window.Clarity.uiTopbar = {
     });
     menu.querySelector('[data-user-action="logout"]')?.addEventListener("click", async () => {
       close();
-      await window.Clarity.auth.logout();
+      await window.Darkness.auth.logout();
     });
   },
 
@@ -206,7 +206,7 @@ window.Clarity.uiTopbar = {
     if (!chip || !dropdown || dropdown._bound) return;
     dropdown._bound = true;
 
-    window.Clarity.modelSelector.renderDropdown("modelSelectorDropdown");
+    window.Darkness.modelSelector.renderDropdown("modelSelectorDropdown");
 
     const place = () => {
       const rect = chip.getBoundingClientRect();

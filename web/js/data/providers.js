@@ -156,8 +156,8 @@
   };
 
   if (typeof window !== "undefined") {
-    window.Clarity = window.Clarity || {};
-    window.Clarity.providers = Registry;
+    window.Darkness = window.Darkness || {};
+    window.Darkness.providers = Registry;
     window.MODEL_PROVIDERS = PROVIDERS;
   }
 

@@ -1,5 +1,5 @@
-window.Clarity = window.Clarity || {};
-window.Clarity.dom = {
+window.Darkness = window.Darkness || {};
+window.Darkness.dom = {
   empty(node) {
     if (!node) return;
     while (node.firstChild) node.removeChild(node.firstChild);

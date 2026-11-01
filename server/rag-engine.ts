@@ -85,7 +85,7 @@ export const DEFAULT_RAG_SETTINGS: RagSettings = {
   similarityThreshold: 0.70,
   retrievalStrategy: "hybrid",
   embeddingProvider: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY ? "Google Gemini" : "Local Hybrid Vectorizer",
-  embeddingModel: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY ? "text-embedding-004" : "clarity-dense-v1",
+  embeddingModel: process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY ? "text-embedding-004" : "darkness-dense-v1",
 };
 
 export function computeHash(text: string): string {
@@ -861,7 +861,7 @@ export function getProjectRagStatus(projectId: string) {
       similarityThreshold: settings.similarityThreshold,
       retrievalStrategy: settings.retrievalStrategy,
       embeddingProvider: hasGeminiKey ? "Google Gemini (text-embedding-004)" : "Local Hybrid Dense/Lexical Vectorizer",
-      embeddingModel: hasGeminiKey ? "text-embedding-004" : "clarity-dense-v1",
+      embeddingModel: hasGeminiKey ? "text-embedding-004" : "darkness-dense-v1",
       dimensions: hasGeminiKey ? 768 : 384,
       embeddingStatus: hasGeminiKey || totalChunks > 0 ? "Connected" : "Not configured",
       vectorStoreProvider: "SQLite In-Memory Vector Store",

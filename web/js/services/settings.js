@@ -1,15 +1,15 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.settings = {
+window.Darkness.settings = {
   defaults: { theme: 'dark', density: 'comfortable' },
   get() {
-    const store = window.Clarity.store || { get(key, fallback) { return fallback; } };
+    const store = window.Darkness.store || { get(key, fallback) { return fallback; } };
     const saved = store.get('app_settings', {});
     return Object.assign({}, this.defaults, saved || {});
   },
   set(partial) {
     const next = Object.assign(this.get(), partial || {});
-    const store = window.Clarity.store || { set() {} };
+    const store = window.Darkness.store || { set() {} };
     store.set('app_settings', next);
     return next;
   },
@@ -17,8 +17,8 @@ window.Clarity.settings = {
     const next = theme || this.get().theme || 'light';
     if (!['light', 'dark', 'system'].includes(next)) return;
     this.set({ theme: next });
-    if (window.Clarity.theme) {
-      window.Clarity.theme.setMode(next);
+    if (window.Darkness.theme) {
+      window.Darkness.theme.setMode(next);
     } else {
       document.documentElement.setAttribute('data-theme', next);
     }

@@ -1,6 +1,6 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.modal = {
+window.Darkness.modal = {
   _onKeydown: null,
 
   open(title, bodyHtml, actions, options) {
@@ -10,7 +10,7 @@ window.Clarity.modal = {
     const styleAttr = (options && options.maxWidth) ? `style="width: min(${options.maxWidth}, 100%); max-width:${options.maxWidth};"` : '';
     root.innerHTML = [
       `<div class="${modalClass}" role="dialog" aria-modal="true" aria-labelledby="modalTitle" ${styleAttr}>`,
-      '<div class="modal__head"><h3 id="modalTitle">' + window.Clarity.utils.escapeHtml(title || 'Dialog') + '</h3><button class="btn btn--ghost btn--icon-sm" type="button" data-modal-close="true" aria-label="Close">',
+      '<div class="modal__head"><h3 id="modalTitle">' + window.Darkness.utils.escapeHtml(title || 'Dialog') + '</h3><button class="btn btn--ghost btn--icon-sm" type="button" data-modal-close="true" aria-label="Close">',
       '<svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>',
       '</button></div>',
       '<div class="modal__body">' + (bodyHtml || '') + '</div>',

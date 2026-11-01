@@ -1,6 +1,6 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.toast = {
+window.Darkness.toast = {
   show(message, type) {
     const root = document.getElementById('toasts');
     if (!root) return;

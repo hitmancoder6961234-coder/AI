@@ -366,8 +366,8 @@ export async function ensureUserExistsInSupabase(rawUserId: string): Promise<str
       localUser = getUserById(rawUserId) || getUserById(validUserId);
     } catch {}
 
-    const email = (localUser?.email || `user_${validUserId.slice(0, 8)}@clarity.local`).toLowerCase().trim();
-    const name = (localUser?.name || "Clarity User").trim();
+    const email = (localUser?.email || `user_${validUserId.slice(0, 8)}@darkness.local`).toLowerCase().trim();
+    const name = (localUser?.name || "Darkness User").trim();
     const password = localUser?.password || "hashed_pass";
 
     await client.from("users").upsert({
@@ -899,10 +899,10 @@ export async function ensureStorageBuckets(): Promise<void> {
       "project-files",
       "rag-documents",
       "artifacts",
-      "clarity-project-files",
-      "clarity-rag-documents",
-      "clarity-artifacts",
-      "clarity-exports",
+      "darkness-project-files",
+      "darkness-rag-documents",
+      "darkness-artifacts",
+      "darkness-exports",
     ];
     for (const bucketName of required) {
       if (!existingNames.has(bucketName)) {
@@ -1136,7 +1136,7 @@ export async function syncUserToSupabase(user: {
     const rawPass = user.rawPassword || (user.password && !user.password.includes(":") ? user.password : undefined);
     const { data: createData, error: authErr } = await client.auth.admin.createUser({
       email: cleanEmail,
-      password: rawPass || `Clarity_${user.id}_Secure!`,
+      password: rawPass || `Darkness_${user.id}_Secure!`,
       email_confirm: true,
       user_metadata: {
         id: user.id,

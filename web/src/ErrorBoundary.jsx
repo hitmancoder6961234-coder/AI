@@ -11,7 +11,7 @@ export class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, errorInfo) {
-    console.error("Clarity UI Error Boundary caught an error:", error, errorInfo);
+    console.error("Darkness UI Error Boundary caught an error:", error, errorInfo);
   }
 
   render() {

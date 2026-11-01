@@ -55,7 +55,7 @@ function boot(extraEnv = {}) {
       ...process.env,
       NODE_ENV: "production",
       PORT: String(APP_PORT),
-      CLARITY_STORAGE_ROOT: dataDir,
+      DARKNESS_STORAGE_ROOT: dataDir,
       AGENT_PROVIDER: "openai",
       AGENT_BASE_URL: `http://127.0.0.1:${MOCK_PORT}/v1`,
       OPENAI_API_KEY: "test-key-not-real",
@@ -95,7 +95,7 @@ try {
   console.log("upgrade path");
   await check("old open mode really seeded the demo account (precondition)", async () => {
     assert.equal((await get("/api/conversations", "default_token")).status, 200);
-    assert.equal((await post("/api/auth/login", { email: "user@clarity.ai", password: "password123" })).status, 200);
+    assert.equal((await post("/api/auth/login", { email: "user@darkness.local", password: "password123" })).status, 200);
   });
   await stopChild(legacy);
   server = boot();
@@ -103,7 +103,7 @@ try {
   console.log(`strict server up on :${APP_PORT}\n`);
   await check("strict boot purged the public demo account and token", async () => {
     assert.equal((await get("/api/conversations", "default_token")).status, 401);
-    assert.notEqual((await post("/api/auth/login", { email: "user@clarity.ai", password: "password123" })).status, 200);
+    assert.notEqual((await post("/api/auth/login", { email: "user@darkness.local", password: "password123" })).status, 200);
   });
   const pw = "correct horse battery";
   const emailA = `alice-${crypto.randomUUID().slice(0, 6)}@example.com`;

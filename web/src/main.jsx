@@ -1,4 +1,4 @@
-// Initialize existing Clarity vanilla JS application
+// Initialize existing Darkness vanilla JS application
 // This script loads all modules. Application bootstrap (init) is performed
 // by js/app.js itself, so do NOT register a second DOMContentLoaded listener
 // here — two listeners caused init() to run twice and every UI handler to
@@ -22,11 +22,11 @@ if (typeof window !== "undefined") {
   }
   window.cytoscape = cytoscape;
   window.katex = katex;
-  window.Clarity = window.Clarity || {};
-  window.Clarity.ReactMarkdown = ReactMarkdown;
-  window.Clarity.ErrorBoundary = ErrorBoundary;
-  window.Clarity.AnswerEngine = AnswerEngine;
-  window.Clarity.ResponseDocumentBuilder = ResponseDocumentBuilder;
+  window.Darkness = window.Darkness || {};
+  window.Darkness.ReactMarkdown = ReactMarkdown;
+  window.Darkness.ErrorBoundary = ErrorBoundary;
+  window.Darkness.AnswerEngine = AnswerEngine;
+  window.Darkness.ResponseDocumentBuilder = ResponseDocumentBuilder;
 }
 
 import "../js/lib/utils.js";
@@ -78,14 +78,14 @@ import "../css/pages.css";
 import "../css/artifacts.css";
 import "../css/code-viewer.css";
 
-// Hook/intercept window.Clarity.markdown.render to route all renders through ResponseDocumentBuilder
-if (typeof window !== "undefined" && window.Clarity && window.Clarity.markdown) {
-  const originalRender = window.Clarity.markdown.render;
-  window.Clarity.markdown.render = function (text, options) {
+// Hook/intercept window.Darkness.markdown.render to route all renders through ResponseDocumentBuilder
+if (typeof window !== "undefined" && window.Darkness && window.Darkness.markdown) {
+  const originalRender = window.Darkness.markdown.render;
+  window.Darkness.markdown.render = function (text, options) {
     if (options && options.__intercepted) {
-      return originalRender.call(window.Clarity.markdown, text, options);
+      return originalRender.call(window.Darkness.markdown, text, options);
     }
-    return window.Clarity.ResponseDocumentBuilder.build(text, options);
+    return window.Darkness.ResponseDocumentBuilder.build(text, options);
   };
 }
 

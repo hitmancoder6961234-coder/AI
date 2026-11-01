@@ -1,5 +1,5 @@
 {
-  "name": "Clarity",
+  "name": "Darkness",
   "description": "AI-powered answers grounded in your knowledge.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

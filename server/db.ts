@@ -25,7 +25,7 @@ import {
 } from "./supabase.js";
 
 // Ensure storage database directory exists via storageManager
-const DB_PATH = process.env.CLARITY_DB_PATH || storageManager.getDatabasePath();
+const DB_PATH = process.env.DARKNESS_DB_PATH || storageManager.getDatabasePath();
 const dbDir = path.dirname(DB_PATH);
 if (!fs.existsSync(dbDir)) {
   fs.mkdirSync(dbDir, { recursive: true });
@@ -580,7 +580,7 @@ export function initDatabaseSchema() {
     try {
       const userMappings = [
         { from: 'user_default', to: 'a8331e01-8219-c7e0-27ba-93b91f0c20aa' },
-        { from: 'CLARITY-DELAYED-PERSISTENCE-TEST', to: '28f9382a-dced-f01b-bbbb-b23a6c677faa' }
+        { from: 'DARKNESS-DELAYED-PERSISTENCE-TEST', to: '28f9382a-dced-f01b-bbbb-b23a6c677faa' }
       ];
       
       for (const map of userMappings) {
@@ -614,12 +614,12 @@ export function initDatabaseSchema() {
       db.prepare(`
         INSERT OR IGNORE INTO users (id, email, name, password, created_at)
         VALUES (?, ?, ?, NULL, ?)
-      `).run(defaultUserId, "default@clarity.local", "Default User", now);
+      `).run(defaultUserId, "default@darkness.local", "Default User", now);
 
       db.prepare(`
         INSERT OR IGNORE INTO users (id, email, name, password, created_at)
         VALUES (?, ?, ?, NULL, ?)
-      `).run("user_default", "legacy-default@clarity.local", "Default User", now);
+      `).run("user_default", "legacy-default@darkness.local", "Default User", now);
 
       const defaultProjects = [
         { id: "global", name: "Global Workspace", desc: "Global workspace project context" }
@@ -643,7 +643,7 @@ export function initDatabaseSchema() {
 export function ensureUserExists(userId?: string | null, email?: string, name?: string): string {
   const validId = toValidUuid(userId || "user_default") || "a8331e01-8219-c7e0-27ba-93b91f0c20aa";
   const now = Date.now();
-  const safeEmail = (email || `${validId}@clarity.local`).toLowerCase().trim();
+  const safeEmail = (email || `${validId}@darkness.local`).toLowerCase().trim();
   const safeName = (name || "User").trim();
   try {
     db.prepare(`

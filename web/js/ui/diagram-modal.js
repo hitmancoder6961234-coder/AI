@@ -1,4 +1,4 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
 (function () {
   let activeModalEl = null;
@@ -21,21 +21,21 @@ window.Clarity = window.Clarity || {};
 
     const title = options.title || "Architecture Diagram";
     const subtitle = options.subtitle || "Full-screen interactive view • Pan & Zoom enabled";
-    const baseFilename = (options.filename || "clarity_architecture_diagram").replace(/\.[^.]+$/, "");
+    const baseFilename = (options.filename || "darkness_architecture_diagram").replace(/\.[^.]+$/, "");
 
     // Prepare SVG markup
     let rawSvg = options.svgString || "";
     if (!rawSvg && options.svgElement) {
-      if (window.Clarity && window.Clarity.getStandaloneSvgString) {
-        rawSvg = window.Clarity.getStandaloneSvgString(options.svgElement);
+      if (window.Darkness && window.Darkness.getStandaloneSvgString) {
+        rawSvg = window.Darkness.getStandaloneSvgString(options.svgElement);
       } else {
         rawSvg = new XMLSerializer().serializeToString(options.svgElement);
       }
     }
 
     if (!rawSvg) {
-      if (window.Clarity && window.Clarity.toast) {
-        window.Clarity.toast.show("No diagram graphic available to preview", "warning");
+      if (window.Darkness && window.Darkness.toast) {
+        window.Darkness.toast.show("No diagram graphic available to preview", "warning");
       }
       return;
     }
@@ -213,20 +213,20 @@ window.Clarity = window.Clarity || {};
     modalEl.querySelector("#dmDownloadPngBtn")?.addEventListener("click", (e) => {
       e.stopPropagation();
       const targetSvg = wrapper.querySelector("svg");
-      if (targetSvg && window.Clarity && window.Clarity.downloadPngDiagram) {
-        window.Clarity.downloadPngDiagram(targetSvg, `${baseFilename}.png`);
+      if (targetSvg && window.Darkness && window.Darkness.downloadPngDiagram) {
+        window.Darkness.downloadPngDiagram(targetSvg, `${baseFilename}.png`);
       } else {
-        window.Clarity?.toast?.show("Unable to export PNG graphic", "error");
+        window.Darkness?.toast?.show("Unable to export PNG graphic", "error");
       }
     });
 
     modalEl.querySelector("#dmDownloadJpgBtn")?.addEventListener("click", (e) => {
       e.stopPropagation();
       const targetSvg = wrapper.querySelector("svg");
-      if (targetSvg && window.Clarity && window.Clarity.downloadJpgDiagram) {
-        window.Clarity.downloadJpgDiagram(targetSvg, `${baseFilename}.jpg`);
+      if (targetSvg && window.Darkness && window.Darkness.downloadJpgDiagram) {
+        window.Darkness.downloadJpgDiagram(targetSvg, `${baseFilename}.jpg`);
       } else {
-        window.Clarity?.toast?.show("Unable to export JPG graphic", "error");
+        window.Darkness?.toast?.show("Unable to export JPG graphic", "error");
       }
     });
 
@@ -346,8 +346,8 @@ window.Clarity = window.Clarity || {};
       if (typeof options.onClose === "function") {
         options.onClose();
       }
-      if (window.Clarity && window.Clarity.toast) {
-        window.Clarity.toast.show("Returned to normal view", "info");
+      if (window.Darkness && window.Darkness.toast) {
+        window.Darkness.toast.show("Returned to normal view", "info");
       }
     }
 
@@ -374,8 +374,8 @@ window.Clarity = window.Clarity || {};
     };
     window.addEventListener("keydown", activeKeydownListener);
 
-    if (window.Clarity && window.Clarity.toast) {
-      window.Clarity.toast.show("Full-screen diagram viewer opened (Press Esc or click Back to exit)", "info");
+    if (window.Darkness && window.Darkness.toast) {
+      window.Darkness.toast.show("Full-screen diagram viewer opened (Press Esc or click Back to exit)", "info");
     }
   }
 
@@ -398,17 +398,17 @@ window.Clarity = window.Clarity || {};
     if (typeof svgElementOrString === "string") {
       svgStr = svgElementOrString;
     } else if (svgElementOrString) {
-      if (window.Clarity && window.Clarity.getStandaloneSvgString) {
-        svgStr = window.Clarity.getStandaloneSvgString(svgElementOrString);
+      if (window.Darkness && window.Darkness.getStandaloneSvgString) {
+        svgStr = window.Darkness.getStandaloneSvgString(svgElementOrString);
       } else {
         svgStr = new XMLSerializer().serializeToString(svgElementOrString);
       }
     }
     if (!svgStr) {
-      if (window.Clarity && window.Clarity.toast) window.Clarity.toast.show("No visual available to download", "warning");
+      if (window.Darkness && window.Darkness.toast) window.Darkness.toast.show("No visual available to download", "warning");
       return;
     }
-    const safeName = (filename || "clarity_visual").replace(/[^a-zA-Z0-9_\-]/g, "_") + ".svg";
+    const safeName = (filename || "darkness_visual").replace(/[^a-zA-Z0-9_\-]/g, "_") + ".svg";
     const blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -420,13 +420,13 @@ window.Clarity = window.Clarity || {};
       if (a.parentNode) document.body.removeChild(a);
       URL.revokeObjectURL(url);
     }, 100);
-    if (window.Clarity && window.Clarity.toast) {
-      window.Clarity.toast.show(`Downloaded ${safeName}`, "success");
+    if (window.Darkness && window.Darkness.toast) {
+      window.Darkness.toast.show(`Downloaded ${safeName}`, "success");
     }
   }
 
-  window.Clarity.downloadSvgDirect = downloadSvgDirect;
-  window.Clarity.openDiagramModalViewer = openDiagramModalViewer;
-  window.Clarity.openVisualFullView = openDiagramModalViewer;
-  window.Clarity.closeDiagramModalViewer = closeDiagramModalViewer;
+  window.Darkness.downloadSvgDirect = downloadSvgDirect;
+  window.Darkness.openDiagramModalViewer = openDiagramModalViewer;
+  window.Darkness.openVisualFullView = openDiagramModalViewer;
+  window.Darkness.closeDiagramModalViewer = closeDiagramModalViewer;
 })();

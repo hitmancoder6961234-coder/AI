@@ -1,5 +1,5 @@
 /**
- * CLARITY — CANONICAL REAL-WORLD ARCHITECTURE & WORKFLOW ICON REGISTRY
+ * DARKNESS — CANONICAL REAL-WORLD ARCHITECTURE & WORKFLOW ICON REGISTRY
  * 
  * Provides production-grade vector icons, technology intelligence metadata,
  * and deterministic icon resolution for system architecture, dataflow, RAG,

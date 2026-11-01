@@ -1,14 +1,14 @@
-window.Clarity = window.Clarity || {};
-window.Clarity.ResponseDocumentBuilder = {
+window.Darkness = window.Darkness || {};
+window.Darkness.ResponseDocumentBuilder = {
   build: function(text, opts) {
-    if (window.Clarity.markdown && typeof window.Clarity.markdown.render === "function") {
-      return window.Clarity.markdown.render(text, Object.assign({}, opts || {}, { __intercepted: true }));
+    if (window.Darkness.markdown && typeof window.Darkness.markdown.render === "function") {
+      return window.Darkness.markdown.render(text, Object.assign({}, opts || {}, { __intercepted: true }));
     }
     return text || "";
   }
 };
 
-window.Clarity.uiChat = {
+window.Darkness.uiChat = {
   _activeConversation: null,
   _isStreaming: false,
   _abortController: null,
@@ -24,25 +24,25 @@ window.Clarity.uiChat = {
   },
 
   _loadState() {
-    this._activeConversation = window.Clarity.store.get("active_conversation", null);
-    this._activeModel = window.Clarity.store.get("active_model", null);
+    this._activeConversation = window.Darkness.store.get("active_conversation", null);
+    this._activeModel = window.Darkness.store.get("active_model", null);
     if (this._activeConversation) {
-      this._attachedFiles = window.Clarity.store.get("chat_attachments_" + this._activeConversation, []);
+      this._attachedFiles = window.Darkness.store.get("chat_attachments_" + this._activeConversation, []);
     } else {
-      this._attachedFiles = window.Clarity.store.get("chat_attachments_home_new", []);
+      this._attachedFiles = window.Darkness.store.get("chat_attachments_home_new", []);
     }
-    window.Clarity.store.remove("current_project");
+    window.Darkness.store.remove("current_project");
   },
 
   _saveState() {
     const key = this._activeConversation ? ("chat_attachments_" + this._activeConversation) : "chat_attachments_home_new";
     if (this._attachedFiles && this._attachedFiles.length > 0) {
-      window.Clarity.store.set(key, this._attachedFiles);
+      window.Darkness.store.set(key, this._attachedFiles);
     } else {
-      window.Clarity.store.remove(key);
+      window.Darkness.store.remove(key);
     }
-    window.Clarity.store.remove("current_project");
-    window.Clarity.store.set("active_model", this._activeModel);
+    window.Darkness.store.remove("current_project");
+    window.Darkness.store.set("active_model", this._activeModel);
   },
 
   /**
@@ -51,7 +51,7 @@ window.Clarity.uiChat = {
    * first paint. Never a hardcoded or display name.
    */
   _resolveModelId() {
-    const fromSelector = window.Clarity.modelSelector && window.Clarity.modelSelector.activeId();
+    const fromSelector = window.Darkness.modelSelector && window.Darkness.modelSelector.activeId();
     return fromSelector || this._activeModel || null;
   },
 
@@ -60,19 +60,19 @@ window.Clarity.uiChat = {
     this._activeConversation = null;
     this._firstMessagePending = false;
     this._userScrolledUp = false;
-    window.Clarity.store.remove("active_conversation");
-    window.Clarity.store.remove("chat_attachments_home_new");
-    window.Clarity.store.remove("chat_attachments");
-    window.Clarity.store.remove("current_project");
+    window.Darkness.store.remove("active_conversation");
+    window.Darkness.store.remove("chat_attachments_home_new");
+    window.Darkness.store.remove("chat_attachments");
+    window.Darkness.store.remove("current_project");
     this._attachedFiles = [];
     this._currentProject = null;
     this._saveState();
-    if (window.Clarity.composer && typeof window.Clarity.composer.clearAttachments === "function") {
-      window.Clarity.composer.clearAttachments();
+    if (window.Darkness.composer && typeof window.Darkness.composer.clearAttachments === "function") {
+      window.Darkness.composer.clearAttachments();
     }
     // Auto-close sidebar on mobile/drawer when starting a new chat
-    if (window.Clarity.app && typeof window.Clarity.app.closeSidebar === "function") {
-      window.Clarity.app.closeSidebar();
+    if (window.Darkness.app && typeof window.Darkness.app.closeSidebar === "function") {
+      window.Darkness.app.closeSidebar();
     }
     this.renderChat();
     setTimeout(() => {
@@ -84,20 +84,20 @@ window.Clarity.uiChat = {
   async loadConversation(cid) {
     this._stopStreaming();
     try {
-      const data = await window.Clarity.api.get(`/api/conversations/${cid}`);
+      const data = await window.Darkness.api.get(`/api/conversations/${cid}`);
       this._activeConversation = cid;
       this._firstMessagePending = false;
-      window.Clarity.store.set("active_conversation", cid);
+      window.Darkness.store.set("active_conversation", cid);
       this.renderChat(data.messages);
     } catch (err) {
       this._isStreaming = false;
       this._syncComposerStreaming();
       if (err.status === 404 || (err.data && err.data.type === "not_found")) {
-        window.Clarity.store.remove("active_conversation");
-        window.Clarity.toast.show("Conversation not found. Starting new chat.", "warning");
+        window.Darkness.store.remove("active_conversation");
+        window.Darkness.toast.show("Conversation not found. Starting new chat.", "warning");
         await this.startNewConversation();
       } else {
-        window.Clarity.toast.show("Failed to load conversation", "danger");
+        window.Darkness.toast.show("Failed to load conversation", "danger");
       }
     }
   },
@@ -127,15 +127,15 @@ window.Clarity.uiChat = {
       this._isStreaming = false;
       this._syncComposerStreaming();
 
-      if (document.getElementById("clarityRobot")) {
+      if (document.getElementById("darknessRobot")) {
         this.setRobotState("idle");
       }
 
       if (list.length > 0) {
         this._userScrolledUp = false;
         this._scrollToBottom(true);
-        if (window.Clarity && window.Clarity.renderKaTeX) {
-          window.Clarity.renderKaTeX(convEl || main);
+        if (window.Darkness && window.Darkness.renderKaTeX) {
+          window.Darkness.renderKaTeX(convEl || main);
         }
       }
     } catch (err) {
@@ -252,9 +252,9 @@ window.Clarity.uiChat = {
 
     // 1. Generate standalone, self-contained SVG string with inlined styles
     let svgStr = "";
-    if (window.Clarity && typeof window.Clarity.getStandaloneSvgString === "function") {
+    if (window.Darkness && typeof window.Darkness.getStandaloneSvgString === "function") {
       try {
-        svgStr = window.Clarity.getStandaloneSvgString(svgClone);
+        svgStr = window.Darkness.getStandaloneSvgString(svgClone);
       } catch (e) {
         console.warn("getStandaloneSvgString error:", e);
       }
@@ -347,12 +347,12 @@ window.Clarity.uiChat = {
   async exportChatToPdf(options = {}) {
     const feed = options.feed || document.getElementById("conversationList") || document.getElementById("projectChatFeed");
     if (!feed) {
-      if (window.Clarity && window.Clarity.toast) window.Clarity.toast.show("No chat to export.", "info");
+      if (window.Darkness && window.Darkness.toast) window.Darkness.toast.show("No chat to export.", "info");
       return;
     }
 
     if (feed.classList.contains("conversation--empty")) {
-      if (window.Clarity && window.Clarity.toast) window.Clarity.toast.show("No chat to export.", "info");
+      if (window.Darkness && window.Darkness.toast) window.Darkness.toast.show("No chat to export.", "info");
       return;
     }
 
@@ -365,9 +365,9 @@ window.Clarity.uiChat = {
       if (!el || self.indexOf(el) !== idx) return false;
       return !self.some(other => other !== el && other.contains(el));
     });
-    const stateMsgs = window.Clarity?.state?.activeConversation?.messages;
+    const stateMsgs = window.Darkness?.state?.activeConversation?.messages;
     if (rawMsgs.length === 0 && (!stateMsgs || stateMsgs.length === 0)) {
-      if (window.Clarity && window.Clarity.toast) window.Clarity.toast.show("No chat to export.", "info");
+      if (window.Darkness && window.Darkness.toast) window.Darkness.toast.show("No chat to export.", "info");
       return;
     }
 
@@ -382,23 +382,23 @@ window.Clarity.uiChat = {
           document.head.appendChild(s);
         });
       } catch (e) {
-        if (window.Clarity && window.Clarity.toast) window.Clarity.toast.show("PDF library failed to load.", "danger");
+        if (window.Darkness && window.Darkness.toast) window.Darkness.toast.show("PDF library failed to load.", "danger");
         return;
       }
     }
 
-    if (window.Clarity && window.Clarity.toast) {
-      window.Clarity.toast.show("Exporting Chat to PDF...", "info");
+    if (window.Darkness && window.Darkness.toast) {
+      window.Darkness.toast.show("Exporting Chat to PDF...", "info");
     }
 
     // Capture project metadata
     let projectName = options.projectName || "";
     if (!projectName) {
-      const cid = window.Clarity?.state?.activeConversation?.id;
-      if (cid && window.Clarity?.state?.conversations) {
-        const conv = window.Clarity.state.conversations.find(c => c.id === cid);
+      const cid = window.Darkness?.state?.activeConversation?.id;
+      if (cid && window.Darkness?.state?.conversations) {
+        const conv = window.Darkness.state.conversations.find(c => c.id === cid);
         if (conv && conv.project_id) {
-          const proj = window.Clarity.state.projects?.find(p => p.id === conv.project_id);
+          const proj = window.Darkness.state.projects?.find(p => p.id === conv.project_id);
           if (proj) projectName = proj.name;
         }
       }
@@ -406,7 +406,7 @@ window.Clarity.uiChat = {
 
     // Loading overlay
     const loadingModal = document.createElement("div");
-    loadingModal.id = "clarity-pdf-export-loading";
+    loadingModal.id = "darkness-pdf-export-loading";
     loadingModal.style.cssText = "position:fixed; inset:0; background:rgba(15,23,42,0.7); backdrop-filter:blur(4px); z-index:100002; display:flex; align-items:center; justify-content:center; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;";
     loadingModal.innerHTML = `
       <div style="background:#ffffff; border:1px solid #e2e8f0; padding:28px 36px; border-radius:12px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.25); display:flex; flex-direction:column; align-items:center; gap:14px; min-width:300px; text-align:center; color:#0f172a;">
@@ -419,29 +419,29 @@ window.Clarity.uiChat = {
 
     // Controlled offscreen rendering host
     const host = document.createElement("div");
-    host.id = "clarity-pdf-export-host";
+    host.id = "darkness-pdf-export-host";
     host.style.cssText = "position:fixed !important; top:0 !important; left:-9999px !important; width:794px !important; min-width:794px !important; max-width:794px !important; margin:0 !important; padding:0 !important; background:#ffffff !important; z-index:100001 !important; box-sizing:border-box !important; overflow:visible !important; pointer-events:none !important;";
 
     // High-fidelity print styles that strictly match the Chat UI presentation
     const styleTag = document.createElement("style");
     styleTag.textContent = `
-      #clarity-pdf-export-host, #clarity-pdf-export-host * {
+      #darkness-pdf-export-host, #darkness-pdf-export-host * {
         box-sizing: border-box !important;
       }
-      #clarity-pdf-export-host {
+      #darkness-pdf-export-host {
         background-color: #ffffff !important;
         color: #0f172a !important;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
         font-size: 13.5px !important;
         line-height: 1.65 !important;
       }
-      #clarity-pdf-export-host .pdf-page {
+      #darkness-pdf-export-host .pdf-page {
         box-sizing: border-box !important;
         background-color: #ffffff !important;
       }
       
       /* Chat Message Structure */
-      #clarity-pdf-export-host .message {
+      #darkness-pdf-export-host .message {
         width: 100% !important;
         display: flex !important;
         flex-direction: column !important;
@@ -449,36 +449,36 @@ window.Clarity.uiChat = {
         page-break-inside: auto !important;
         break-inside: auto !important;
       }
-      #clarity-pdf-export-host .message--user {
+      #darkness-pdf-export-host .message--user {
         align-items: flex-end !important;
       }
-      #clarity-pdf-export-host .message--assistant {
+      #darkness-pdf-export-host .message--assistant {
         align-items: flex-start !important;
       }
-      #clarity-pdf-export-host .message__row {
+      #darkness-pdf-export-host .message__row {
         display: flex !important;
         width: 100% !important;
       }
-      #clarity-pdf-export-host .message--user .message__row {
+      #darkness-pdf-export-host .message--user .message__row {
         justify-content: flex-end !important;
       }
-      #clarity-pdf-export-host .message__body {
+      #darkness-pdf-export-host .message__body {
         display: flex !important;
         flex-direction: column !important;
         min-width: 0 !important;
         width: 100% !important;
       }
-      #clarity-pdf-export-host .message--user .message__body {
+      #darkness-pdf-export-host .message--user .message__body {
         align-items: flex-end !important;
         max-width: 88% !important;
       }
-      #clarity-pdf-export-host .message--assistant .message__body {
+      #darkness-pdf-export-host .message--assistant .message__body {
         align-items: flex-start !important;
         max-width: 100% !important;
       }
       
       /* Message Author Header */
-      #clarity-pdf-export-host .message__author-tag {
+      #darkness-pdf-export-host .message__author-tag {
         display: inline-flex !important;
         align-items: center !important;
         gap: 6px !important;
@@ -490,29 +490,29 @@ window.Clarity.uiChat = {
         page-break-after: avoid !important;
         break-after: avoid !important;
       }
-      #clarity-pdf-export-host .message--user .message__author-tag {
+      #darkness-pdf-export-host .message--user .message__author-tag {
         color: #475569 !important;
         justify-content: flex-end !important;
       }
-      #clarity-pdf-export-host .message--assistant .message__author-tag {
+      #darkness-pdf-export-host .message--assistant .message__author-tag {
         color: #4f46e5 !important;
         justify-content: flex-start !important;
       }
-      #clarity-pdf-export-host .message__author-dot {
+      #darkness-pdf-export-host .message__author-dot {
         width: 6px !important;
         height: 6px !important;
         border-radius: 50% !important;
         display: inline-block !important;
       }
-      #clarity-pdf-export-host .message--user .message__author-dot {
+      #darkness-pdf-export-host .message--user .message__author-dot {
         background-color: #64748b !important;
       }
-      #clarity-pdf-export-host .message--assistant .message__author-dot {
+      #darkness-pdf-export-host .message--assistant .message__author-dot {
         background-color: #4f46e5 !important;
       }
 
       /* Chat Bubbles */
-      #clarity-pdf-export-host .message__bubble {
+      #darkness-pdf-export-host .message__bubble {
         border-radius: 12px !important;
         padding: 14px 18px !important;
         line-height: 1.65 !important;
@@ -522,7 +522,7 @@ window.Clarity.uiChat = {
         page-break-inside: auto !important;
         break-inside: auto !important;
       }
-      #clarity-pdf-export-host .message--user .message__bubble {
+      #darkness-pdf-export-host .message--user .message__bubble {
         background-color: #eef2ff !important;
         color: #1e1b4b !important;
         border: 1px solid #c7d2fe !important;
@@ -530,7 +530,7 @@ window.Clarity.uiChat = {
         display: inline-block !important;
         max-width: 100% !important;
       }
-      #clarity-pdf-export-host .message--assistant .message__bubble {
+      #darkness-pdf-export-host .message--assistant .message__bubble {
         background-color: #ffffff !important;
         color: #0f172a !important;
         border: 1px solid #e2e8f0 !important;
@@ -539,22 +539,22 @@ window.Clarity.uiChat = {
       }
 
       /* Markdown & Chat Typography Hierarchy */
-      #clarity-pdf-export-host .message__content {
+      #darkness-pdf-export-host .message__content {
         color: inherit !important;
         font-size: 13.5px !important;
         line-height: 1.65 !important;
         word-break: break-word !important;
       }
-      #clarity-pdf-export-host .message--user .message__content {
+      #darkness-pdf-export-host .message--user .message__content {
         white-space: pre-wrap !important;
         color: #1e1b4b !important;
       }
-      #clarity-pdf-export-host .message__content h1,
-      #clarity-pdf-export-host .message__content h2,
-      #clarity-pdf-export-host .message__content h3,
-      #clarity-pdf-export-host .message__content h4,
-      #clarity-pdf-export-host .message__content h5,
-      #clarity-pdf-export-host .message__content h6 {
+      #darkness-pdf-export-host .message__content h1,
+      #darkness-pdf-export-host .message__content h2,
+      #darkness-pdf-export-host .message__content h3,
+      #darkness-pdf-export-host .message__content h4,
+      #darkness-pdf-export-host .message__content h5,
+      #darkness-pdf-export-host .message__content h6 {
         margin: 14px 0 8px !important;
         font-weight: 600 !important;
         color: #0f172a !important;
@@ -563,44 +563,44 @@ window.Clarity.uiChat = {
         page-break-after: avoid !important;
         break-after: avoid !important;
       }
-      #clarity-pdf-export-host .message__content h1:first-child,
-      #clarity-pdf-export-host .message__content h2:first-child,
-      #clarity-pdf-export-host .message__content h3:first-child {
+      #darkness-pdf-export-host .message__content h1:first-child,
+      #darkness-pdf-export-host .message__content h2:first-child,
+      #darkness-pdf-export-host .message__content h3:first-child {
         margin-top: 0 !important;
       }
-      #clarity-pdf-export-host .message__content h1 { font-size: 18px !important; font-weight: 700 !important; }
-      #clarity-pdf-export-host .message__content h2 { font-size: 15.5px !important; font-weight: 700 !important; }
-      #clarity-pdf-export-host .message__content h3 { font-size: 14px !important; font-weight: 600 !important; }
-      #clarity-pdf-export-host .message__content h4 { font-size: 13px !important; font-weight: 600 !important; }
-      #clarity-pdf-export-host .message__content h5 { font-size: 12px !important; font-weight: 600 !important; }
-      #clarity-pdf-export-host .message__content h6 { font-size: 11.5px !important; color: #64748b !important; }
+      #darkness-pdf-export-host .message__content h1 { font-size: 18px !important; font-weight: 700 !important; }
+      #darkness-pdf-export-host .message__content h2 { font-size: 15.5px !important; font-weight: 700 !important; }
+      #darkness-pdf-export-host .message__content h3 { font-size: 14px !important; font-weight: 600 !important; }
+      #darkness-pdf-export-host .message__content h4 { font-size: 13px !important; font-weight: 600 !important; }
+      #darkness-pdf-export-host .message__content h5 { font-size: 12px !important; font-weight: 600 !important; }
+      #darkness-pdf-export-host .message__content h6 { font-size: 11.5px !important; color: #64748b !important; }
       
-      #clarity-pdf-export-host .message__content p {
+      #darkness-pdf-export-host .message__content p {
         margin: 8px 0 !important;
         color: #1e293b !important;
         line-height: 1.65 !important;
       }
-      #clarity-pdf-export-host .message__content p:first-child { margin-top: 0 !important; }
-      #clarity-pdf-export-host .message__content p:last-child { margin-bottom: 0 !important; }
+      #darkness-pdf-export-host .message__content p:first-child { margin-top: 0 !important; }
+      #darkness-pdf-export-host .message__content p:last-child { margin-bottom: 0 !important; }
       
-      #clarity-pdf-export-host .message__content ul,
-      #clarity-pdf-export-host .message__content ol {
+      #darkness-pdf-export-host .message__content ul,
+      #darkness-pdf-export-host .message__content ol {
         margin: 8px 0 8px 24px !important;
         padding: 0 !important;
         color: #1e293b !important;
         line-height: 1.65 !important;
       }
-      #clarity-pdf-export-host .message__content li {
+      #darkness-pdf-export-host .message__content li {
         margin: 3px 0 !important;
       }
-      #clarity-pdf-export-host .message__content strong {
+      #darkness-pdf-export-host .message__content strong {
         font-weight: 700 !important;
         color: #0f172a !important;
       }
-      #clarity-pdf-export-host .message__content em {
+      #darkness-pdf-export-host .message__content em {
         font-style: italic !important;
       }
-      #clarity-pdf-export-host .message__content blockquote {
+      #darkness-pdf-export-host .message__content blockquote {
         margin: 10px 0 !important;
         padding: 8px 14px !important;
         border-left: 3px solid #6366f1 !important;
@@ -611,13 +611,13 @@ window.Clarity.uiChat = {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
-      #clarity-pdf-export-host .message__content a {
+      #darkness-pdf-export-host .message__content a {
         color: #2563eb !important;
         text-decoration: underline !important;
       }
       
       /* Tables */
-      #clarity-pdf-export-host .table-wrapper {
+      #darkness-pdf-export-host .table-wrapper {
         margin: 12px 0 !important;
         border-radius: 6px !important;
         border: 1px solid #cbd5e1 !important;
@@ -625,32 +625,32 @@ window.Clarity.uiChat = {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
-      #clarity-pdf-export-host table {
+      #darkness-pdf-export-host table {
         width: 100% !important;
         border-collapse: collapse !important;
         font-size: 12px !important;
       }
-      #clarity-pdf-export-host th,
-      #clarity-pdf-export-host td {
+      #darkness-pdf-export-host th,
+      #darkness-pdf-export-host td {
         border: 1px solid #cbd5e1 !important;
         padding: 7px 12px !important;
         text-align: left !important;
       }
-      #clarity-pdf-export-host th {
+      #darkness-pdf-export-host th {
         background: #f1f5f9 !important;
         font-weight: 600 !important;
         color: #0f172a !important;
       }
-      #clarity-pdf-export-host td {
+      #darkness-pdf-export-host td {
         color: #334155 !important;
         background: #ffffff !important;
       }
-      #clarity-pdf-export-host tr:nth-child(even) td {
+      #darkness-pdf-export-host tr:nth-child(even) td {
         background: #f8fafc !important;
       }
 
       /* Inline Code */
-      #clarity-pdf-export-host code:not(.pdf-code-content) {
+      #darkness-pdf-export-host code:not(.pdf-code-content) {
         display: inline !important;
         padding: 2px 6px !important;
         background: #f1f5f9 !important;
@@ -662,7 +662,7 @@ window.Clarity.uiChat = {
       }
 
       /* Code Blocks */
-      #clarity-pdf-export-host .pdf-code-block {
+      #darkness-pdf-export-host .pdf-code-block {
         margin: 12px 0 !important;
         border-radius: 8px !important;
         background: #f8fafc !important;
@@ -673,7 +673,7 @@ window.Clarity.uiChat = {
         page-break-inside: auto !important;
         break-inside: auto !important;
       }
-      #clarity-pdf-export-host .pdf-code-header {
+      #darkness-pdf-export-host .pdf-code-header {
         display: flex !important;
         justify-content: space-between !important;
         align-items: center !important;
@@ -684,7 +684,7 @@ window.Clarity.uiChat = {
         font-weight: 600 !important;
         color: #475569 !important;
       }
-      #clarity-pdf-export-host .pdf-code-badge {
+      #darkness-pdf-export-host .pdf-code-badge {
         background: #e2e8f0 !important;
         color: #0f172a !important;
         padding: 2px 6px !important;
@@ -694,7 +694,7 @@ window.Clarity.uiChat = {
         font-family: ui-monospace, monospace !important;
         font-weight: 700 !important;
       }
-      #clarity-pdf-export-host .pdf-code-body {
+      #darkness-pdf-export-host .pdf-code-body {
         padding: 6px 0 !important;
         font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
         font-size: 11.5px !important;
@@ -704,14 +704,14 @@ window.Clarity.uiChat = {
         width: 100% !important;
         box-sizing: border-box !important;
       }
-      #clarity-pdf-export-host .pdf-code-line {
+      #darkness-pdf-export-host .pdf-code-line {
         display: flex !important;
         width: 100% !important;
         box-sizing: border-box !important;
         padding: 0 10px !important;
         line-height: 1.55 !important;
       }
-      #clarity-pdf-export-host .pdf-code-num {
+      #darkness-pdf-export-host .pdf-code-num {
         width: 32px !important;
         min-width: 32px !important;
         text-align: right !important;
@@ -721,7 +721,7 @@ window.Clarity.uiChat = {
         box-sizing: border-box !important;
         font-size: 10.5px !important;
       }
-      #clarity-pdf-export-host .pdf-code-content {
+      #darkness-pdf-export-host .pdf-code-content {
         flex: 1 !important;
         white-space: pre-wrap !important;
         word-break: break-all !important;
@@ -729,15 +729,15 @@ window.Clarity.uiChat = {
       }
 
       /* Syntax Tokens */
-      #clarity-pdf-export-host .tk-comment { color: #64748b !important; font-style: italic !important; }
-      #clarity-pdf-export-host .tk-string { color: #059669 !important; }
-      #clarity-pdf-export-host .tk-keyword { color: #7c3aed !important; font-weight: 600 !important; }
-      #clarity-pdf-export-host .tk-function { color: #2563eb !important; font-weight: 600 !important; }
-      #clarity-pdf-export-host .tk-number { color: #d97706 !important; }
-      #clarity-pdf-export-host .tk-operator { color: #0284c7 !important; }
+      #darkness-pdf-export-host .tk-comment { color: #64748b !important; font-style: italic !important; }
+      #darkness-pdf-export-host .tk-string { color: #059669 !important; }
+      #darkness-pdf-export-host .tk-keyword { color: #7c3aed !important; font-weight: 600 !important; }
+      #darkness-pdf-export-host .tk-function { color: #2563eb !important; font-weight: 600 !important; }
+      #darkness-pdf-export-host .tk-number { color: #d97706 !important; }
+      #darkness-pdf-export-host .tk-operator { color: #0284c7 !important; }
 
       /* Images & Diagrams */
-      #clarity-pdf-export-host .pdf-image-block {
+      #darkness-pdf-export-host .pdf-image-block {
         width: 100% !important;
         margin: 12px 0 !important;
         text-align: center !important;
@@ -745,7 +745,7 @@ window.Clarity.uiChat = {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
-      #clarity-pdf-export-host .pdf-image-block img {
+      #darkness-pdf-export-host .pdf-image-block img {
         max-width: 100% !important;
         height: auto !important;
         object-fit: contain !important;
@@ -754,7 +754,7 @@ window.Clarity.uiChat = {
         border-radius: 8px !important;
         border: 1px solid #e2e8f0 !important;
       }
-      #clarity-pdf-export-host .pdf-diagram-block {
+      #darkness-pdf-export-host .pdf-diagram-block {
         width: 100% !important;
         margin: 12px 0 !important;
         text-align: center !important;
@@ -766,7 +766,7 @@ window.Clarity.uiChat = {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
-      #clarity-pdf-export-host .pdf-diagram-block img {
+      #darkness-pdf-export-host .pdf-diagram-block img {
         max-width: 100% !important;
         height: auto !important;
         object-fit: contain !important;
@@ -775,7 +775,7 @@ window.Clarity.uiChat = {
       }
 
       /* Semantic Callout Boxes in PDF */
-      #clarity-pdf-export-host .answer-callout {
+      #darkness-pdf-export-host .answer-callout {
         margin: 12px 0 !important;
         padding: 10px 14px !important;
         border-radius: 8px !important;
@@ -785,7 +785,7 @@ window.Clarity.uiChat = {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
-      #clarity-pdf-export-host .answer-callout__header {
+      #darkness-pdf-export-host .answer-callout__header {
         display: flex !important;
         align-items: center !important;
         gap: 6px !important;
@@ -793,51 +793,51 @@ window.Clarity.uiChat = {
         font-size: 12px !important;
         margin-bottom: 4px !important;
       }
-      #clarity-pdf-export-host .answer-callout__body {
+      #darkness-pdf-export-host .answer-callout__body {
         font-size: 12.5px !important;
         line-height: 1.55 !important;
         color: #1e293b !important;
       }
-      #clarity-pdf-export-host .answer-callout--tip {
+      #darkness-pdf-export-host .answer-callout--tip {
         border-left-color: #d97706 !important;
         background: #fffbeb !important;
         border-color: #fde68a !important;
       }
-      #clarity-pdf-export-host .answer-callout--tip .answer-callout__header { color: #b45309 !important; }
-      #clarity-pdf-export-host .answer-callout--warning {
+      #darkness-pdf-export-host .answer-callout--tip .answer-callout__header { color: #b45309 !important; }
+      #darkness-pdf-export-host .answer-callout--warning {
         border-left-color: #dc2626 !important;
         background: #fef2f2 !important;
         border-color: #fecaca !important;
       }
-      #clarity-pdf-export-host .answer-callout--warning .answer-callout__header { color: #b91c1c !important; }
-      #clarity-pdf-export-host .answer-callout--success {
+      #darkness-pdf-export-host .answer-callout--warning .answer-callout__header { color: #b91c1c !important; }
+      #darkness-pdf-export-host .answer-callout--success {
         border-left-color: #16a34a !important;
         background: #f0fdf4 !important;
         border-color: #bbf7d0 !important;
       }
-      #clarity-pdf-export-host .answer-callout--success .answer-callout__header { color: #15803d !important; }
-      #clarity-pdf-export-host .answer-callout--important {
+      #darkness-pdf-export-host .answer-callout--success .answer-callout__header { color: #15803d !important; }
+      #darkness-pdf-export-host .answer-callout--important {
         border-left-color: #0284c7 !important;
         background: #f0f9ff !important;
         border-color: #bae6fd !important;
       }
-      #clarity-pdf-export-host .answer-callout--important .answer-callout__header { color: #0369a1 !important; }
-      #clarity-pdf-export-host .answer-callout--example {
+      #darkness-pdf-export-host .answer-callout--important .answer-callout__header { color: #0369a1 !important; }
+      #darkness-pdf-export-host .answer-callout--example {
         border-left-color: #4f46e5 !important;
         background: #eef2ff !important;
         border-color: #c7d2fe !important;
       }
-      #clarity-pdf-export-host .answer-callout--example .answer-callout__header { color: #3730a3 !important; }
-      #clarity-pdf-export-host .answer-callout--formula {
+      #darkness-pdf-export-host .answer-callout--example .answer-callout__header { color: #3730a3 !important; }
+      #darkness-pdf-export-host .answer-callout--formula {
         border-left-color: #7c3aed !important;
         background: #f5f3ff !important;
         border-color: #ddd6fe !important;
       }
-      #clarity-pdf-export-host .answer-callout--formula .answer-callout__header { color: #6d28d9 !important; }
+      #darkness-pdf-export-host .answer-callout--formula .answer-callout__header { color: #6d28d9 !important; }
 
       /* Math & KaTeX rendering in PDF */
-      #clarity-pdf-export-host .katex-display,
-      #clarity-pdf-export-host .math-display {
+      #darkness-pdf-export-host .katex-display,
+      #darkness-pdf-export-host .math-display {
         margin: 10px 0 !important;
         padding: 6px 10px !important;
         background: #f8fafc !important;
@@ -847,7 +847,7 @@ window.Clarity.uiChat = {
         page-break-inside: avoid !important;
         break-inside: avoid !important;
       }
-      #clarity-pdf-export-host .math-inline {
+      #darkness-pdf-export-host .math-inline {
         padding: 1px 3px !important;
         background: #f8fafc !important;
         border-radius: 3px !important;
@@ -856,7 +856,7 @@ window.Clarity.uiChat = {
     host.appendChild(styleTag);
 
     const measurer = document.createElement("div");
-    measurer.id = "clarity-pdf-measurer";
+    measurer.id = "darkness-pdf-measurer";
     measurer.style.cssText = "position:fixed !important; left:-9999px !important; top:0 !important; width:794px !important; min-width:794px !important; max-width:794px !important; visibility:hidden !important; pointer-events:none !important; box-sizing:border-box !important; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif !important;";
     document.body.appendChild(measurer);
 
@@ -905,7 +905,7 @@ window.Clarity.uiChat = {
           if (isU) {
             c.innerHTML = `<p>${escapeHtml(m.content)}</p>`;
           } else {
-            c.innerHTML = window.Clarity?.markdown ? window.Clarity.markdown.render(m.content) : `<p>${escapeHtml(m.content)}</p>`;
+            c.innerHTML = window.Darkness?.markdown ? window.Darkness.markdown.render(m.content) : `<p>${escapeHtml(m.content)}</p>`;
           }
           el.appendChild(c);
           dummyFeed.appendChild(el);
@@ -1032,7 +1032,7 @@ window.Clarity.uiChat = {
           });
           return canvas.toDataURL("image/png");
         } catch (err) {
-          console.warn("[Clarity Export] html2canvas live element capture fallback:", err);
+          console.warn("[Darkness Export] html2canvas live element capture fallback:", err);
           return null;
         } finally {
           mc.style.height = originalMcHeight;
@@ -1075,7 +1075,7 @@ window.Clarity.uiChat = {
           rawCode = block._rawCode;
         } else {
           const cellId = block.getAttribute("data-cell-id") || block.id;
-          const snip = window.Clarity?.codeViewer?.getSnippet ? window.Clarity.codeViewer.getSnippet(cellId, block) : null;
+          const snip = window.Darkness?.codeViewer?.getSnippet ? window.Darkness.codeViewer.getSnippet(cellId, block) : null;
           if (snip && typeof snip.code === "string" && snip.code.length > 0) {
             rawCode = snip.code;
           } else {
@@ -1097,7 +1097,7 @@ window.Clarity.uiChat = {
           block.querySelector(".code-cell__filename")?.textContent?.trim() ||
           "";
 
-        const highlighter = window.Clarity?.highlighter;
+        const highlighter = window.Darkness?.highlighter;
         const langInfo = highlighter?.getLanguageInfo ? highlighter.getLanguageInfo(lang || filename) : { id: lang, name: (lang || "TEXT").toUpperCase() };
 
         const lines = rawCode.split("\n");
@@ -1399,7 +1399,7 @@ window.Clarity.uiChat = {
         const authorTag = document.createElement("div");
         authorTag.className = "message__author-tag";
         let displayAuthor = authorName;
-        if (!isUser && (/clarity/i.test(authorName) || !authorName)) {
+        if (!isUser && (/darkness/i.test(authorName) || !authorName)) {
           displayAuthor = "Study Notes & Explanation";
         } else if (isUser) {
           displayAuthor = "Topic / Question";
@@ -1583,7 +1583,7 @@ window.Clarity.uiChat = {
 
       // Step 3: Populate pages to wrapper layout
       const wrapper = document.createElement("div");
-      wrapper.id = "clarity-pdf-export-wrapper";
+      wrapper.id = "darkness-pdf-export-wrapper";
       wrapper.style.cssText = "width:794px !important; min-width:794px !important; max-width:794px !important; margin:0 !important; padding:0 !important; background:#ffffff !important; box-sizing:border-box !important;";
 
       const totalPages = pages.length;
@@ -1610,7 +1610,7 @@ window.Clarity.uiChat = {
       }
 
       // Step 4: Run html2pdf render pipeline
-      const safeName = (projectName || "Clarity").replace(/[^a-zA-Z0-9_-]/g, '_') + "_chat_" + now.toISOString().split('T')[0] + ".pdf";
+      const safeName = (projectName || "Darkness").replace(/[^a-zA-Z0-9_-]/g, '_') + "_chat_" + now.toISOString().split('T')[0] + ".pdf";
 
       const opt = {
         margin: 0,
@@ -1640,19 +1640,19 @@ window.Clarity.uiChat = {
 
       await window.html2pdf().set(opt).from(wrapper).save();
 
-      if (window.Clarity && window.Clarity.toast) {
-        window.Clarity.toast.show("PDF export completed successfully", "success");
+      if (window.Darkness && window.Darkness.toast) {
+        window.Darkness.toast.show("PDF export completed successfully", "success");
       }
 
       // Save PDF artifact to project context if available
-      const pId = options.projectId || window.Clarity?.state?.activeConversation?.project_id;
-      if (pId && window.Clarity?.api?.request) {
+      const pId = options.projectId || window.Darkness?.state?.activeConversation?.project_id;
+      if (pId && window.Darkness?.api?.request) {
         try {
           const dataUriWorker = window.html2pdf().set(opt).from(wrapper);
           const pdfDataUri = await dataUriWorker.outputPdf('datauristring');
           const base64Data = pdfDataUri ? pdfDataUri.split(',')[1] : null;
           if (base64Data && pdfDataUri.startsWith("data:application/pdf")) {
-            await window.Clarity.api.request('/api/projects/' + pId + '/artifacts', {
+            await window.Darkness.api.request('/api/projects/' + pId + '/artifacts', {
               method: 'POST',
               body: JSON.stringify({
                 filename: safeName,
@@ -1671,8 +1671,8 @@ window.Clarity.uiChat = {
 
     } catch (err) {
       console.error("PDF Export error:", err);
-      if (window.Clarity && window.Clarity.toast) {
-        window.Clarity.toast.show("Couldn't export the chat. Please try again.", "error");
+      if (window.Darkness && window.Darkness.toast) {
+        window.Darkness.toast.show("Couldn't export the chat. Please try again.", "error");
       }
     } finally {
       if (document.body.contains(loadingModal)) loadingModal.remove();
@@ -1736,9 +1736,9 @@ window.Clarity.uiChat = {
         });
         if (text) {
           navigator.clipboard.writeText(text).then(() => {
-            if (window.Clarity?.toast) window.Clarity.toast.show("Conversation copied as Markdown", "success");
+            if (window.Darkness?.toast) window.Darkness.toast.show("Conversation copied as Markdown", "success");
           }).catch(() => {
-            if (window.Clarity?.toast) window.Clarity.toast.show("Failed to copy conversation", "danger");
+            if (window.Darkness?.toast) window.Darkness.toast.show("Failed to copy conversation", "danger");
           });
         }
       });
@@ -1790,7 +1790,7 @@ window.Clarity.uiChat = {
 
     if (!container || !menuBtn || !dropdown || !pdfBtn) return;
 
-    const messages = window.Clarity?.state?.activeConversation?.messages || [];
+    const messages = window.Darkness?.state?.activeConversation?.messages || [];
     if (messages.length > 0) {
         container.hidden = false;
     } else {
@@ -1890,15 +1890,15 @@ window.Clarity.uiChat = {
     let hasViva = false;
     let hasSecurity = false;
 
-    const conv = window.Clarity?.state?.activeConversation;
+    const conv = window.Darkness?.state?.activeConversation;
     if (conv && conv.project_id) {
         projId = conv.project_id;
-        const proj = window.Clarity?.state?.projects?.find(p => p.id === projId);
+        const proj = window.Darkness?.state?.projects?.find(p => p.id === projId);
         if (proj) {
             projName = proj.name;
             hasProj = true;
 
-            const analysis = window.Clarity?.state?.projectAnalyses?.[projId];
+            const analysis = window.Darkness?.state?.projectAnalyses?.[projId];
             if (analysis) {
                 if (analysis.architecture && analysis.architecture.length > 0) hasArch = true;
                 if (analysis.viva && analysis.viva.length > 0) hasViva = true;
@@ -1908,7 +1908,7 @@ window.Clarity.uiChat = {
         }
     }
 
-    const title = hasProj ? `What are you working on in ${window.Clarity.utils.escapeHtml(projName)}?` : 'What are you working on?';
+    const title = hasProj ? `What are you working on in ${window.Darkness.utils.escapeHtml(projName)}?` : 'What are you working on?';
     const sub = hasProj ? 'Ask me about your project, code, architecture, knowledge, or anything you\'re building.' : 'Ask me anything to get started.';
 
     let suggestionsHtml = '';
@@ -1933,9 +1933,9 @@ window.Clarity.uiChat = {
     return [
       '<div class="chat-empty" style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:20px; text-align:center;">',
       '<div class="chat-empty__inner" style="animation: fade-in 0.4s ease-out forwards;">',
-            '<div class="clarity-robot" id="clarityRobot" data-state="idle">',
-      '  <div class="clarity-robot__ring"></div>',
-      '  <img src="/robot_asset.svg" class="clarity-robot__img" alt="Darkness Robot" />',
+            '<div class="darkness-robot" id="darknessRobot" data-state="idle">',
+      '  <div class="darkness-robot__ring"></div>',
+      '  <img src="/robot_asset.svg" class="darkness-robot__img" alt="Darkness Robot" />',
       '</div>',
       '<h1 class="chat-empty__title" style="font-size:28px; font-weight:700; color:var(--ink); margin-bottom:12px; letter-spacing:-0.02em;">' + title + '</h1>',
       '<p class="chat-empty__sub" style="font-size:15px; color:var(--ink-muted); max-width:480px; margin:0 auto; line-height:1.5;">' + sub + '</p>',
@@ -1997,7 +1997,7 @@ window.Clarity.uiChat = {
     return `
       <div class="agent-transient-activity">
         <span class="agent-activity-spinner"></span>
-        <span class="agent-activity-label">${window.Clarity.utils.escapeHtml(label)}</span>
+        <span class="agent-activity-label">${window.Darkness.utils.escapeHtml(label)}</span>
       </div>
     `;
   },
@@ -2072,11 +2072,11 @@ window.Clarity.uiChat = {
           textToRender = textToRender.replace(/\!\[.*?\]\((?:data:|http|\/api\/).*?\)/g, "").trim();
         }
 
-        const rendered = textToRender ? window.Clarity.markdown.render(textToRender, { __intercepted: true }) : "";
+        const rendered = textToRender ? window.Darkness.markdown.render(textToRender, { __intercepted: true }) : "";
         contentHtml = '<div class="message__content">' + (rendered || "") + "</div>";
         setTimeout(() => {
-          if (window.Clarity && window.Clarity.renderMermaid) {
-            window.Clarity.renderMermaid();
+          if (window.Darkness && window.Darkness.renderMermaid) {
+            window.Darkness.renderMermaid();
           }
         }, 50);
       } catch (e) {
@@ -2099,10 +2099,10 @@ window.Clarity.uiChat = {
           return `
             <div class="inline-image-card" style="max-width: 820px; width: 100%; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); box-shadow: 0 4px 16px rgba(0,0,0,0.04); padding: 12px;">
               <div class="inline-image-wrapper" style="position: relative; border-radius: 8px; overflow: hidden; background: var(--surface-subtle, #18181b); display: flex; justify-content: center; align-items: center;">
-                <img src="${url}" alt="${window.Clarity.utils.escapeHtml(title)}" class="inline-generated-img" loading="lazy" style="width: 100%; max-height: 560px; object-fit: contain; display: block; border-radius: 8px; cursor: zoom-in; transition: transform 0.15s ease;" data-img-url="${url}" data-img-title="${window.Clarity.utils.escapeHtml(title)}" />
+                <img src="${url}" alt="${window.Darkness.utils.escapeHtml(title)}" class="inline-generated-img" loading="lazy" style="width: 100%; max-height: 560px; object-fit: contain; display: block; border-radius: 8px; cursor: zoom-in; transition: transform 0.15s ease;" data-img-url="${url}" data-img-title="${window.Darkness.utils.escapeHtml(title)}" />
               </div>
               <div class="inline-image-actions" style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; align-items: center; justify-content: flex-start;">
-                <button type="button" class="btn btn--sm btn--outline image-lightbox-btn" data-img-url="${url}" data-img-title="${window.Clarity.utils.escapeHtml(title)}" style="font-size: 12px; display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 5px 12px; font-weight: 500;">
+                <button type="button" class="btn btn--sm btn--outline image-lightbox-btn" data-img-url="${url}" data-img-title="${window.Darkness.utils.escapeHtml(title)}" style="font-size: 12px; display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 5px 12px; font-weight: 500;">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
                   <span>↗ Full View</span>
                 </button>
@@ -2110,7 +2110,7 @@ window.Clarity.uiChat = {
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   <span>↓ Download</span>
                 </a>
-                <button type="button" class="btn btn--sm btn--outline image-regenerate-btn" data-art-id="${artId}" data-prompt="${window.Clarity.utils.escapeHtml(title)}" style="font-size: 12px; display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 5px 12px; font-weight: 500;">
+                <button type="button" class="btn btn--sm btn--outline image-regenerate-btn" data-art-id="${artId}" data-prompt="${window.Darkness.utils.escapeHtml(title)}" style="font-size: 12px; display: inline-flex; align-items: center; gap: 5px; border-radius: 6px; padding: 5px 12px; font-weight: 500;">
                   <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6"/><path d="M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
                   <span>↻ Regenerate</span>
                 </button>
@@ -2160,8 +2160,8 @@ window.Clarity.uiChat = {
       artifactsHtml = '<div class="message__artifacts">' +
         batchHeader +
         fileArtifacts.map(art => {
-          return window.Clarity.artifact && window.Clarity.artifact.renderCard
-            ? window.Clarity.artifact.renderCard(art)
+          return window.Darkness.artifact && window.Darkness.artifact.renderCard
+            ? window.Darkness.artifact.renderCard(art)
             : "";
         }).join("") + '</div>';
     }
@@ -2174,9 +2174,9 @@ window.Clarity.uiChat = {
       actionsHtml = `
         <div class="message__suggested-actions">
           ${msg.suggested_actions.map(act => `
-            <button type="button" class="action-chip" data-action-prompt="${window.Clarity.utils.escapeHtml(act)}">
+            <button type="button" class="action-chip" data-action-prompt="${window.Darkness.utils.escapeHtml(act)}">
               <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 8 16 12 12 16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-              <span>${window.Clarity.utils.escapeHtml(act)}</span>
+              <span>${window.Darkness.utils.escapeHtml(act)}</span>
             </button>
           `).join("")}
         </div>
@@ -2245,8 +2245,8 @@ window.Clarity.uiChat = {
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
       </button>`,
     ];
-    const playerBar = window.Clarity?.narrationSync
-      ? window.Clarity.narrationSync.renderPlayerBarHtml(msg.id || "", "en")
+    const playerBar = window.Darkness?.narrationSync
+      ? window.Darkness.narrationSync.renderPlayerBarHtml(msg.id || "", "en")
       : `
       <div class="narration-player-bar" hidden data-player-msg-id="${msg.id || ""}">
         <div class="narration-player-left">
@@ -2327,11 +2327,11 @@ window.Clarity.uiChat = {
       '<div class="attachment-file-card" data-file-id="' + fileId + '">',
         '<div class="attachment-file-card__icon">' + icon + '</div>',
         '<div class="attachment-file-card__info">',
-          '<div class="attachment-file-card__name">' + window.Clarity.utils.escapeHtml(name) + '</div>',
+          '<div class="attachment-file-card__name">' + window.Darkness.utils.escapeHtml(name) + '</div>',
           previewHtml,
         '</div>',
         '<div class="attachment-file-card__actions">',
-          '<button type="button" class="btn btn--ghost btn--sm file-preview-btn" data-file-id="' + fileId + '" data-file-name="' + window.Clarity.utils.escapeHtml(name) + '" title="Preview">',
+          '<button type="button" class="btn btn--ghost btn--sm file-preview-btn" data-file-id="' + fileId + '" data-file-name="' + window.Darkness.utils.escapeHtml(name) + '" title="Preview">',
             '<svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 6v6l4 2"/></svg>',
             ' Preview',
           '</button>',
@@ -2362,11 +2362,11 @@ window.Clarity.uiChat = {
     const container = document.getElementById("chatComposer");
     if (!container) return;
     this._attachedFiles = (this._attachedFiles || []).filter(a => a && a.id);
-    window.Clarity.composer.mount(container, (value, attachments, think) => {
+    window.Darkness.composer.mount(container, (value, attachments, think) => {
       this._attachedFiles = attachments || [];
       this.sendMessage(value, this._attachedFiles, undefined, think);
     }, this._resolveModelId(), this._attachedFiles);
-    window.Clarity.composer.setStreaming(this._isStreaming, () => this._stopStreaming());
+    window.Darkness.composer.setStreaming(this._isStreaming, () => this._stopStreaming());
   },
 
   _openFilePreview(att) {
@@ -2388,7 +2388,7 @@ window.Clarity.uiChat = {
     const cleanTitle = title || "Generated Image";
     const bodyHtml = `
       <div style="display: flex; justify-content: center; align-items: center; padding: 16px; background: rgba(0,0,0,0.88); border-radius: 12px; min-height: 320px; max-height: 82vh; overflow: auto;">
-        <img src="${url}" alt="${window.Clarity.utils.escapeHtml(cleanTitle)}" style="max-width: 100%; max-height: 78vh; object-fit: contain; border-radius: 8px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);" />
+        <img src="${url}" alt="${window.Darkness.utils.escapeHtml(cleanTitle)}" style="max-width: 100%; max-height: 78vh; object-fit: contain; border-radius: 8px; box-shadow: 0 12px 40px rgba(0,0,0,0.6);" />
       </div>
     `;
     const actionsHtml = `
@@ -2398,8 +2398,8 @@ window.Clarity.uiChat = {
       </a>
       <button type="button" class="btn btn--outline" data-modal-close="true">Close</button>
     `;
-    if (window.Clarity.modal && window.Clarity.modal.open) {
-      window.Clarity.modal.open(cleanTitle, bodyHtml, actionsHtml, { maxWidth: "88vw" });
+    if (window.Darkness.modal && window.Darkness.modal.open) {
+      window.Darkness.modal.open(cleanTitle, bodyHtml, actionsHtml, { maxWidth: "88vw" });
     }
   },
 
@@ -2412,7 +2412,7 @@ window.Clarity.uiChat = {
 
     let contentHtml = "";
     if (isImage) {
-      contentHtml = '<img src="/api/files/' + fileId + '/raw" alt="' + window.Clarity.utils.escapeHtml(fileName) + '" class="preview-image" />';
+      contentHtml = '<img src="/api/files/' + fileId + '/raw" alt="' + window.Darkness.utils.escapeHtml(fileName) + '" class="preview-image" />';
     } else {
       contentHtml = this._buildCodePreview(fileId, fileName, att.content || "");
     }
@@ -2428,11 +2428,11 @@ window.Clarity.uiChat = {
       '<div class="preview-header">',
         '<div class="preview-header__info">',
           '<span class="preview-header__icon">' + icon + '</span>',
-          '<span class="preview-header__name">' + window.Clarity.utils.escapeHtml(fileName) + '</span>',
+          '<span class="preview-header__name">' + window.Darkness.utils.escapeHtml(fileName) + '</span>',
           '<span class="preview-header__meta">Python File • 2.1 KB</span>',
         '</div>',
         '<div class="preview-header__actions">',
-          '<a href="/api/files/' + fileId + '/raw" download="' + window.Clarity.utils.escapeHtml(fileName) + '" class="btn btn--ghost btn--sm" title="Download">Download</a>',
+          '<a href="/api/files/' + fileId + '/raw" download="' + window.Darkness.utils.escapeHtml(fileName) + '" class="btn btn--ghost btn--sm" title="Download">Download</a>',
           '<button class="btn btn--sm btn--outline" type="button" id="previewCloseBtn" title="Close preview (Esc)" aria-label="Close preview" style="display:inline-flex; align-items:center; gap:4px; font-weight:600; color:var(--ink);">',
             '<svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
             ' Close',
@@ -2471,9 +2471,9 @@ window.Clarity.uiChat = {
     return [
       '<div class="preview-code">',
         '<div class="preview-line-numbers">',
-          '<pre><code class="language-plaintext">' + window.Clarity.utils.escapeHtml(lineNumbers) + '</code></pre>',
+          '<pre><code class="language-plaintext">' + window.Darkness.utils.escapeHtml(lineNumbers) + '</code></pre>',
         '</div>',
-        '<pre class="preview-source"><code class="language-' + langClass + '">' + window.Clarity.utils.escapeHtml(codeContent) + '</code></pre>',
+        '<pre class="preview-source"><code class="language-' + langClass + '">' + window.Darkness.utils.escapeHtml(codeContent) + '</code></pre>',
       '</div>'
     ].join("");
   },
@@ -2485,7 +2485,7 @@ window.Clarity.uiChat = {
         const fileId = btn.getAttribute("data-file-id");
         const fileName = btn.getAttribute("data-file-name");
         // Fetch content from server
-        fetch(window.Clarity.api.base + "/api/files/" + fileId + "/raw")
+        fetch(window.Darkness.api.base + "/api/files/" + fileId + "/raw")
           .then(r => r.text())
           .then(text => {
             this._previewFile = { file_id: fileId, name: fileName, content: text, mime: "text/plain" };
@@ -2506,7 +2506,7 @@ window.Clarity.uiChat = {
   },
 
   setRobotState(state) {
-    const robot = document.getElementById("clarityRobot");
+    const robot = document.getElementById("darknessRobot");
     if (!robot) return;
 
     // Check if we're trying to set idle but we are currently streaming
@@ -2528,7 +2528,7 @@ window.Clarity.uiChat = {
 
     if (state === "idle" || state === "listening" || state === "thinking") {
       this._robotLookInterval = setInterval(() => {
-        if (!document.getElementById("clarityRobot")) return clearInterval(this._robotLookInterval);
+        if (!document.getElementById("darknessRobot")) return clearInterval(this._robotLookInterval);
 
         const r = Math.random();
         let look = "none";
@@ -2551,7 +2551,7 @@ window.Clarity.uiChat = {
   },
 
   _syncComposerStreaming() {
-    window.Clarity.composer.setStreaming(this._isStreaming, () => this._stopStreaming());
+    window.Darkness.composer.setStreaming(this._isStreaming, () => this._stopStreaming());
   },
 
   async sendMessage(content, attachments, explicitMode, think, selectedCodeContext) {
@@ -2562,37 +2562,37 @@ window.Clarity.uiChat = {
     if (!this._activeConversation) {
       try {
         const defaultTitle = (content && content.trim()) || (attachments && attachments[0] && attachments[0].name) || "New Chat";
-        const convData = await window.Clarity.api.post("/api/conversations", {
+        const convData = await window.Darkness.api.post("/api/conversations", {
           title: defaultTitle,
           model_id: this._resolveModelId(),
         });
         this._activeConversation = convData.id;
         this._firstMessagePending = false;
-        window.Clarity.store.set("active_conversation", convData.id);
-        if (window.Clarity.uiSidebar) window.Clarity.uiSidebar.refresh();
+        window.Darkness.store.set("active_conversation", convData.id);
+        if (window.Darkness.uiSidebar) window.Darkness.uiSidebar.refresh();
         setTimeout(() => {
           const input = document.getElementById("composerInput");
           if (input) input.focus();
         }, 50);
       } catch (err) {
-        window.Clarity.toast.show("Failed to create conversation: " + (err.message || "unknown"), "danger");
+        window.Darkness.toast.show("Failed to create conversation: " + (err.message || "unknown"), "danger");
         return;
       }
     }
     const cid = this._activeConversation;
     if (!cid) {
-      window.Clarity.toast.show("Could not start conversation: no conversation id.", "danger");
+      window.Darkness.toast.show("Could not start conversation: no conversation id.", "danger");
       return;
     }
 
     const hasImages = attachments && attachments.some(a => a.type === "image");
     if (hasImages) {
       const modelId = this._resolveModelId();
-      const caps = window.Clarity.modelSelector && window.Clarity.modelSelector.getCapabilities(modelId);
+      const caps = window.Darkness.modelSelector && window.Darkness.modelSelector.getCapabilities(modelId);
       if (!caps || !caps.vision) {
         this._isStreaming = false;
         this._syncComposerStreaming();
-        window.Clarity.toast.show("This model does not support image input. Please select a Vision-capable model.", "danger");
+        window.Darkness.toast.show("This model does not support image input. Please select a Vision-capable model.", "danger");
         return;
       }
     }
@@ -2657,7 +2657,7 @@ window.Clarity.uiChat = {
     const chosenMode = explicitMode || undefined;
     const resolvedFormat = chosenMode === "ppt" ? "pptx" : (chosenMode === "word" ? "docx" : (chosenMode === "excel" ? "xlsx" : (chosenMode === "file" ? "code" : chosenMode)));
 
-    const activeProfessorMode = localStorage.getItem("clarity_professor_mode") || "normal";
+    const activeProfessorMode = localStorage.getItem("darkness_professor_mode") || "normal";
     const userWantsReadAloud = /\b(read aloud|read it aloud|voice)\b/i.test(content);
 
     let requestBody = {
@@ -2681,7 +2681,7 @@ window.Clarity.uiChat = {
     this.setRobotState("thinking");
 
     try {
-      const response = await fetch(window.Clarity.api.base + `/api/conversations/${cid}/chat`, {
+      const response = await fetch(window.Darkness.api.base + `/api/conversations/${cid}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(requestBody),
@@ -2878,11 +2878,11 @@ window.Clarity.uiChat = {
                 msgEl.innerHTML = this._renderMessage(botMsg);
                 this._bindMessageControls();
                 this._scrollToBottom();
-                if (userWantsReadAloud || localStorage.getItem("clarity_auto_read_aloud") === "true") {
+                if (userWantsReadAloud || localStorage.getItem("darkness_auto_read_aloud") === "true") {
                   setTimeout(() => {
                     const targetMsgEl = document.querySelector(`[data-msg-id="${botMsg.id}"]`);
-                    if (targetMsgEl && window.Clarity.narrationSync) {
-                      window.Clarity.narrationSync.startReadAloud(botMsg.id, targetMsgEl);
+                    if (targetMsgEl && window.Darkness.narrationSync) {
+                      window.Darkness.narrationSync.startReadAloud(botMsg.id, targetMsgEl);
                     }
                   }, 400);
                 }
@@ -2956,15 +2956,15 @@ window.Clarity.uiChat = {
         if (!content && !streaming) {
           contentEl.innerHTML = '<div class="message__empty">No response generated.</div>';
         } else {
-          let html = window.Clarity.markdown.render(content);
+          let html = window.Darkness.markdown.render(content);
           if (streaming) html += '<span class="cursor"></span>';
           contentEl.innerHTML = html;
 
-          if (!streaming && window.Clarity && window.Clarity.renderMermaid) {
-            window.Clarity.renderMermaid(contentEl);
+          if (!streaming && window.Darkness && window.Darkness.renderMermaid) {
+            window.Darkness.renderMermaid(contentEl);
           }
-          if (window.Clarity && window.Clarity.renderKaTeX) {
-            window.Clarity.renderKaTeX(contentEl);
+          if (window.Darkness && window.Darkness.renderKaTeX) {
+            window.Darkness.renderKaTeX(contentEl);
           }
         }
       }
@@ -3013,8 +3013,8 @@ window.Clarity.uiChat = {
       '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
       '</div>',
       '<div class="error-block__body">',
-      '<div class="error-block__title">' + window.Clarity.utils.escapeHtml(friendly.title) + '</div>',
-      '<div class="error-block__detail">' + window.Clarity.utils.escapeHtml(friendly.detail) + '</div>',
+      '<div class="error-block__title">' + window.Darkness.utils.escapeHtml(friendly.title) + '</div>',
+      '<div class="error-block__detail">' + window.Darkness.utils.escapeHtml(friendly.detail) + '</div>',
       '</div>',
       '</div>'
     ].join("");
@@ -3099,9 +3099,9 @@ window.Clarity.uiChat = {
           const text = this._extractText(msgEl);
           try {
             await navigator.clipboard.writeText(text);
-            window.Clarity.toast.show("Copied to clipboard", "success");
+            window.Darkness.toast.show("Copied to clipboard", "success");
           } catch (e) {
-            window.Clarity.toast.show("Copy failed", "danger");
+            window.Darkness.toast.show("Copy failed", "danger");
           }
         }
         break;
@@ -3118,8 +3118,8 @@ window.Clarity.uiChat = {
         window.location.hash = "#/model";
         break;
       case "read-aloud":
-        if (window.Clarity.narrationSync) {
-          window.Clarity.narrationSync.toggleReadAloud(msgId, msgEl);
+        if (window.Darkness.narrationSync) {
+          window.Darkness.narrationSync.toggleReadAloud(msgId, msgEl);
         }
         break;
     }
@@ -3179,11 +3179,11 @@ window.Clarity.uiChat = {
     const hasImages = lastUser.attachments && lastUser.attachments.some(a => a.type === "image");
     if (hasImages) {
       const modelId = this._resolveModelId();
-      const caps = window.Clarity.modelSelector && window.Clarity.modelSelector.getCapabilities(modelId);
+      const caps = window.Darkness.modelSelector && window.Darkness.modelSelector.getCapabilities(modelId);
       if (!caps || !caps.vision) {
         this._isStreaming = false;
         this._syncComposerStreaming();
-        window.Clarity.toast.show("This model does not support image input. Please select a Vision-capable model.", "danger");
+        window.Darkness.toast.show("This model does not support image input. Please select a Vision-capable model.", "danger");
         return;
       }
     }
@@ -3191,7 +3191,7 @@ window.Clarity.uiChat = {
     this._abortController = new AbortController();
 
     try {
-      const response = await fetch(window.Clarity.api.base + `/api/conversations/${cid}/regenerate`, {
+      const response = await fetch(window.Darkness.api.base + `/api/conversations/${cid}/regenerate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -3405,9 +3405,9 @@ window.Clarity.uiChat = {
       const newValue = textarea.value.trim();
       if (!newValue) return;
       msgEl.classList.remove("message--editing");
-      bubble.innerHTML = window.Clarity.markdown ? window.Clarity.markdown.render(newValue) : `<div class="message__content">${newValue}</div>`;
-      if (window.Clarity && window.Clarity.renderMermaid) {
-        window.Clarity.renderMermaid(bubble);
+      bubble.innerHTML = window.Darkness.markdown ? window.Darkness.markdown.render(newValue) : `<div class="message__content">${newValue}</div>`;
+      if (window.Darkness && window.Darkness.renderMermaid) {
+        window.Darkness.renderMermaid(bubble);
       } else if (window.mermaid) {
         try { window.mermaid.run({ querySelector: '.mermaid' }).catch(()=>{}); } catch(e) {}
       }
@@ -3423,7 +3423,7 @@ window.Clarity.uiChat = {
       const cid = this._activeConversation;
       if (cid) {
         try {
-          await window.Clarity.api.post("/api/conversations/" + cid + "/messages/" + msg.id + "/edit", { content: newValue });
+          await window.Darkness.api.post("/api/conversations/" + cid + "/messages/" + msg.id + "/edit", { content: newValue });
         } catch (e) { /* best effort */ }
       }
 
@@ -3483,11 +3483,11 @@ window.Clarity.uiChat = {
     const hasImages = attachments.some(a => a.type === "image");
     if (hasImages) {
       const modelId = this._resolveModelId();
-      const caps = window.Clarity.modelSelector && window.Clarity.modelSelector.getCapabilities(modelId);
+      const caps = window.Darkness.modelSelector && window.Darkness.modelSelector.getCapabilities(modelId);
       if (!caps || !caps.vision) {
         this._isStreaming = false;
         this._syncComposerStreaming();
-        window.Clarity.toast.show("This model does not support image input. Please select a Vision-capable model.", "danger");
+        window.Darkness.toast.show("This model does not support image input. Please select a Vision-capable model.", "danger");
         return;
       }
     }
@@ -3497,7 +3497,7 @@ window.Clarity.uiChat = {
     this._abortController = new AbortController();
 
     try {
-      const response = await fetch(window.Clarity.api.base + `/api/conversations/${cid}/regenerate`, {
+      const response = await fetch(window.Darkness.api.base + `/api/conversations/${cid}/regenerate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -3664,14 +3664,14 @@ window.Clarity.uiChat = {
   _replaceUserMessage(msgId, newContent, convEl) {
     const el = convEl.querySelector(`[data-msg-id="${msgId}"] .message__content`);
     if (el) {
-      el.innerHTML = window.Clarity.markdown.render(newContent);
-      if (window.Clarity && window.Clarity.renderMermaid) {
-        window.Clarity.renderMermaid(el);
+      el.innerHTML = window.Darkness.markdown.render(newContent);
+      if (window.Darkness && window.Darkness.renderMermaid) {
+        window.Darkness.renderMermaid(el);
       } else if (window.mermaid) {
         try { window.mermaid.run({ querySelector: '.mermaid' }).catch(()=>{}); } catch(e) {}
       }
-      if (window.Clarity && window.Clarity.renderKaTeX) {
-        window.Clarity.renderKaTeX(el);
+      if (window.Darkness && window.Darkness.renderKaTeX) {
+        window.Darkness.renderKaTeX(el);
       }
     }
   },
@@ -3734,7 +3734,7 @@ window.Clarity.uiChat = {
         e.stopPropagation();
         const pAction = btn.getAttribute("data-player-action");
         const bar = btn.closest(".narration-player-bar");
-        const controller = window.Clarity.speechController;
+        const controller = window.Darkness.speechController;
         if (!controller) return;
 
         if (pAction === "play-pause") {
@@ -3757,9 +3757,9 @@ window.Clarity.uiChat = {
         btn.onchange = (e) => {
           const act = btn.getAttribute("data-player-action");
           if (act === "speed") {
-            window.Clarity.speechController?.setSpeed(e.target.value);
+            window.Darkness.speechController?.setSpeed(e.target.value);
           } else if (act === "voice") {
-            window.Clarity.speechController?.setVoice(e.target.value);
+            window.Darkness.speechController?.setVoice(e.target.value);
           }
         };
       } else {
@@ -3774,7 +3774,7 @@ window.Clarity.uiChat = {
         const codeEl = btn.closest(".code-block").querySelector("code");
         const text = codeEl ? codeEl.textContent : "";
         navigator.clipboard.writeText(text).then(() => {
-          window.Clarity.toast.show("Code copied", "success");
+          window.Darkness.toast.show("Code copied", "success");
         });
       };
       btn.addEventListener("click", btn._handler);
@@ -3829,7 +3829,7 @@ window.Clarity.uiChat = {
         const fileId = btn.getAttribute("data-file-id");
         const fileName = btn.getAttribute("data-file-name");
         // Fetch file content for preview
-        fetch(window.Clarity.api.base + "/api/files/" + fileId + "/raw")
+        fetch(window.Darkness.api.base + "/api/files/" + fileId + "/raw")
           .then(r => r.text())
           .then(text => {
             this._previewFile = { file_id: fileId, name: fileName, content: text, mime: "text/plain" };
@@ -3843,8 +3843,8 @@ window.Clarity.uiChat = {
       btn.addEventListener("click", btn._handler);
     });
 
-    if (window.Clarity.artifact && window.Clarity.artifact.bindEvents) {
-      window.Clarity.artifact.bindEvents(convEl);
+    if (window.Darkness.artifact && window.Darkness.artifact.bindEvents) {
+      window.Darkness.artifact.bindEvents(convEl);
     }
 
     // Batch download all artifacts ZIP
@@ -3881,10 +3881,10 @@ window.Clarity.uiChat = {
           document.body.removeChild(a);
           URL.revokeObjectURL(url);
 
-          window.Clarity.toast.show(`Downloaded ${artifactIds.length} files as ZIP archive`, "success");
+          window.Darkness.toast.show(`Downloaded ${artifactIds.length} files as ZIP archive`, "success");
         } catch (err) {
           console.error("ZIP download failed:", err);
-          window.Clarity.toast.show("ZIP download failed: " + err.message, "danger");
+          window.Darkness.toast.show("ZIP download failed: " + err.message, "danger");
         } finally {
           btn.disabled = false;
           btn.innerHTML = origText;
@@ -3911,7 +3911,7 @@ window.Clarity.uiChat = {
 
         for (const id of artifactIds) {
           try {
-            await window.Clarity.api.post(`/api/artifacts/${id}/apply`, {});
+            await window.Darkness.api.post(`/api/artifacts/${id}/apply`, {});
             appliedCount++;
             // Update individual card if present
             const card = document.getElementById(`art_${id}`);
@@ -3938,9 +3938,9 @@ window.Clarity.uiChat = {
         btn.innerHTML = `✓ ${appliedCount} Applied`;
         btn.classList.add("btn--outline");
         if (appliedCount > 0) {
-          window.Clarity.toast.show(`Applied ${appliedCount} files to project workspace!`, "success");
+          window.Darkness.toast.show(`Applied ${appliedCount} files to project workspace!`, "success");
         } else if (errors > 0) {
-          window.Clarity.toast.show("Failed to apply files to workspace", "danger");
+          window.Darkness.toast.show("Failed to apply files to workspace", "danger");
         }
       };
       btn.addEventListener("click", btn._batchApplyHandler);
@@ -4014,8 +4014,8 @@ window.Clarity.uiChat = {
             <svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
             <span>Copied ✓</span>
           `;
-          if (window.Clarity && window.Clarity.toast) {
-            window.Clarity.toast.show("Code copied", "success");
+          if (window.Darkness && window.Darkness.toast) {
+            window.Darkness.toast.show("Code copied", "success");
           }
           setTimeout(() => {
             copyBtn.classList.remove("pre-copy-btn--copied");
@@ -4031,9 +4031,9 @@ window.Clarity.uiChat = {
   },
 
   _refreshSidebarAfterMessage() {
-    if (window.Clarity.uiSidebar) {
-      window.Clarity.uiSidebar.loadConversations().then(() => {
-        window.Clarity.uiSidebar.render();
+    if (window.Darkness.uiSidebar) {
+      window.Darkness.uiSidebar.loadConversations().then(() => {
+        window.Darkness.uiSidebar.render();
       });
     }
   },
@@ -4042,7 +4042,7 @@ window.Clarity.uiChat = {
     const cid = this._activeConversation;
     if (!cid || !title) return;
     try {
-      await window.Clarity.api.patch(`/api/conversations/${cid}/title`, { title });
+      await window.Darkness.api.patch(`/api/conversations/${cid}/title`, { title });
     } catch (err) {
       console.error("Failed to update conversation title:", err);
     }
@@ -4080,17 +4080,17 @@ window.Clarity.uiChat = {
     const opts = options || {};
     this._activeModel = modelId || null;
     if (opts.persist !== false) this._saveState();
-    if (window.Clarity.uiTopbar) {
-      window.Clarity.uiTopbar.updateModelChip();
+    if (window.Darkness.uiTopbar) {
+      window.Darkness.uiTopbar.updateModelChip();
     }
   },
 
   clearConversation() {
     const cid = this._activeConversation;
     if (cid) {
-      window.Clarity.api.del(`/api/conversations/${cid}`).then(() => {
+      window.Darkness.api.del(`/api/conversations/${cid}`).then(() => {
         this._activeConversation = null;
-        window.Clarity.store.remove("active_conversation");
+        window.Darkness.store.remove("active_conversation");
         this.renderChat([{ role: "assistant", content: "Chat cleared. Start a new conversation or pick one from the sidebar." }]);
       });
     }
@@ -4102,7 +4102,7 @@ window.Clarity.uiChat = {
   },
 };
 
-window.Clarity.exportChatToPdf = function(opts) {
-  return window.Clarity.uiChat.exportChatToPdf(opts);
+window.Darkness.exportChatToPdf = function(opts) {
+  return window.Darkness.uiChat.exportChatToPdf(opts);
 };
 

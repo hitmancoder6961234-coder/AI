@@ -1,5 +1,5 @@
 -- ============================================================================
--- CLARITY PRODUCTION MIGRATION: public.models (Production-Safe RLS)
+-- DARKNESS PRODUCTION MIGRATION: public.models (Production-Safe RLS)
 -- ============================================================================
 -- This migration creates the model registry table in Supabase PostgreSQL
 -- with exact schema matching server.ts / supabase.ts, RLS enabled, and 

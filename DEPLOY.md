@@ -14,7 +14,7 @@ Browser --> your own server: Caddy (TLS) --> Docker (API + UI)
 ## 0. Generate your secrets (Windows PowerShell)
 
 ```powershell
-cd clarity-ai
+cd darkness-ai
 .\scripts\new-secrets.ps1          # writes .secrets\secrets.env (git-ignored): PRIVACY_ENCRYPTION_KEY
 ```
 
@@ -22,7 +22,7 @@ Back the value up in a password manager - without it, mirrored data cannot be de
 
 ## 1. Render (API)
 
-1. Dashboard -> **New -> Blueprint** -> select this repo -> **Blueprint file path:** `clarity-ai/render.yaml`.
+1. Dashboard -> **New -> Blueprint** -> select this repo -> **Blueprint file path:** `darkness-ai/render.yaml`.
 2. Fill the `sync: false` variables: at least one provider key (e.g. `GEMINI_API_KEY`) and `PRIVACY_ENCRYPTION_KEY`.
 3. Deploy. Check `https://<service>.onrender.com/api/health`.
 
@@ -32,7 +32,7 @@ copy. Free services also sleep when idle (first request is slow).
 
 ## 2. Vercel (UI + same-origin proxy)
 
-1. **Add New -> Project** -> import the repo -> **Root Directory:** `clarity-ai`. Vercel reads `vercel.json`.
+1. **Add New -> Project** -> import the repo -> **Root Directory:** `darkness-ai`. Vercel reads `vercel.json`.
 2. Environment variable: `BACKEND_URL = https://<service>.onrender.com`.
 3. Deploy. The browser only ever talks to your Vercel domain; `api/proxy.js` forwards `/api/*` to Render (streaming
    preserved), so cookies are first-party.
@@ -76,7 +76,7 @@ Without `PRIVACY_ENCRYPTION_KEY` the mirror refuses to start rather than store p
 
 ```bash
 mkdir -p ~/darkness-ai && cd ~/darkness-ai
-nano .env            # paste values based on clarity-ai/.env.example ; keep PRIVACY_STRICT=true
+nano .env            # paste values based on darkness-ai/.env.example ; keep PRIVACY_STRICT=true
 chmod 600 .env
 ```
 

@@ -1,6 +1,6 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.store = {
+window.Darkness.store = {
   get(key, fallback) {
     try {
       const raw = localStorage.getItem(key);

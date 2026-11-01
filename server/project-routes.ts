@@ -360,7 +360,7 @@ export function registerProjectAndFileRoutes(
       const incomingBytes = reqFiles.reduce((sum, f) => sum + (f.size || 0), 0);
       const quota = storageManager.checkQuota(incomingBytes);
       if (!quota.allowed) {
-        return res.status(400).json({ error: quota.message || "Clarity storage limit reached. Free up space or increase the storage limit." });
+        return res.status(400).json({ error: quota.message || "Darkness storage limit reached. Free up space or increase the storage limit." });
       }
 
       for (const f of reqFiles) {
@@ -754,7 +754,7 @@ export function registerProjectAndFileRoutes(
 
     const quota = storageManager.checkQuota(incomingBytes);
     if (!quota.allowed) {
-      return res.status(400).json({ error: quota.message || "Clarity storage limit reached. Free up space or increase the storage limit." });
+      return res.status(400).json({ error: quota.message || "Darkness storage limit reached. Free up space or increase the storage limit." });
     }
 
     try {
@@ -956,7 +956,7 @@ export function registerProjectAndFileRoutes(
     const incomingBytes = reqFiles.reduce((sum, f) => sum + (f.size || 0), 0);
     const quota = storageManager.checkQuota(incomingBytes);
     if (!quota.allowed) {
-      return res.status(400).json({ error: quota.message || "Clarity storage limit reached. Free up space or increase the storage limit." });
+      return res.status(400).json({ error: quota.message || "Darkness storage limit reached. Free up space or increase the storage limit." });
     }
 
     try {
@@ -2025,7 +2025,7 @@ Strict Requirements:
       }
 
       const headers: Record<string, string> = {
-        "User-Agent": "Clarity-AI-Assistant",
+        "User-Agent": "Darkness-AI-Assistant",
         Accept: "application/vnd.github.v3+json",
       };
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -2080,7 +2080,7 @@ Strict Requirements:
       }
 
       const headers: Record<string, string> = {
-        "User-Agent": "Clarity-AI-Assistant",
+        "User-Agent": "Darkness-AI-Assistant",
       };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
@@ -2240,7 +2240,7 @@ Strict Requirements:
 
     try {
       const { owner, repo, branch = "main" } = proj.github;
-      const headers: Record<string, string> = { "User-Agent": "Clarity-AI-Assistant" };
+      const headers: Record<string, string> = { "User-Agent": "Darkness-AI-Assistant" };
       const zipUrl = `https://api.github.com/repos/${owner}/${repo}/zipball/${encodeURIComponent(branch)}`;
       const archiveResp = await fetch(zipUrl, { headers });
       if (!archiveResp.ok) throw new Error(`HTTP ${archiveResp.status} while fetching repository`);

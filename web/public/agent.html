@@ -83,7 +83,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var controller = null;
 
-  function token() { try { return localStorage.getItem('clarity_token'); } catch (e) { return null; } }
+  function token() { try { return localStorage.getItem('darkness_token'); } catch (e) { return null; } }
   function headers() {
     var h = { 'Content-Type': 'application/json' };
     var t = token(); if (t) h.Authorization = 'Bearer ' + t;

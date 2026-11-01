@@ -1,7 +1,7 @@
 /**
- * CLARITY FRONTEND RESPONSE DOCUMENT BUILDER
+ * DARKNESS FRONTEND RESPONSE DOCUMENT BUILDER
  * 
- * Standardizes output rendering across all chat surfaces in Clarity.
+ * Standardizes output rendering across all chat surfaces in Darkness.
  * Ensures clean paragraph flow, semantic lists, and proper LaTeX math rendering
  * while thoroughly stripping raw Markdown artifacts globally to prevent raw leaks.
  */
@@ -30,9 +30,9 @@ export class ResponseDocumentBuilder {
     processed = this.regulateHeadings(processed);
 
     // 5. Delegate to the core markdown engine with an interception flag
-    if (typeof window !== "undefined" && window.Clarity && window.Clarity.markdown && typeof window.Clarity.markdown.render === "function") {
+    if (typeof window !== "undefined" && window.Darkness && window.Darkness.markdown && typeof window.Darkness.markdown.render === "function") {
       const renderOptions = { ...(options || {}), __intercepted: true };
-      return window.Clarity.markdown.render(processed, renderOptions);
+      return window.Darkness.markdown.render(processed, renderOptions);
     }
 
     if (markdown && typeof markdown.render === "function") {

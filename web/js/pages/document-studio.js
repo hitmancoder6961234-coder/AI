@@ -1,7 +1,7 @@
-window.Clarity = window.Clarity || {};
-window.Clarity.pages = window.Clarity.pages || {};
+window.Darkness = window.Darkness || {};
+window.Darkness.pages = window.Darkness.pages || {};
 
-window.Clarity.pages["document-studio"] = async function renderDocumentStudio() {
+window.Darkness.pages["document-studio"] = async function renderDocumentStudio() {
   const main = document.getElementById("main");
   if (!main) return;
 
@@ -28,7 +28,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
   let isGenerating = false;
   let activeAbortController = null;
 
-  const savedHistory = localStorage.getItem("clarity_doc_chat_history");
+  const savedHistory = localStorage.getItem("darkness_doc_chat_history");
   if (savedHistory) {
     try {
       chatHistory = JSON.parse(savedHistory);
@@ -36,7 +36,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
   }
 
   function saveChatHistory() {
-    localStorage.setItem("clarity_doc_chat_history", JSON.stringify(chatHistory));
+    localStorage.setItem("darkness_doc_chat_history", JSON.stringify(chatHistory));
   }
 
   // Version History Undo/Redo Stacks
@@ -45,7 +45,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
   let isUnsaved = false;
 
   // LocalStorage Auto-recovery
-  const savedDoc = localStorage.getItem("clarity_prompt_doc_save");
+  const savedDoc = localStorage.getItem("darkness_prompt_doc_save");
   if (savedDoc) {
     try {
       const parsed = JSON.parse(savedDoc);
@@ -74,7 +74,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
   }
 
   function saveLocalDoc() {
-    localStorage.setItem("clarity_prompt_doc_save", JSON.stringify({
+    localStorage.setItem("darkness_prompt_doc_save", JSON.stringify({
       title: docTitle,
       content: docContent,
       orientation: docOrientation,
@@ -90,9 +90,9 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
     let raw = String(md).trim();
 
     let html = "";
-    if (window.Clarity.markdown && typeof window.Clarity.markdown.render === "function") {
+    if (window.Darkness.markdown && typeof window.Darkness.markdown.render === "function") {
       try {
-        html = window.Clarity.markdown.render(raw);
+        html = window.Darkness.markdown.render(raw);
       } catch (e) {
         html = "";
       }
@@ -457,7 +457,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
                 <select id="aiDocPreset">
                   <option value="report">Project Evaluation</option>
                 </select>
-                <input type="text" id="docStudioTitle" value="${window.Clarity.utils.escapeHtml(docTitle)}" />
+                <input type="text" id="docStudioTitle" value="${window.Darkness.utils.escapeHtml(docTitle)}" />
               </div>
 
               <div class="studio-chat-input-pill">
@@ -606,9 +606,9 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
     if (!rawText) return "";
     let str = String(rawText).trim();
 
-    if (window.Clarity && window.Clarity.markdown && typeof window.Clarity.markdown.render === "function") {
+    if (window.Darkness && window.Darkness.markdown && typeof window.Darkness.markdown.render === "function") {
       try {
-        const mdHtml = window.Clarity.markdown.render(str);
+        const mdHtml = window.Darkness.markdown.render(str);
         if (mdHtml && mdHtml.trim()) return mdHtml;
       } catch (e) {}
     }
@@ -701,8 +701,8 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
       let proposalHtml = "";
       if (msg.proposedEdit) {
         const prop = msg.proposedEdit;
-        const origEscaped = window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(prop.originalText) : prop.originalText;
-        const propEscaped = window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(prop.proposedText) : prop.proposedText;
+        const origEscaped = window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(prop.originalText) : prop.originalText;
+        const propEscaped = window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(prop.proposedText) : prop.proposedText;
 
         if (prop.status === "pending") {
           proposalHtml = `
@@ -953,9 +953,9 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
         docContent = "<h1>Untitled Document</h1><p>Start writing or ask the AI to generate something new on any topic.</p>";
         currentPageIndex = 0;
         docTitle = "Untitled Document";
-        try { localStorage.removeItem("clarity_document_draft"); } catch {}
-        try { localStorage.removeItem("clarity_document_title"); } catch {}
-        try { localStorage.removeItem("clarity_doc_chat_history"); } catch {}
+        try { localStorage.removeItem("darkness_document_draft"); } catch {}
+        try { localStorage.removeItem("darkness_document_title"); } catch {}
+        try { localStorage.removeItem("darkness_doc_chat_history"); } catch {}
         const docTitleInput = document.getElementById("docStudioTitle");
         if (docTitleInput) docTitleInput.value = "Untitled Document";
         const headerTitle = document.getElementById("headerTitle");
@@ -969,7 +969,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
           promptInput.value = "";
           resizeDocPrompt();
         }
-        if (window.Clarity.toast) window.Clarity.toast.show("Document cleared. Ready for a new topic!", "info");
+        if (window.Darkness.toast) window.Darkness.toast.show("Document cleared. Ready for a new topic!", "info");
       });
     }
 
@@ -1011,7 +1011,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
           recordState();
           syncCanvasAndUI();
           scrollToPage(currentPageIndex + 1);
-          if (window.Clarity.toast) window.Clarity.toast.show("Page break inserted. Created new A4 page.", "success");
+          if (window.Darkness.toast) window.Darkness.toast.show("Page break inserted. Created new A4 page.", "success");
         }
       });
     }
@@ -1057,8 +1057,8 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
       }
 
       box.style.display = "block";
-      const safeSnippet = window.Clarity.utils && window.Clarity.utils.escapeHtml 
-        ? window.Clarity.utils.escapeHtml(activeDocumentSelection.selectedText) 
+      const safeSnippet = window.Darkness.utils && window.Darkness.utils.escapeHtml 
+        ? window.Darkness.utils.escapeHtml(activeDocumentSelection.selectedText) 
         : activeDocumentSelection.selectedText;
 
       box.innerHTML = `
@@ -1124,7 +1124,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
 
       const targetId = `doc_el_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`;
       if (targetNode && targetNode.setAttribute) {
-        targetNode.setAttribute("data-clarity-target-id", targetId);
+        targetNode.setAttribute("data-darkness-target-id", targetId);
       }
 
       activeDocumentSelection = {
@@ -1148,8 +1148,8 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
           aiEditModeBadge.style.borderColor = isAiEditMode ? "#4f46e5" : "var(--line)";
         }
         updateSelectionUi();
-        if (window.Clarity.toast) {
-          window.Clarity.toast.show(isAiEditMode ? "AI Edit Mode activated. Select text in canvas to edit." : "AI Edit Mode deactivated.", "info");
+        if (window.Darkness.toast) {
+          window.Darkness.toast.show(isAiEditMode ? "AI Edit Mode activated. Select text in canvas to edit." : "AI Edit Mode deactivated.", "info");
         }
       });
     }
@@ -1193,7 +1193,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
       if (pagesFlow) {
         let replaced = false;
         if (targetId) {
-          const el = pagesFlow.querySelector(`[data-clarity-target-id="${targetId}"]`);
+          const el = pagesFlow.querySelector(`[data-darkness-target-id="${targetId}"]`);
           if (el) {
             el.innerHTML = proposedText;
             replaced = true;
@@ -1229,7 +1229,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
       renderChatMessages();
       clearDocumentSelection();
 
-      if (window.Clarity.toast) window.Clarity.toast.show("Edit applied to document!", "success");
+      if (window.Darkness.toast) window.Darkness.toast.show("Edit applied to document!", "success");
     }
 
     function discardDocumentProposal(msgIndex) {
@@ -1241,7 +1241,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
       renderChatMessages();
       clearDocumentSelection();
 
-      if (window.Clarity.toast) window.Clarity.toast.show("Edit discarded.", "info");
+      if (window.Darkness.toast) window.Darkness.toast.show("Edit discarded.", "info");
     }
 
     // Right Side Navigator (Pages Overview) Clean Toggle Logic
@@ -1361,15 +1361,15 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
       }
       chatHistory.length = 0;
       chatHistory = [];
-      try { localStorage.removeItem("clarity_doc_chat_history"); } catch {}
-      try { localStorage.setItem("clarity_doc_chat_history", "[]"); } catch {}
+      try { localStorage.removeItem("darkness_doc_chat_history"); } catch {}
+      try { localStorage.setItem("darkness_doc_chat_history", "[]"); } catch {}
       const container = document.getElementById("aiChatMessages");
       if (container) {
         container.innerHTML = "";
       }
       renderChatMessages();
       updateLoaderState("idle");
-      if (window.Clarity.toast) window.Clarity.toast.show("Chat history cleared.", "success");
+      if (window.Darkness.toast) window.Darkness.toast.show("Chat history cleared.", "success");
     }
 
     const clearChatBtn = document.getElementById("btnClearChatHistory");
@@ -1446,7 +1446,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
       if (!promptText) return;
 
       if (isGenerating) {
-        if (window.Clarity.toast) window.Clarity.toast.show("Please wait for the current task to finish or stop it.", "warning");
+        if (window.Darkness.toast) window.Darkness.toast.show("Please wait for the current task to finish or stop it.", "warning");
         return;
       }
 
@@ -1473,7 +1473,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
         chatHistory.push({ role: "assistant", text: "The document has been cleared successfully. You can generate a new one or undo with Ctrl+Z." });
         saveChatHistory();
         renderChatMessages();
-        if (window.Clarity.toast) window.Clarity.toast.show("Document cleared.", "info");
+        if (window.Darkness.toast) window.Darkness.toast.show("Document cleared.", "info");
         return;
       }
 
@@ -1535,7 +1535,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
           saveChatHistory();
           renderChatMessages();
 
-          if (window.Clarity.toast) window.Clarity.toast.show("Image generated and inserted into document!", "success");
+          if (window.Darkness.toast) window.Darkness.toast.show("Image generated and inserted into document!", "success");
           updateLoaderState("idle");
         } catch (err) {
           if (err.name === "AbortError") {
@@ -1613,7 +1613,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
                     if (docTitleInput) docTitleInput.value = docTitle;
                     const headerTitle = document.getElementById("headerTitle");
                     if (headerTitle) headerTitle.textContent = docTitle;
-                    try { localStorage.setItem("clarity_document_title", docTitle); } catch {}
+                    try { localStorage.setItem("darkness_document_title", docTitle); } catch {}
                   }
 
                   // Convert markdown to clean DOM elements and update document state live
@@ -1642,7 +1642,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
           });
           saveChatHistory();
           renderChatMessages();
-          if (window.Clarity.toast) window.Clarity.toast.show("Document generated successfully!", "success");
+          if (window.Darkness.toast) window.Darkness.toast.show("Document generated successfully!", "success");
           updateLoaderState("idle");
           return;
         }
@@ -1653,7 +1653,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
           chatHistory.push({ role: "assistant", text: "Task was stopped by user." });
           saveChatHistory();
           renderChatMessages();
-          if (window.Clarity.toast) window.Clarity.toast.show("Task stopped.", "warning");
+          if (window.Darkness.toast) window.Darkness.toast.show("Task stopped.", "warning");
           updateLoaderState("cancelled");
           return;
         }
@@ -1729,15 +1729,15 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
               if (docTitleInput) docTitleInput.value = docTitle;
               const headerTitle = document.getElementById("headerTitle");
               if (headerTitle) headerTitle.textContent = docTitle;
-              try { localStorage.setItem("clarity_document_title", docTitle); } catch {}
+              try { localStorage.setItem("darkness_document_title", docTitle); } catch {}
             }
             saveLocalDoc();
             syncCanvasAndUI();
 
-            if (data.toast && window.Clarity.toast) {
-              window.Clarity.toast.show(data.toast, "success");
-            } else if (window.Clarity.toast) {
-              window.Clarity.toast.show(data.intent === "CREATE_NEW" ? "Document created!" : "Document updated!", "success");
+            if (data.toast && window.Darkness.toast) {
+              window.Darkness.toast.show(data.toast, "success");
+            } else if (window.Darkness.toast) {
+              window.Darkness.toast.show(data.intent === "CREATE_NEW" ? "Document created!" : "Document updated!", "success");
             }
           }
 
@@ -1753,7 +1753,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
             chatHistory.push({ role: "assistant", text: "Task was stopped by user." });
             saveChatHistory();
             renderChatMessages();
-            if (window.Clarity.toast) window.Clarity.toast.show("Task stopped.", "warning");
+            if (window.Darkness.toast) window.Darkness.toast.show("Task stopped.", "warning");
             updateLoaderState("cancelled");
           } else {
             console.error(execErr);
@@ -1774,7 +1774,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
     // Exporters click triggers
     if (btnPdfExport) {
       btnPdfExport.addEventListener("click", async () => {
-        if (window.Clarity.toast) window.Clarity.toast.show("Generating professional vector PDF file...", "info");
+        if (window.Darkness.toast) window.Darkness.toast.show("Generating professional vector PDF file...", "info");
         try {
           const response = await fetch("/api/document/export-pdf", {
             method: "POST",
@@ -1798,17 +1798,17 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
           document.body.appendChild(a);
           a.click();
           window.URL.revokeObjectURL(url);
-          if (window.Clarity.toast) window.Clarity.toast.show("PDF file downloaded successfully!", "success");
+          if (window.Darkness.toast) window.Darkness.toast.show("PDF file downloaded successfully!", "success");
         } catch (err) {
           console.error(err);
-          if (window.Clarity.toast) window.Clarity.toast.show("PDF export failed.", "danger");
+          if (window.Darkness.toast) window.Darkness.toast.show("PDF export failed.", "danger");
         }
       });
     }
 
     if (btnDocxExport) {
       btnDocxExport.addEventListener("click", async () => {
-        if (window.Clarity.toast) window.Clarity.toast.show("Compiling clean OpenXML package...", "info");
+        if (window.Darkness.toast) window.Darkness.toast.show("Compiling clean OpenXML package...", "info");
         try {
           const response = await fetch("/api/document/export-docx", {
             method: "POST",
@@ -1832,10 +1832,10 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
-        if (window.Clarity.toast) window.Clarity.toast.show("DOCX file downloaded successfully!", "success");
+        if (window.Darkness.toast) window.Darkness.toast.show("DOCX file downloaded successfully!", "success");
       } catch (err) {
         console.error(err);
-        if (window.Clarity.toast) window.Clarity.toast.show("DOCX export failed.", "danger");
+        if (window.Darkness.toast) window.Darkness.toast.show("DOCX export failed.", "danger");
       }
     });
   }
@@ -2044,7 +2044,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
           ${activeStyle}
         ">
           <div style="font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px; font-size: 8.5px; display: flex; justify-content: space-between; align-items: center; color: #0f172a; flex-shrink: 0;">
-            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 105px;">${window.Clarity.utils.escapeHtml(docTitle || "Document")}</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 105px;">${window.Darkness.utils.escapeHtml(docTitle || "Document")}</span>
             <span style="background: ${isActive ? "var(--accent)" : "rgba(79,70,229,0.1)"}; color: ${isActive ? "#ffffff" : "var(--accent)"}; padding: 1px 5px; border-radius: 3px; font-size: 8px; font-weight: 700;">Page ${idx + 1}</span>
           </div>
           <div class="mini-page-content-preview" style="
@@ -2072,7 +2072,7 @@ window.Clarity.pages["document-studio"] = async function renderDocumentStudio() 
     });
   }
 
-  // Sync canvas contents and render real multi-page A4 sheets (Zero Clarity logo/branding)
+  // Sync canvas contents and render real multi-page A4 sheets (Zero Darkness logo/branding)
   function syncCanvasAndUI() {
     const pages = getPages();
     currentPageIndex = Math.max(0, Math.min(currentPageIndex, pages.length - 1));

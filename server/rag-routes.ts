@@ -68,7 +68,7 @@ export function registerRagRoutes(
       const u = resolveUser(req);
       if (u) return u;
     }
-    return { id: "global", name: "Guest User", email: "guest@clarity.ai" };
+    return { id: "global", name: "Guest User", email: "guest@darkness.ai" };
   };
 
   // 1. Get Project RAG Status & Metadata

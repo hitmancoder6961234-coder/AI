@@ -1,5 +1,5 @@
 /**
- * CLARITY PROJECT UNDERSTANDING ENGINE
+ * DARKNESS PROJECT UNDERSTANDING ENGINE
  *
  * Implements universal project-level understanding, intent classification,
  * contextual evidence extraction, intent-activated context routing, and natural answer synthesis.
@@ -791,7 +791,7 @@ ${languageDirective}
 
 CORE BEHAVIOR & NATURAL CONVERSATION PRINCIPLES:
 - The user is asking about a GENERAL CONCEPT, terminology, or educational principle (e.g. "elevator pitch", "REST API", "RAG", "problem statement", "React", "Docker", "JWT", etc.).
-- Explain the concept directly, clearly, and concisely with world-class engineering clarity.
+- Explain the concept directly, clearly, and concisely with world-class engineering darkness.
 - STRICT RULE (DO NOT CONTAMINATE WITH UNREQUESTED PROJECT CONTEXT):
   * Do NOT assume this is asking about the current project.
   * Do NOT say "For your project..." or "In your project..." unless the user explicitly asked how it applies to this project.
@@ -1250,7 +1250,7 @@ PROJECT BASICS:
 ${languageDirective}
 
 CORE IDENTITY & PRINCIPLES:
-- Name: Clarity
+- Name: Darkness
 - Creator: Kalam (a CS student). Mention Kalam ONLY if the user explicitly asks who created or made you.
 - ROLE: Intelligent Project Understanding Assistant.
 - CORE RULE: ANSWER ONLY WHAT WAS ASKED.

@@ -1,5 +1,5 @@
 /**
- * CLARITY — REAL-WORLD ARCHITECTURE & WORKFLOW DIAGRAM RENDERER
+ * DARKNESS — REAL-WORLD ARCHITECTURE & WORKFLOW DIAGRAM RENDERER
  * 
  * Generates publication-grade, evidence-grounded SVG diagrams matching
  * professional cloud architecture and technical documentation standards.

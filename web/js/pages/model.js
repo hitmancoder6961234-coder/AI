@@ -1,7 +1,7 @@
-window.Clarity = window.Clarity || {};
-window.Clarity.pages = window.Clarity.pages || {};
+window.Darkness = window.Darkness || {};
+window.Darkness.pages = window.Darkness.pages || {};
 
-const MODEL_PROVIDERS = (window.Clarity && window.Clarity.providers && window.Clarity.providers.PROVIDERS) || [
+const MODEL_PROVIDERS = (window.Darkness && window.Darkness.providers && window.Darkness.providers.PROVIDERS) || [
   { id: "gemini", label: "Google Gemini", defaultBase: "https://generativelanguage.googleapis.com/v1beta/openai/", needsKey: true, modelIdPlaceholder: "gemini-3.8-flash", keyPlaceholder: "AIzaSy..." },
   { id: "openai", label: "OpenAI", defaultBase: "https://api.openai.com/v1", needsKey: true, modelIdPlaceholder: "gpt-4o", keyPlaceholder: "sk-proj-..." },
   { id: "openrouter", label: "OpenRouter", defaultBase: "https://openrouter.ai/api/v1", needsKey: true, modelIdPlaceholder: "meta-llama/llama-3.3-70b-instruct", keyPlaceholder: "sk-or-v1-..." },
@@ -17,7 +17,7 @@ const MODEL_PROVIDERS = (window.Clarity && window.Clarity.providers && window.Cl
 
 function escapeAttr(s) { return String(s ?? "").replace(/"/g, "&quot;"); }
 
-window.Clarity.pages.model = async function renderModelPage(path) {
+window.Darkness.pages.model = async function renderModelPage(path) {
   console.log("[MODEL PAGE] Mount: renderModelPage invoked for path:", path);
   const main = document.getElementById("main");
   if (!main) return;
@@ -27,15 +27,15 @@ window.Clarity.pages.model = async function renderModelPage(path) {
   let loadError = null;
   try {
     console.log("[MODEL PAGE] Fetching GET /api/models...");
-    const data = await window.Clarity.api.get("/api/models");
+    const data = await window.Darkness.api.get("/api/models");
     console.log("[MODEL PAGE] GET /api/models returned:", data);
     models = Array.isArray(data) ? data : (data.models || []);
-    activeId = data.active || (window.Clarity.modelSelector && window.Clarity.modelSelector._active);
+    activeId = data.active || (window.Darkness.modelSelector && window.Darkness.modelSelector._active);
     
     // Sync modelSelector internal cache if present
-    if (window.Clarity.modelSelector) {
-      window.Clarity.modelSelector._models = models;
-      if (activeId) window.Clarity.modelSelector._active = activeId;
+    if (window.Darkness.modelSelector) {
+      window.Darkness.modelSelector._models = models;
+      if (activeId) window.Darkness.modelSelector._active = activeId;
     }
   } catch (err) {
     console.error("[MODEL PAGE] Failed to load models from /api/models:", err);
@@ -47,7 +47,7 @@ window.Clarity.pages.model = async function renderModelPage(path) {
     if (b.id === activeId) return 1;
     return (a.name || "").localeCompare(b.name || "");
   });
-  window.Clarity.pages._modelCache = sortedModels;
+  window.Darkness.pages._modelCache = sortedModels;
 
   main.innerHTML = [
     '<div class="page"><div class="page__inner">',
@@ -62,7 +62,7 @@ window.Clarity.pages.model = async function renderModelPage(path) {
     '<svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M12 5v14M5 12h14"/></svg>',
     ' Add Models</button>',
     '</div></header>',
-    loadError ? '<div class="alert alert--danger">' + window.Clarity.utils.escapeHtml(loadError) + '</div>' : '',
+    loadError ? '<div class="alert alert--danger">' + window.Darkness.utils.escapeHtml(loadError) + '</div>' : '',
     '<section class="model-grid">',
     sortedModels.length === 0 ? '<div class="empty-state">No models configured. Click "Add Models" to add your first one.</div>' : '',
     sortedModels.map(modelCardHtml).join(""),
@@ -86,7 +86,7 @@ function statusBadge(model) {
 }
 
 function modelCardHtml(model) {
-  const isActive = model.is_active || model.id === (window.Clarity.modelSelector && window.Clarity.modelSelector._active);
+  const isActive = model.is_active || model.id === (window.Darkness.modelSelector && window.Darkness.modelSelector._active);
   const caps = model.capabilities || {};
   const capTags = [];
   if (caps.text) capTags.push('<span class="tag tag--xs">Text</span>');
@@ -99,7 +99,7 @@ function modelCardHtml(model) {
   const isUserModel = true;
   const enabled = model.enabled !== false;
   const lastTested = model.lastTestedAt ? new Date(model.lastTestedAt * 1000).toLocaleString() : null;
-  const lastErr = model.lastError ? '<div class="muted" style="font-size:12px;color:var(--color-danger,#c0392b);margin-top:4px;">' + window.Clarity.utils.escapeHtml(model.lastError) + '</div>' : '';
+  const lastErr = model.lastError ? '<div class="muted" style="font-size:12px;color:var(--color-danger,#c0392b);margin-top:4px;">' + window.Darkness.utils.escapeHtml(model.lastError) + '</div>' : '';
 
   const formattedCtx = model.contextWindow
     ? (Number(model.contextWindow) >= 1000000
@@ -112,17 +112,17 @@ function modelCardHtml(model) {
   return '<article class="card model-card ' + (isActive ? "is-active" : "") + ' ' + (enabled ? "" : "is-disabled") + '" data-model-id="' + escapeAttr(model.id) + '">' +
     '<div class="card__body">' +
       '<div class="model-card__head">' +
-        '<h3>' + window.Clarity.utils.escapeHtml(model.name) + '</h3>' +
-        '<span class="tag">' + window.Clarity.utils.escapeHtml(model.provider || "custom") + '</span>' +
+        '<h3>' + window.Darkness.utils.escapeHtml(model.name) + '</h3>' +
+        '<span class="tag">' + window.Darkness.utils.escapeHtml(model.provider || "custom") + '</span>' +
         statusBadge(model) +
       '</div>' +
       '<div class="model-card__body">' +
-        '<div class="muted">Registry ID: <code>' + window.Clarity.utils.escapeHtml(model.id) + '</code></div>' +
-        '<div class="muted">Provider Model: <code>' + window.Clarity.utils.escapeHtml(model.modelName || model.id) + '</code></div>' +
-        (model.baseUrl ? '<div class="muted">Base URL: <code>' + window.Clarity.utils.escapeHtml(model.baseUrl) + '</code></div>' : '') +
+        '<div class="muted">Registry ID: <code>' + window.Darkness.utils.escapeHtml(model.id) + '</code></div>' +
+        '<div class="muted">Provider Model: <code>' + window.Darkness.utils.escapeHtml(model.modelName || model.id) + '</code></div>' +
+        (model.baseUrl ? '<div class="muted">Base URL: <code>' + window.Darkness.utils.escapeHtml(model.baseUrl) + '</code></div>' : '') +
       '</div>' +
       '<div class="model-card__meta">' + capTags.join("") + '</div>' +
-      (lastTested ? '<div class="muted" style="font-size:12px;">Last tested: ' + window.Clarity.utils.escapeHtml(lastTested) + '</div>' : '') +
+      (lastTested ? '<div class="muted" style="font-size:12px;">Last tested: ' + window.Darkness.utils.escapeHtml(lastTested) + '</div>' : '') +
       lastErr +
       '<div class="model-card__foot">' +
         '<span class="muted" title="' + (model.contextWindow ? Number(model.contextWindow).toLocaleString() + ' tokens max context' : '') + '">' + formattedCtx + '</span>' +
@@ -144,26 +144,26 @@ function modelCardHtml(model) {
 function bindModelPageEvents() {
   document.getElementById("addModelBtn")?.addEventListener("click", () => openAddModelsModal());
   document.getElementById("refreshModelsBtn")?.addEventListener("click", () => {
-    if (window.Clarity.modelSelector) window.Clarity.modelSelector.load();
-    window.Clarity.app.navigate("#/model");
+    if (window.Darkness.modelSelector) window.Darkness.modelSelector.load();
+    window.Darkness.app.navigate("#/model");
   });
 
   document.querySelectorAll('[data-action="select"]').forEach(btn => {
     btn.addEventListener("click", async () => {
       if (btn.disabled) return;
       const id = btn.getAttribute("data-model-id");
-      await window.Clarity.modelSelector.select(id);
-      window.Clarity.app.navigate("#/model");
+      await window.Darkness.modelSelector.select(id);
+      window.Darkness.app.navigate("#/model");
     });
   });
   document.querySelectorAll('[data-action="edit"]').forEach(btn => {
     btn.addEventListener("click", async () => {
       const id = btn.getAttribute("data-model-id");
-      let model = (window.Clarity.pages._modelCache || []).find(m => m.id === id) ||
-                  (window.Clarity.modelSelector && window.Clarity.modelSelector.getModel(id));
+      let model = (window.Darkness.pages._modelCache || []).find(m => m.id === id) ||
+                  (window.Darkness.modelSelector && window.Darkness.modelSelector.getModel(id));
       if (!model) {
         try {
-          const res = await window.Clarity.api.get("/api/models/" + encodeURIComponent(id));
+          const res = await window.Darkness.api.get("/api/models/" + encodeURIComponent(id));
           model = res;
         } catch (e) {}
       }
@@ -173,22 +173,22 @@ function bindModelPageEvents() {
   document.querySelectorAll('[data-action="delete"]').forEach(btn => {
     btn.addEventListener("click", () => {
       const id = btn.getAttribute("data-model-id");
-      const modalBody = '<div style="font-size: 13.5px; line-height: 1.5; color: var(--ink);">Delete model <strong>' + window.Clarity.utils.escapeHtml(id) + '</strong>? Existing conversations will remain intact.</div>';
+      const modalBody = '<div style="font-size: 13.5px; line-height: 1.5; color: var(--ink);">Delete model <strong>' + window.Darkness.utils.escapeHtml(id) + '</strong>? Existing conversations will remain intact.</div>';
       const modalActions = `
         <button class="btn btn--outline" type="button" data-modal-close="true">Cancel</button>
         <button class="btn btn--danger" id="confirmDeleteModelBtn" type="button">Delete Model</button>
       `;
-      window.Clarity.modal.open('Delete Model?', modalBody, modalActions);
+      window.Darkness.modal.open('Delete Model?', modalBody, modalActions);
 
       document.getElementById('confirmDeleteModelBtn')?.addEventListener('click', async () => {
-        window.Clarity.modal.close();
+        window.Darkness.modal.close();
         try {
-          await window.Clarity.api.del("/api/models/" + encodeURIComponent(id));
-          window.Clarity.toast.show("Model deleted", "success");
-          if (window.Clarity.modelSelector) await window.Clarity.modelSelector.load();
-          window.Clarity.app.navigate("#/model");
+          await window.Darkness.api.del("/api/models/" + encodeURIComponent(id));
+          window.Darkness.toast.show("Model deleted", "success");
+          if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
+          window.Darkness.app.navigate("#/model");
         } catch (err) {
-          window.Clarity.toast.show("Delete failed: " + (err.message || ""), "danger");
+          window.Darkness.toast.show("Delete failed: " + (err.message || ""), "danger");
         }
       }, { once: true });
     });
@@ -198,27 +198,27 @@ function bindModelPageEvents() {
       const id = btn.getAttribute("data-model-id");
       const willEnable = btn.textContent.trim() === "Enable";
       try {
-        await window.Clarity.api.post("/api/models/" + encodeURIComponent(id) + "/enable", { enabled: willEnable });
-        window.Clarity.toast.show(willEnable ? "Model enabled" : "Model disabled", "success");
-        if (window.Clarity.modelSelector) await window.Clarity.modelSelector.load();
-        window.Clarity.app.navigate("#/model");
+        await window.Darkness.api.post("/api/models/" + encodeURIComponent(id) + "/enable", { enabled: willEnable });
+        window.Darkness.toast.show(willEnable ? "Model enabled" : "Model disabled", "success");
+        if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
+        window.Darkness.app.navigate("#/model");
       } catch (err) {
-        window.Clarity.toast.show("Update failed: " + (err.message || ""), "danger");
+        window.Darkness.toast.show("Update failed: " + (err.message || ""), "danger");
       }
     });
   });
 }
 
 function getCanonicalProviders() {
-  if (window.Clarity && window.Clarity.providers && Array.isArray(window.Clarity.providers.PROVIDERS)) {
-    return window.Clarity.providers.PROVIDERS;
+  if (window.Darkness && window.Darkness.providers && Array.isArray(window.Darkness.providers.PROVIDERS)) {
+    return window.Darkness.providers.PROVIDERS;
   }
   return MODEL_PROVIDERS;
 }
 
 function getProviderConfig(providerId) {
-  if (window.Clarity && window.Clarity.providers && typeof window.Clarity.providers.getProvider === "function") {
-    const p = window.Clarity.providers.getProvider(providerId);
+  if (window.Darkness && window.Darkness.providers && typeof window.Darkness.providers.getProvider === "function") {
+    const p = window.Darkness.providers.getProvider(providerId);
     if (p) return p;
   }
   const list = getCanonicalProviders();
@@ -349,7 +349,7 @@ function setupProviderBaseUrlBinding({
 function openModelModal(existing) {
   const isEdit = !!existing;
   const initialProvider = (existing && existing.provider) || "gemini";
-  const defaultBaseForInitial = window.Clarity.providers?.getDefaultBaseUrl(initialProvider) || "";
+  const defaultBaseForInitial = window.Darkness.providers?.getDefaultBaseUrl(initialProvider) || "";
   const initialBase = existing ? (existing.baseUrl || defaultBaseForInitial) : defaultBaseForInitial;
 
   const m = existing || {
@@ -375,7 +375,7 @@ function openModelModal(existing) {
   const cap = (k, label) => '<label class="check"><input type="checkbox" name="cap_' + k + '" ' + (caps[k] ? "checked" : "") + '><span class="check__label">' + label + '</span></label>';
 
   const maskedKeyNote = isEdit && m.hasApiKey
-    ? '<div class="muted" style="margin-top:4px;">Current key on file: <code>' + window.Clarity.utils.escapeHtml(m.apiKeyMasked || '••••••') + '</code></div>'
+    ? '<div class="muted" style="margin-top:4px;">Current key on file: <code>' + window.Darkness.utils.escapeHtml(m.apiKeyMasked || '••••••') + '</code></div>'
     : '';
 
   const body = [
@@ -389,7 +389,7 @@ function openModelModal(existing) {
           '<div class="model-form__field">',
             '<label class="model-form__label" for="mf-id">Registry ID <span class="req">*</span></label>',
             '<input class="input model-form__input" id="mf-id" type="text" name="id" required value="' + escapeAttr(m.id) + '" placeholder="gemini-3.8-flash">',
-            '<div class="muted">Local identifier; unique key in Clarity.</div>',
+            '<div class="muted">Local identifier; unique key in Darkness.</div>',
           '</div>',
           '<div class="model-form__field">',
             '<label class="model-form__label" for="mf-modelName">Provider model ID <span class="req">*</span></label>',
@@ -452,7 +452,7 @@ function openModelModal(existing) {
     '<button class="btn btn--primary" type="button" id="modelSaveBtn">' + (isEdit ? "Save changes" : "Save model") + '</button>',
   ].join("");
 
-  window.Clarity.modal.open(isEdit ? "Edit model" : "Add model", body, actions);
+  window.Darkness.modal.open(isEdit ? "Edit model" : "Add model", body, actions);
 
   const providerSel = document.getElementById("mf-provider");
   const baseInput = document.getElementById("mf-base");
@@ -495,7 +495,7 @@ function openModelModal(existing) {
     }
     showTestResult("Testing connection with " + payload.modelName + "…", null);
     try {
-      const res = await window.Clarity.api.post("/api/models/test", payload);
+      const res = await window.Darkness.api.post("/api/models/test", payload);
       const ok = !!res.ok;
       let msg;
       if (ok) {
@@ -513,12 +513,12 @@ function openModelModal(existing) {
       showTestResult(msg + (res.note ? " — " + res.note : ""), ok);
       if (ok) {
         try {
-          await window.Clarity.api.post("/api/models/set-active", { model_id: payload.id });
+          await window.Darkness.api.post("/api/models/set-active", { model_id: payload.id });
         } catch (e) {}
-        if (window.Clarity.modelSelector) await window.Clarity.modelSelector.load();
-        window.Clarity.app.navigate("#/model");
-        window.Clarity.modal.close();
-        window.Clarity.toast.show("Model verified — status: Available", "success");
+        if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
+        window.Darkness.app.navigate("#/model");
+        window.Darkness.modal.close();
+        window.Darkness.toast.show("Model verified — status: Available", "success");
       }
     } catch (err) {
       showTestResult("✗ Test failed: " + (err.message || ""), false);
@@ -528,7 +528,7 @@ function openModelModal(existing) {
   document.getElementById("modelSaveBtn")?.addEventListener("click", async () => {
     const payload = collectEditModelForm();
     if (!payload.id || !payload.modelName) {
-      window.Clarity.toast.show("Registry ID and Provider Model ID are required", "danger");
+      window.Darkness.toast.show("Registry ID and Provider Model ID are required", "danger");
       return;
     }
     const prov = getProviderConfig(payload.provider);
@@ -537,23 +537,23 @@ function openModelModal(existing) {
     }
     try {
       if (isEdit) {
-        await window.Clarity.api.put("/api/models/" + encodeURIComponent(existing.id), payload);
+        await window.Darkness.api.put("/api/models/" + encodeURIComponent(existing.id), payload);
         try {
-          await window.Clarity.api.post("/api/models/set-active", { model_id: payload.id });
+          await window.Darkness.api.post("/api/models/set-active", { model_id: payload.id });
         } catch (e) {}
       } else {
-        await window.Clarity.api.post("/api/models", payload);
+        await window.Darkness.api.post("/api/models", payload);
         try {
-          await window.Clarity.api.post("/api/models/set-active", { model_id: payload.id });
+          await window.Darkness.api.post("/api/models/set-active", { model_id: payload.id });
         } catch (e) {}
       }
 
-      window.Clarity.toast.show(isEdit ? "Model updated and set active" : "Model added and set active", "success");
-      if (window.Clarity.modelSelector) await window.Clarity.modelSelector.load();
-      window.Clarity.modal.close();
-      window.Clarity.app.navigate("#/model");
+      window.Darkness.toast.show(isEdit ? "Model updated and set active" : "Model added and set active", "success");
+      if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
+      window.Darkness.modal.close();
+      window.Darkness.app.navigate("#/model");
     } catch (err) {
-      window.Clarity.toast.show("Save failed: " + (err.message || ""), "danger");
+      window.Darkness.toast.show("Save failed: " + (err.message || ""), "danger");
     }
   });
 }
@@ -658,7 +658,7 @@ function openAddModelsModal() {
     '<button class="btn btn--primary" type="button" id="saveModelsBtn">Save Models</button>',
   ].join("");
 
-  window.Clarity.modal.open("Add Models", body, actions);
+  window.Darkness.modal.open("Add Models", body, actions);
 
   const sel = document.getElementById("mf-provider");
   const baseInput = document.getElementById("mf-base");
@@ -726,7 +726,7 @@ function openAddModelsModal() {
       }
 
       try {
-        await window.Clarity.api.post("/api/models", payload);
+        await window.Darkness.api.post("/api/models", payload);
         successCount++;
         if (!firstSuccessId) {
           firstSuccessId = payload.id;
@@ -740,13 +740,13 @@ function openAddModelsModal() {
     if (successCount > 0) {
       if (firstSuccessId) {
         try {
-          await window.Clarity.api.post("/api/models/set-active", { model_id: firstSuccessId });
+          await window.Darkness.api.post("/api/models/set-active", { model_id: firstSuccessId });
         } catch (e) {}
       }
-      window.Clarity.toast.show(successCount + " model(s) added and set active" + (failCount > 0 ? " (" + failCount + " failed)" : ""), failCount > 0 ? "warning" : "success");
-      if (window.Clarity.modelSelector) await window.Clarity.modelSelector.load();
-      window.Clarity.modal.close();
-      window.Clarity.app.navigate("#/model");
+      window.Darkness.toast.show(successCount + " model(s) added and set active" + (failCount > 0 ? " (" + failCount + " failed)" : ""), failCount > 0 ? "warning" : "success");
+      if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
+      window.Darkness.modal.close();
+      window.Darkness.app.navigate("#/model");
     } else {
       showAddModelsResultNew("Failed to add models:\n" + errors.join("\n"), false);
     }

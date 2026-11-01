@@ -1,5 +1,5 @@
-window.Clarity = window.Clarity || {};
-window.Clarity.pages = window.Clarity.pages || {};
+window.Darkness = window.Darkness || {};
+window.Darkness.pages = window.Darkness.pages || {};
 
 const THEME_ICONS = {
   light: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
@@ -18,16 +18,16 @@ function segmentedGroup(items, type) {
       const icon = type === "theme" ? THEME_ICONS[it.value] : DENSITY_ICONS[it.value];
       return '<button class="segmented__option" type="button" data-' + type + '="' + it.value + '" role="radio" aria-checked="false">' +
         '<span class="segmented__icon">' + icon + '</span>' +
-        '<span class="segmented__label">' + window.Clarity.utils.escapeHtml(it.label) + '</span>' +
+        '<span class="segmented__label">' + window.Darkness.utils.escapeHtml(it.label) + '</span>' +
         '</button>';
     }).join("") +
     '</div>';
 }
 
-window.Clarity.pages.settings = function renderSettingsPage() {
+window.Darkness.pages.settings = function renderSettingsPage() {
   const main = document.getElementById("main");
   if (!main) return;
-  const current = window.Clarity.settings.get();
+  const current = window.Darkness.settings.get();
 
   const page = [
     '<div class="page"><div class="page__inner page__inner--narrow">',
@@ -115,7 +115,7 @@ window.Clarity.pages.settings = function renderSettingsPage() {
   const density = document.querySelectorAll('.segmented__option[data-density]');
 
   const refresh = () => {
-    const settings = window.Clarity.settings ? window.Clarity.settings.get() : {};
+    const settings = window.Darkness.settings ? window.Darkness.settings.get() : {};
     const mode = settings.theme || 'light';
     theme.forEach(btn => {
       const v = btn.getAttribute('data-theme');
@@ -135,17 +135,17 @@ window.Clarity.pages.settings = function renderSettingsPage() {
 
   theme.forEach(btn => btn.addEventListener('click', () => {
     const v = btn.getAttribute('data-theme');
-    window.Clarity.settings.applyTheme(v);
-    window.Clarity.theme.setMode(v);
-    window.Clarity.toast.show('Theme set to ' + v.charAt(0).toUpperCase() + v.slice(1), 'success');
+    window.Darkness.settings.applyTheme(v);
+    window.Darkness.theme.setMode(v);
+    window.Darkness.toast.show('Theme set to ' + v.charAt(0).toUpperCase() + v.slice(1), 'success');
     refresh();
   }));
 
   density.forEach(btn => btn.addEventListener('click', () => {
     const v = btn.getAttribute('data-density');
-    window.Clarity.settings.set({ density: v });
+    window.Darkness.settings.set({ density: v });
     document.documentElement.setAttribute('data-density', v);
-    window.Clarity.toast.show('Density set to ' + v, 'success');
+    window.Darkness.toast.show('Density set to ' + v, 'success');
     refresh();
   }));
 
@@ -153,7 +153,7 @@ window.Clarity.pages.settings = function renderSettingsPage() {
     if (!confirm('Clear all local preferences?')) return;
     try {
       Object.keys(localStorage).filter(k => k !== 'auth_token').forEach(k => localStorage.removeItem(k));
-      window.Clarity.toast.show('Local preferences cleared. Reloading…', 'success');
+      window.Darkness.toast.show('Local preferences cleared. Reloading…', 'success');
       setTimeout(() => window.location.reload(), 600);
     } catch (e) {}
   });

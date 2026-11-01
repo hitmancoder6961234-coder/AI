@@ -1,7 +1,7 @@
-window.Clarity = window.Clarity || {};
-window.Clarity.pages = window.Clarity.pages || {};
+window.Darkness = window.Darkness || {};
+window.Darkness.pages = window.Darkness.pages || {};
 
-window.Clarity.pages["presentation-studio"] = async function renderPresentationStudio() {
+window.Darkness.pages["presentation-studio"] = async function renderPresentationStudio() {
   const main = document.getElementById("main");
   if (!main) return;
 
@@ -32,7 +32,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
   let isGenerating = false;
   let activeAbortController = null;
 
-  const savedHistory = localStorage.getItem("clarity_pres_chat_history");
+  const savedHistory = localStorage.getItem("darkness_pres_chat_history");
   if (savedHistory) {
     try {
       chatHistory = JSON.parse(savedHistory);
@@ -40,7 +40,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
   }
 
   function saveChatHistory() {
-    localStorage.setItem("clarity_pres_chat_history", JSON.stringify(chatHistory));
+    localStorage.setItem("darkness_pres_chat_history", JSON.stringify(chatHistory));
   }
 
   // Undo/Redo Version History Stack
@@ -49,7 +49,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
   let isUnsaved = false;
 
   // LocalStorage Auto-recovery
-  const savedPres = localStorage.getItem("clarity_prompt_pres_save");
+  const savedPres = localStorage.getItem("darkness_prompt_pres_save");
   if (savedPres) {
     try {
       const parsed = JSON.parse(savedPres);
@@ -76,7 +76,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
   }
 
   function saveLocalPres() {
-    localStorage.setItem("clarity_prompt_pres_save", JSON.stringify({
+    localStorage.setItem("darkness_prompt_pres_save", JSON.stringify({
       title: presentationTitle,
       slides: slides,
       size: slideSize,
@@ -168,7 +168,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
                 <select id="slideLayoutSelector">
                   <option value="content" selected>Content</option>
                 </select>
-                <input type="text" id="presStudioTitle" value="${window.Clarity.utils.escapeHtml(presentationTitle)}" />
+                <input type="text" id="presStudioTitle" value="${window.Darkness.utils.escapeHtml(presentationTitle)}" />
               </div>
 
               <div class="studio-chat-input-pill studio-chat-input-pill--pres">
@@ -347,9 +347,9 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
     if (!rawText) return "";
     let str = String(rawText).trim();
 
-    if (window.Clarity && window.Clarity.markdown && typeof window.Clarity.markdown.render === "function") {
+    if (window.Darkness && window.Darkness.markdown && typeof window.Darkness.markdown.render === "function") {
       try {
-        const mdHtml = window.Clarity.markdown.render(str);
+        const mdHtml = window.Darkness.markdown.render(str);
         if (mdHtml && mdHtml.trim()) return mdHtml;
       } catch (e) {}
     }
@@ -429,8 +429,8 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
       let proposalHtml = "";
       if (msg.proposedEdit) {
         const prop = msg.proposedEdit;
-        const origEscaped = window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(prop.originalText || "") : (prop.originalText || "");
-        const propEscaped = window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(prop.proposedText || "") : (prop.proposedText || "");
+        const origEscaped = window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(prop.originalText || "") : (prop.originalText || "");
+        const propEscaped = window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(prop.proposedText || "") : (prop.proposedText || "");
 
         if (prop.status === "pending") {
           if (prop.targetType === "image") {
@@ -735,9 +735,9 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
         }];
         activeSlideIndex = 0;
         presentationTitle = "Untitled Presentation";
-        try { localStorage.removeItem("clarity_presentation_draft"); } catch {}
-        try { localStorage.removeItem("clarity_presentation_title"); } catch {}
-        try { localStorage.removeItem("clarity_pres_chat_history"); } catch {}
+        try { localStorage.removeItem("darkness_presentation_draft"); } catch {}
+        try { localStorage.removeItem("darkness_presentation_title"); } catch {}
+        try { localStorage.removeItem("darkness_pres_chat_history"); } catch {}
         const presTitleInput = document.getElementById("presStudioTitle");
         if (presTitleInput) presTitleInput.value = "Untitled Presentation";
         const headerTitle = document.getElementById("headerTitle");
@@ -751,7 +751,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
           promptInput.value = "";
           resizePresPrompt();
         }
-        if (window.Clarity.toast) window.Clarity.toast.show("Presentation cleared. Ready for a new topic!", "info");
+        if (window.Darkness.toast) window.Darkness.toast.show("Presentation cleared. Ready for a new topic!", "info");
       });
     }
 
@@ -883,15 +883,15 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
       }
       chatHistory.length = 0;
       chatHistory = [];
-      try { localStorage.removeItem("clarity_pres_chat_history"); } catch {}
-      try { localStorage.setItem("clarity_pres_chat_history", "[]"); } catch {}
+      try { localStorage.removeItem("darkness_pres_chat_history"); } catch {}
+      try { localStorage.setItem("darkness_pres_chat_history", "[]"); } catch {}
       const container = document.getElementById("aiChatMessages");
       if (container) {
         container.innerHTML = "";
       }
       renderChatMessages();
       updateLoaderState("idle");
-      if (window.Clarity.toast) window.Clarity.toast.show("Chat history cleared.", "success");
+      if (window.Darkness.toast) window.Darkness.toast.show("Chat history cleared.", "success");
     }
 
     const clearChatBtn = document.getElementById("btnClearChatHistory");
@@ -968,7 +968,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
       if (!promptText) return;
 
       if (isGenerating) {
-        if (window.Clarity.toast) window.Clarity.toast.show("Please wait for the current task to finish or stop it.", "warning");
+        if (window.Darkness.toast) window.Darkness.toast.show("Please wait for the current task to finish or stop it.", "warning");
         return;
       }
 
@@ -1001,7 +1001,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
         chatHistory.push({ role: "assistant", text: "The presentation slides have been cleared successfully. You can generate a new one or undo with Ctrl+Z." });
         saveChatHistory();
         renderChatMessages();
-        if (window.Clarity.toast) window.Clarity.toast.show("Presentation cleared.", "info");
+        if (window.Darkness.toast) window.Darkness.toast.show("Presentation cleared.", "info");
         return;
       }
 
@@ -1062,7 +1062,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
           saveChatHistory();
           renderChatMessages();
 
-          if (window.Clarity.toast) window.Clarity.toast.show(`Image added to Slide ${targetIdx + 1}!`, "success");
+          if (window.Darkness.toast) window.Darkness.toast.show(`Image added to Slide ${targetIdx + 1}!`, "success");
           updateLoaderState("idle");
         } catch (err) {
           if (err.name === "AbortError") {
@@ -1155,15 +1155,15 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
               if (presTitleInput) presTitleInput.value = presentationTitle;
               const headerTitle = document.getElementById("headerTitle");
               if (headerTitle) headerTitle.textContent = presentationTitle;
-              try { localStorage.setItem("clarity_presentation_title", presentationTitle); } catch {}
+              try { localStorage.setItem("darkness_presentation_title", presentationTitle); } catch {}
             }
             saveLocalPres();
             syncSlideCanvasAndUI();
 
-            if (data.toast && window.Clarity.toast) {
-              window.Clarity.toast.show(data.toast, "success");
-            } else if (window.Clarity.toast) {
-              window.Clarity.toast.show(data.intent === "CREATE_NEW" ? "Presentation created!" : "Slide updated!", "success");
+            if (data.toast && window.Darkness.toast) {
+              window.Darkness.toast.show(data.toast, "success");
+            } else if (window.Darkness.toast) {
+              window.Darkness.toast.show(data.intent === "CREATE_NEW" ? "Presentation created!" : "Slide updated!", "success");
             }
           }
         }
@@ -1181,7 +1181,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
           chatHistory.push({ role: "assistant", text: "Task was cancelled." });
           saveChatHistory();
           renderChatMessages();
-          if (window.Clarity.toast) window.Clarity.toast.show("Task stopped.", "warning");
+          if (window.Darkness.toast) window.Darkness.toast.show("Task stopped.", "warning");
           updateLoaderState("cancelled");
         } else {
           console.error(err);
@@ -1213,8 +1213,8 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
 
       box.style.display = "block";
       if (activePresentationSelection && (activePresentationSelection.selectedText || activePresentationSelection.imageUrl)) {
-        const safeSnippet = window.Clarity.utils && window.Clarity.utils.escapeHtml 
-          ? window.Clarity.utils.escapeHtml(activePresentationSelection.selectedText || "Slide Image") 
+        const safeSnippet = window.Darkness.utils && window.Darkness.utils.escapeHtml 
+          ? window.Darkness.utils.escapeHtml(activePresentationSelection.selectedText || "Slide Image") 
           : (activePresentationSelection.selectedText || "Slide Image");
 
         box.innerHTML = `
@@ -1258,8 +1258,8 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
           aiEditModeBadge.style.borderColor = isAiEditMode ? "#f43f5e" : "var(--line)";
         }
         updatePresentationSelectionUi();
-        if (window.Clarity.toast) {
-          window.Clarity.toast.show(isAiEditMode ? "AI Edit Mode activated. Click a slide element to target it." : "AI Edit Mode deactivated.", "info");
+        if (window.Darkness.toast) {
+          window.Darkness.toast.show(isAiEditMode ? "AI Edit Mode activated. Click a slide element to target it." : "AI Edit Mode deactivated.", "info");
         }
       });
     }
@@ -1337,7 +1337,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
             syncSlideCanvasAndUI();
             saveChatHistory();
             renderChatMessages();
-            if (window.Clarity.toast) window.Clarity.toast.show(`Edit applied to Slide ${prop.slideIndex + 1}!`, "success");
+            if (window.Darkness.toast) window.Darkness.toast.show(`Edit applied to Slide ${prop.slideIndex + 1}!`, "success");
           }
         }
       }
@@ -1349,7 +1349,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
           msg.proposedEdit.status = "discarded";
           saveChatHistory();
           renderChatMessages();
-          if (window.Clarity.toast) window.Clarity.toast.show("Proposed edit discarded.", "info");
+          if (window.Darkness.toast) window.Darkness.toast.show("Proposed edit discarded.", "info");
         }
       }
     });
@@ -1361,7 +1361,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
     // Export PPTX Click handler
     if (btnPptxExport) {
       btnPptxExport.addEventListener("click", async () => {
-        if (window.Clarity.toast) window.Clarity.toast.show("Packing OpenXML PowerPoint file...", "info");
+        if (window.Darkness.toast) window.Darkness.toast.show("Packing OpenXML PowerPoint file...", "info");
         try {
           const response = await fetch("/api/presentation/export-pptx", {
             method: "POST",
@@ -1385,10 +1385,10 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
-        if (window.Clarity.toast) window.Clarity.toast.show("PowerPoint slide deck downloaded successfully!", "success");
+        if (window.Darkness.toast) window.Darkness.toast.show("PowerPoint slide deck downloaded successfully!", "success");
       } catch (err) {
         console.error(err);
-        if (window.Clarity.toast) window.Clarity.toast.show("PowerPoint export failed.", "danger");
+        if (window.Darkness.toast) window.Darkness.toast.show("PowerPoint export failed.", "danger");
       }
     });
   }
@@ -1547,7 +1547,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
           box-sizing: border-box;
           position: relative;
         ">
-          <h1 style="font-size: 38px; font-weight: 700; margin: 0 0 24px; border:none; background:transparent;">${window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(s.title || "") : (s.title || "")}</h1>
+          <h1 style="font-size: 38px; font-weight: 700; margin: 0 0 24px; border:none; background:transparent;">${window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(s.title || "") : (s.title || "")}</h1>
           <div style="flex: 1; overflow-y: auto; color: ${textHex};">${renderSlideBodyHtml(s, themeHex)}</div>
           
           <div style="display:flex; justify-content:space-between; font-size: 14px; color: #9ca3af; margin-top: auto; padding-top: 16px;">
@@ -1657,7 +1657,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
       const cardCols = cards.length <= 2 ? "repeat(2, 1fr)" : cards.length === 3 ? "repeat(3, 1fr)" : "repeat(4, 1fr)";
       const cardsHtml = cards.slice(0, 4).map((c, i) => `
         <div style="background: var(--surface-muted, #f8fafc); border: 1px solid var(--line, #e2e8f0); border-top: 3px solid ${themeHex}; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.04);">
-          <div style="font-weight: 700; font-size: 14px; color: #1e293b;">${window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(c.title || `Point ${i + 1}`) : (c.title || `Point ${i + 1}`)}</div>
+          <div style="font-weight: 700; font-size: 14px; color: #1e293b;">${window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(c.title || `Point ${i + 1}`) : (c.title || `Point ${i + 1}`)}</div>
           <div style="font-size: 12.5px; line-height: 1.5; color: #475569;">${renderRichSlideContent(c.description || c.text || "")}</div>
         </div>
       `).join("");
@@ -1690,7 +1690,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
         <div style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 6px; position: relative;">
           <div style="display: flex; align-items: center; gap: 8px;">
             <span style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; background: ${themeHex}; color: white; border-radius: 50%; font-size: 11px; font-weight: 700;">${st.step || (i + 1)}</span>
-            <strong style="font-size: 13px; color: #1e293b;">${window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(st.title || `Step ${i + 1}`) : (st.title || `Step ${i + 1}`)}</strong>
+            <strong style="font-size: 13px; color: #1e293b;">${window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(st.title || `Step ${i + 1}`) : (st.title || `Step ${i + 1}`)}</strong>
           </div>
           <div style="font-size: 11.5px; line-height: 1.45; color: #475569;">${renderRichSlideContent(st.description || "")}</div>
         </div>
@@ -1719,7 +1719,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
 
       const gridHtml = items.slice(0, 6).map((it, i) => `
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 4px;">
-          <div style="font-size: 13px; font-weight: 700; color: ${themeHex};">${window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(it.title || `Item ${i + 1}`) : (it.title || `Item ${i + 1}`)}</div>
+          <div style="font-size: 13px; font-weight: 700; color: ${themeHex};">${window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(it.title || `Item ${i + 1}`) : (it.title || `Item ${i + 1}`)}</div>
           <div style="font-size: 11.5px; line-height: 1.45; color: #475569;">${renderRichSlideContent(it.description || it.text || "")}</div>
         </div>
       `).join("");
@@ -1770,7 +1770,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
           <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
             <thead>
               <tr style="background: ${themeHex}; color: #ffffff;">
-                ${tHeaders.map(h => `<th style="padding: 8px 12px; font-weight: 700; border-bottom: 1px solid #cbd5e1;">${window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(h) : h}</th>`).join("")}
+                ${tHeaders.map(h => `<th style="padding: 8px 12px; font-weight: 700; border-bottom: 1px solid #cbd5e1;">${window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(h) : h}</th>`).join("")}
               </tr>
             </thead>
             <tbody>
@@ -1778,7 +1778,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
                 <tr style="background: ${rIdx % 2 === 0 ? "#ffffff" : "#f8fafc"}; border-bottom: 1px solid #e2e8f0;">
                   ${r.map((c, cIdx) => `
                     <td style="padding: 8px 12px; color: ${cIdx === 1 ? themeHex : "#374151"}; font-weight: ${cIdx === 0 || cIdx === 1 ? 600 : 400};">
-                      ${window.Clarity.utils && window.Clarity.utils.escapeHtml ? window.Clarity.utils.escapeHtml(c) : c}
+                      ${window.Darkness.utils && window.Darkness.utils.escapeHtml ? window.Darkness.utils.escapeHtml(c) : c}
                     </td>
                   `).join("")}
                 </tr>
@@ -1875,11 +1875,11 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
           ${activeStyle}
         ">
           <div style="font-weight: 700; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 4px; margin-bottom: 6px; font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
-            <span style="overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${window.Clarity.utils.escapeHtml(slide.title || ("Slide " + (idx + 1)))}</span>
+            <span style="overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${window.Darkness.utils.escapeHtml(slide.title || ("Slide " + (idx + 1)))}</span>
             <span style="background: ${isActive ? "#f43f5e" : "rgba(244,63,94,0.1)"}; color: ${isActive ? "#ffffff" : "#f43f5e"}; padding: 1px 5px; border-radius: 3px; font-size: 8px; font-weight: 700;">Slide ${idx + 1}</span>
           </div>
           <div style="flex: 1; overflow: hidden; opacity: 0.85; white-space: normal; text-align: left; font-size: 8.5px; line-height: 1.4; word-break: break-word;">
-            ${window.Clarity.utils.escapeHtml(cleanContent.substring(0, 220))}
+            ${window.Darkness.utils.escapeHtml(cleanContent.substring(0, 220))}
           </div>
         </div>
       `;
@@ -1915,7 +1915,7 @@ window.Clarity.pages["presentation-studio"] = async function renderPresentationS
           delete current.imageUrl;
           saveLocalPres();
           syncSlideCanvasAndUI();
-          if (window.Clarity.toast) window.Clarity.toast.show("Slide image removed.", "info");
+          if (window.Darkness.toast) window.Darkness.toast.show("Slide image removed.", "info");
         };
       }
 

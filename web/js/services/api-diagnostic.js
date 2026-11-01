@@ -1,5 +1,5 @@
 /**
- * Clarity API Diagnostic Utility
+ * Darkness API Diagnostic Utility
  * 
  * Intercepts, traces, and logs the full request/response cycle for API calls
  * with specialized diagnostic telemetry targeting the '/api/chat' route and related chat endpoints.
@@ -7,10 +7,10 @@
 (function () {
   if (typeof window === "undefined") return;
 
-  window.Clarity = window.Clarity || {};
+  window.Darkness = window.Darkness || {};
 
   const MAX_LOG_ENTRIES = 100;
-  const STORAGE_KEY = "clarity_api_diagnostics_log";
+  const STORAGE_KEY = "darkness_api_diagnostics_log";
 
   // In-memory ring buffer
   const diagnosticLogs = [];
@@ -135,7 +135,7 @@
     /**
      * Self-diagnostic probe that sends a test payload to '/api/chat' and outputs the step-by-step trace
      */
-    async testChatRoute(message = "Hello from Clarity API Diagnostic Probe", options = {}) {
+    async testChatRoute(message = "Hello from Darkness API Diagnostic Probe", options = {}) {
       const targetUrl = options.url || "/api/chat";
       console.group(`%c[API Diagnostic Probe] Testing '${targetUrl}'...`, "color: #8b5cf6; font-weight: bold; font-size: 13px;");
       console.log("Sending payload:", { message, timestamp: new Date().toISOString() });
@@ -200,7 +200,7 @@
   };
 
   // Expose global accessors
-  window.Clarity.diagnostic = diagnostic;
+  window.Darkness.diagnostic = diagnostic;
   window.apiDiagnostic = diagnostic;
   window.getApiChatDiagnostics = () => diagnostic.getChatLogs();
   window.printApiDiagnostics = () => diagnostic.printSummary();
@@ -377,12 +377,12 @@
       }
 
       if (!installed) {
-        console.warn("[API Diagnostic] window.fetch is read-only in this environment. Diagnostic methods available via Clarity.diagnostic.");
+        console.warn("[API Diagnostic] window.fetch is read-only in this environment. Diagnostic methods available via Darkness.diagnostic.");
       }
     } catch (e) {
       console.warn("[API Diagnostic] Fetch interception setup warning:", e);
     }
   }
 
-  console.log("%c[Clarity API Diagnostic Logger Active]%c Full request/response cycle telemetry installed for '/api/chat'. Run %cClarity.diagnostic.printSummary()%c or %cClarity.diagnostic.testChatRoute()%c to test.", "background: #2563eb; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;", "color: inherit;", "color: #2563eb; font-weight: bold;", "color: inherit;", "color: #2563eb; font-weight: bold;", "color: inherit;");
+  console.log("%c[Darkness API Diagnostic Logger Active]%c Full request/response cycle telemetry installed for '/api/chat'. Run %cDarkness.diagnostic.printSummary()%c or %cDarkness.diagnostic.testChatRoute()%c to test.", "background: #2563eb; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold;", "color: inherit;", "color: #2563eb; font-weight: bold;", "color: inherit;", "color: #2563eb; font-weight: bold;", "color: inherit;");
 })();

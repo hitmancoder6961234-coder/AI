@@ -1,4 +1,4 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
 /**
  * Model selector.
@@ -8,7 +8,7 @@ window.Clarity = window.Clarity || {};
  * There is no client-side fallback list: if the request fails the selector
  * reports the real error instead of inventing a model.
  */
-window.Clarity.modelSelector = {
+window.Darkness.modelSelector = {
   _models: [],
   _active: null,
   _error: null,
@@ -22,7 +22,7 @@ window.Clarity.modelSelector = {
 
   async load() {
     try {
-      const data = await window.Clarity.api.get("/api/models");
+      const data = await window.Darkness.api.get("/api/models");
       this._models = data.models || [];
       this._active = data.active || null;
       this._error = null;
@@ -32,9 +32,9 @@ window.Clarity.modelSelector = {
       this._error = err.message || "Could not load models";
     }
     // Keep the chat's selection in step with the backend's stored selection.
-    if (window.Clarity.uiChat) window.Clarity.uiChat.setModel(this._active, { persist: false });
+    if (window.Darkness.uiChat) window.Darkness.uiChat.setModel(this._active, { persist: false });
     this._updateAllContainers();
-    if (window.Clarity.uiTopbar) window.Clarity.uiTopbar.updateModelChip();
+    if (window.Darkness.uiTopbar) window.Darkness.uiTopbar.updateModelChip();
     return this._models;
   },
 
@@ -76,24 +76,24 @@ window.Clarity.modelSelector = {
     if (!modelId) return false;
     const target = this.getModel(modelId);
     if (!target) {
-      window.Clarity.toast.show("That model is no longer available", "danger");
+      window.Darkness.toast.show("That model is no longer available", "danger");
       return false;
     }
     if (target.enabled === false) {
-      window.Clarity.toast.show("Cannot select a disabled model", "danger");
+      window.Darkness.toast.show("Cannot select a disabled model", "danger");
       return false;
     }
     try {
-      await window.Clarity.api.post("/api/models/set-active", { model_id: modelId });
+      await window.Darkness.api.post("/api/models/set-active", { model_id: modelId });
     } catch (err) {
-      window.Clarity.toast.show("Failed to select model: " + (err.message || ""), "danger");
+      window.Darkness.toast.show("Failed to select model: " + (err.message || ""), "danger");
       return false;
     }
     this._active = modelId;
-    if (window.Clarity.uiChat) window.Clarity.uiChat.setModel(modelId);
+    if (window.Darkness.uiChat) window.Darkness.uiChat.setModel(modelId);
     this._updateAllContainers();
-    if (window.Clarity.uiTopbar) window.Clarity.uiTopbar.updateModelChip();
-    window.Clarity.toast.show("Model switched to " + (target.name || modelId), "success");
+    if (window.Darkness.uiTopbar) window.Darkness.uiTopbar.updateModelChip();
+    window.Darkness.toast.show("Model switched to " + (target.name || modelId), "success");
     return true;
   },
 
@@ -107,7 +107,7 @@ window.Clarity.modelSelector = {
     const container = document.getElementById(containerId);
     if (!container) return;
     const active = this.getActive();
-    const escape = window.Clarity.utils.escapeHtml;
+    const escape = window.Darkness.utils.escapeHtml;
 
     if (!active) {
       const message = this._error ? "Models unavailable" : "Select a model";
@@ -147,7 +147,7 @@ window.Clarity.modelSelector = {
 
   _renderInto(container) {
     if (!container) return;
-    const escape = window.Clarity.utils.escapeHtml;
+    const escape = window.Darkness.utils.escapeHtml;
 
     if (this._error) {
       container.innerHTML =

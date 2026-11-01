@@ -228,7 +228,7 @@ export class PollinationsImageProvider implements ImageGenerationProvider {
       const seed = Math.floor(Math.random() * 1000000);
       const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=1280&height=720&nologo=true&seed=${seed}`;
       
-      const response = await fetch(url, { headers: { "User-Agent": "Clarity-Image-Gen/1.0" } });
+      const response = await fetch(url, { headers: { "User-Agent": "Darkness-Image-Gen/1.0" } });
       if (!response.ok) {
         return null;
       }
@@ -297,7 +297,7 @@ export class ConceptualDiagramSvgProvider implements ImageGenerationProvider {
       width: 1280,
       height: 720,
       source: "conceptual_vector_engine",
-      modelUsed: "clarity_vector_svg_v2",
+      modelUsed: "darkness_vector_svg_v2",
     };
   }
 

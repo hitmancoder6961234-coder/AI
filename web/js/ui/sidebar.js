@@ -1,6 +1,6 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.uiSidebar = {
+window.Darkness.uiSidebar = {
   _conversations: [],
   _searchQuery: "",
   _searchBound: false,
@@ -66,8 +66,8 @@ window.Clarity.uiSidebar = {
         _searchTitle: title.toLowerCase(),
         _searchSnippet: snippet.toLowerCase(),
         _displayTime: displayTime,
-        _escapedTitle: window.Clarity?.utils?.escapeHtml
-          ? window.Clarity.utils.escapeHtml(title)
+        _escapedTitle: window.Darkness?.utils?.escapeHtml
+          ? window.Darkness.utils.escapeHtml(title)
           : title.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"),
       };
     });
@@ -75,7 +75,7 @@ window.Clarity.uiSidebar = {
 
   async loadConversations() {
     try {
-      const data = await window.Clarity.api.get("/api/conversations");
+      const data = await window.Darkness.api.get("/api/conversations");
       const list = data.conversations || [];
       this._conversations = this._prepareConversations(list);
     } catch (err) {
@@ -101,27 +101,27 @@ window.Clarity.uiSidebar = {
           '" href="' +
           item.href +
           '" aria-label="' +
-          window.Clarity.utils.escapeHtml(item.label) +
+          window.Darkness.utils.escapeHtml(item.label) +
           '" data-tooltip="' +
-          window.Clarity.utils.escapeHtml(item.label) +
+          window.Darkness.utils.escapeHtml(item.label) +
           '"><span class="nav__icon">' +
           icon +
           '</span><span class="nav__label">' +
-          window.Clarity.utils.escapeHtml(item.label) +
+          window.Darkness.utils.escapeHtml(item.label) +
           '</span></a>'
         );
       }).join("");
     };
 
-    renderLinks((window.Clarity.data && window.Clarity.data.nav) || [], navRoot);
-    renderLinks((window.Clarity.data && window.Clarity.data.secondaryNav) || [], secondaryNav);
+    renderLinks((window.Darkness.data && window.Darkness.data.nav) || [], navRoot);
+    renderLinks((window.Darkness.data && window.Darkness.data.secondaryNav) || [], secondaryNav);
     this._bindSearchEvents();
     this._updateRecent();
 
     // Wire tooltip on every interactive sidebar element (only shows when rail).
     const sidebar = document.getElementById("sidebar");
-    if (sidebar && window.Clarity.uiTooltip) {
-      window.Clarity.uiTooltip.bindSidebar(sidebar);
+    if (sidebar && window.Darkness.uiTooltip) {
+      window.Darkness.uiTooltip.bindSidebar(sidebar);
     }
   },
 
@@ -240,7 +240,7 @@ window.Clarity.uiSidebar = {
 
   // Highlight search keywords in the title without costly regex rebuilds
   _highlightTitle(title, tokens) {
-    if (!tokens || tokens.length === 0) return window.Clarity.utils.escapeHtml(title);
+    if (!tokens || tokens.length === 0) return window.Darkness.utils.escapeHtml(title);
     
     // Sort tokens by length desc to match longer tokens first
     const sortedTokens = tokens.slice().sort((a, b) => b.length - a.length);
@@ -270,7 +270,7 @@ window.Clarity.uiSidebar = {
     }
 
     if (intervals.length === 0) {
-      return window.Clarity.utils.escapeHtml(title);
+      return window.Darkness.utils.escapeHtml(title);
     }
 
     intervals.sort((a, b) => a.start - b.start);
@@ -279,15 +279,15 @@ window.Clarity.uiSidebar = {
     let cursor = 0;
     for (const inv of intervals) {
       if (inv.start > cursor) {
-        html += window.Clarity.utils.escapeHtml(title.slice(cursor, inv.start));
+        html += window.Darkness.utils.escapeHtml(title.slice(cursor, inv.start));
       }
       html += '<mark class="recent__highlight">' +
-        window.Clarity.utils.escapeHtml(title.slice(inv.start, inv.end)) +
+        window.Darkness.utils.escapeHtml(title.slice(inv.start, inv.end)) +
         '</mark>';
       cursor = inv.end;
     }
     if (cursor < title.length) {
-      html += window.Clarity.utils.escapeHtml(title.slice(cursor));
+      html += window.Darkness.utils.escapeHtml(title.slice(cursor));
     }
     return html;
   },
@@ -349,7 +349,7 @@ window.Clarity.uiSidebar = {
     if (items.length === 0) {
       list.innerHTML = query
         ? '<li class="recent__empty" style="padding: 8px 10px; font-size: 12px; color: var(--ink-muted); text-align: center;">No chats match "<strong>' +
-          window.Clarity.utils.escapeHtml(query) +
+          window.Darkness.utils.escapeHtml(query) +
           '</strong>"</li>'
         : '<li class="recent__empty">No recent chats</li>';
       return;
@@ -369,7 +369,7 @@ window.Clarity.uiSidebar = {
         title = title.slice(0, 35) + "...";
       }
 
-      const formattedTitle = query ? this._highlightTitle(title, tokens) : window.Clarity.utils.escapeHtml(title);
+      const formattedTitle = query ? this._highlightTitle(title, tokens) : window.Darkness.utils.escapeHtml(title);
       const timeStr = item._displayTime || "";
 
       htmlChunks.push(
@@ -380,7 +380,7 @@ window.Clarity.uiSidebar = {
           '"' +
           ariaCurrent +
           ' title="' +
-          window.Clarity.utils.escapeHtml(item.title) +
+          window.Darkness.utils.escapeHtml(item.title) +
           '"><span class="recent__title">' +
           formattedTitle +
           '</span><span class="recent__time">' +

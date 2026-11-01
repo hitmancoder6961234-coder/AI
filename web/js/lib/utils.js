@@ -1,4 +1,4 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
 const _MIME_BY_EXT = {
   '.py': 'text/x-python',
@@ -35,7 +35,7 @@ const _MIME_BY_EXT = {
   '.bat': 'text/x-batch',
 };
 
-window.Clarity.utils = {
+window.Darkness.utils = {
   MIME_BY_EXT: _MIME_BY_EXT,
 
   getMimeType(ext) {

@@ -1,6 +1,6 @@
 var _sharedRenderMarkdown = function(t) { return String(t || ""); };
 if (typeof window !== "undefined") {
-  window.Clarity = window.Clarity || {};
+  window.Darkness = window.Darkness || {};
 }
 
 (function () {
@@ -1035,11 +1035,11 @@ if (typeof window !== "undefined") {
         '<div class="visual-card__header">' +
           '<span class="visual-card__badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> ' + svgBadge + '</span>' +
           '<div class="visual-card__actions">' +
-            '<button class="visual-card__btn visual-card__btn--fullview" type="button" onclick="if (window.Clarity && window.Clarity.openVisualFullView) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Clarity.openVisualFullView({ svgElement: c.querySelector(\'svg\'), title: \'' + svgBadge + '\' }); }" title="Open in Full View (Zoom & Pan)">' +
+            '<button class="visual-card__btn visual-card__btn--fullview" type="button" onclick="if (window.Darkness && window.Darkness.openVisualFullView) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Darkness.openVisualFullView({ svgElement: c.querySelector(\'svg\'), title: \'' + svgBadge + '\' }); }" title="Open in Full View (Zoom & Pan)">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>' +
               '<span>Full View</span>' +
             '</button>' +
-            '<button class="visual-card__btn visual-card__btn--download" type="button" onclick="if (window.Clarity && window.Clarity.downloadSvgDirect) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Clarity.downloadSvgDirect(c.querySelector(\'svg\'), \'' + svgBadge.toLowerCase().replace(/\s+/g, '_') + '\'); }" title="Download graphic">' +
+            '<button class="visual-card__btn visual-card__btn--download" type="button" onclick="if (window.Darkness && window.Darkness.downloadSvgDirect) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Darkness.downloadSvgDirect(c.querySelector(\'svg\'), \'' + svgBadge.toLowerCase().replace(/\s+/g, '_') + '\'); }" title="Download graphic">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
               '<span>Download</span>' +
             '</button>' +
@@ -1078,11 +1078,11 @@ if (typeof window !== "undefined") {
         '<div class="visual-card__header">' +
           '<span class="visual-card__badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> ' + svgBadge + '</span>' +
           '<div class="visual-card__actions">' +
-            '<button class="visual-card__btn visual-card__btn--fullview" type="button" onclick="if (window.Clarity && window.Clarity.openVisualFullView) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Clarity.openVisualFullView({ svgElement: c.querySelector(\'svg\'), title: \'' + svgBadge + '\' }); }" title="Open in Full View (Zoom & Pan)">' +
+            '<button class="visual-card__btn visual-card__btn--fullview" type="button" onclick="if (window.Darkness && window.Darkness.openVisualFullView) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Darkness.openVisualFullView({ svgElement: c.querySelector(\'svg\'), title: \'' + svgBadge + '\' }); }" title="Open in Full View (Zoom & Pan)">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>' +
               '<span>Full View</span>' +
             '</button>' +
-            '<button class="visual-card__btn visual-card__btn--download" type="button" onclick="if (window.Clarity && window.Clarity.downloadSvgDirect) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Clarity.downloadSvgDirect(c.querySelector(\'svg\'), \'' + svgBadge.toLowerCase().replace(/\s+/g, '_') + '\'); }" title="Download graphic">' +
+            '<button class="visual-card__btn visual-card__btn--download" type="button" onclick="if (window.Darkness && window.Darkness.downloadSvgDirect) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Darkness.downloadSvgDirect(c.querySelector(\'svg\'), \'' + svgBadge.toLowerCase().replace(/\s+/g, '_') + '\'); }" title="Download graphic">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
               '<span>Download</span>' +
             '</button>' +
@@ -1118,8 +1118,8 @@ if (typeof window !== "undefined") {
     }
     var cellId = block.cellId || "codecell_" + Math.random().toString(36).substring(2, 9);
 
-    if (typeof window !== "undefined" && window.Clarity && window.Clarity.codeViewer && typeof window.Clarity.codeViewer.renderCell === "function") {
-      return window.Clarity.codeViewer.renderCell({
+    if (typeof window !== "undefined" && window.Darkness && window.Darkness.codeViewer && typeof window.Darkness.codeViewer.renderCell === "function") {
+      return window.Darkness.codeViewer.renderCell({
         cellId: cellId,
         code: code,
         lang: lang,
@@ -1165,7 +1165,7 @@ if (typeof window !== "undefined") {
     var copyIcon = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
     var downloadIcon = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
 
-    var viewBtn = '<button class="code-file-card__open-btn" type="button" data-code-action="expand" data-cell-id="' + cellId + '" onclick="event.preventDefault(); event.stopPropagation(); window.Clarity.codeViewer && window.Clarity.codeViewer.openWorkspace(\'' + cellId + '\', \'code\', this); return false;" title="Open code in resizable side panel (drag left to resize)" aria-label="View code">' + expandIcon + '<span>View</span></button>';
+    var viewBtn = '<button class="code-file-card__open-btn" type="button" data-code-action="expand" data-cell-id="' + cellId + '" onclick="event.preventDefault(); event.stopPropagation(); window.Darkness.codeViewer && window.Darkness.codeViewer.openWorkspace(\'' + cellId + '\', \'code\', this); return false;" title="Open code in resizable side panel (drag left to resize)" aria-label="View code">' + expandIcon + '<span>View</span></button>';
     var copyBtn = '<button class="code-cell__btn code-cell__btn--copy" type="button" data-code-action="copy" data-cell-id="' + cellId + '" title="Copy code" aria-label="Copy code">' + copyIcon + '<span>Copy</span></button>';
     var downloadBtn = '<button class="code-cell__btn code-cell__btn--download" type="button" data-code-action="download" data-cell-id="' + cellId + '" title="Download ' + escapeHtml(detectedFilename) + '" aria-label="Download file">' + downloadIcon + '<span>Download</span></button>';
 
@@ -1258,10 +1258,10 @@ if (typeof window !== "undefined") {
     // Group sibling files if multiple code blocks exist in this message
     var codeBlocks = blocks.filter(function (b) { return b.type === "code" && b.lang.toLowerCase() !== "mermaid"; });
     var siblingFiles = null;
-    if (codeBlocks.length > 1 && window.Clarity && window.Clarity.highlighter) {
+    if (codeBlocks.length > 1 && window.Darkness && window.Darkness.highlighter) {
       siblingFiles = codeBlocks.map(function (b, idx) {
-        var fn = window.Clarity.highlighter.detectFilename(b.lang, b.code, b.precedingText);
-        var langInfo = window.Clarity.highlighter.getLanguageInfo(b.lang || fn);
+        var fn = window.Darkness.highlighter.detectFilename(b.lang, b.code, b.precedingText);
+        var langInfo = window.Darkness.highlighter.getLanguageInfo(b.lang || fn);
         return {
           id: "file_" + idx,
           name: fn,
@@ -1375,7 +1375,7 @@ if (typeof window !== "undefined") {
 
   function downloadSvgDiagram(svgElement, filename) {
     try {
-      var finalFilename = (filename || ("clarity_diagram_" + Date.now())).replace(/\.[^.]+$/, "") + ".svg";
+      var finalFilename = (filename || ("darkness_diagram_" + Date.now())).replace(/\.[^.]+$/, "") + ".svg";
       var svgStr = getStandaloneSvgString(svgElement);
       var blob = new Blob([svgStr], { type: "image/svg+xml;charset=utf-8" });
       var url = URL.createObjectURL(blob);
@@ -1387,20 +1387,20 @@ if (typeof window !== "undefined") {
       document.body.removeChild(a);
       setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
 
-      if (window.Clarity && window.Clarity.toast) {
-        window.Clarity.toast.show("Diagram downloaded as vector SVG", "success");
+      if (window.Darkness && window.Darkness.toast) {
+        window.Darkness.toast.show("Diagram downloaded as vector SVG", "success");
       }
     } catch (err) {
       console.error("Failed to download SVG diagram:", err);
-      if (window.Clarity && window.Clarity.toast) {
-        window.Clarity.toast.show("Failed to export SVG diagram", "error");
+      if (window.Darkness && window.Darkness.toast) {
+        window.Darkness.toast.show("Failed to export SVG diagram", "error");
       }
     }
   }
 
   async function downloadDiagramFromServer(svgStr, format, filename) {
     try {
-      var endpoint = (window.Clarity && window.Clarity.api ? window.Clarity.api.base : "") + "/api/diagrams/render-image";
+      var endpoint = (window.Darkness && window.Darkness.api ? window.Darkness.api.base : "") + "/api/diagrams/render-image";
       var response = await fetch(endpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1426,21 +1426,21 @@ if (typeof window !== "undefined") {
       document.body.removeChild(a);
       setTimeout(function() { URL.revokeObjectURL(url); }, 2000);
 
-      if (window.Clarity && window.Clarity.toast) {
-        window.Clarity.toast.show("Diagram downloaded as high-quality " + format.toUpperCase(), "success");
+      if (window.Darkness && window.Darkness.toast) {
+        window.Darkness.toast.show("Diagram downloaded as high-quality " + format.toUpperCase(), "success");
       }
       return true;
     } catch (err) {
       console.error("Failed to render diagram via server:", err);
-      if (window.Clarity && window.Clarity.toast) {
-        window.Clarity.toast.show("Failed to export diagram image", "error");
+      if (window.Darkness && window.Darkness.toast) {
+        window.Darkness.toast.show("Failed to export diagram image", "error");
       }
       return false;
     }
   }
 
   function downloadPngDiagram(svgElement, filename) {
-    var finalFilename = (filename || ("clarity_diagram_" + Date.now())).replace(/\.[^.]+$/, "") + ".png";
+    var finalFilename = (filename || ("darkness_diagram_" + Date.now())).replace(/\.[^.]+$/, "") + ".png";
     var svgStr = getStandaloneSvgString(svgElement);
 
     try {
@@ -1472,8 +1472,8 @@ if (typeof window !== "undefined") {
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          if (window.Clarity && window.Clarity.toast) {
-            window.Clarity.toast.show("Diagram downloaded as high-resolution PNG (300 DPI)", "success");
+          if (window.Darkness && window.Darkness.toast) {
+            window.Darkness.toast.show("Diagram downloaded as high-resolution PNG (300 DPI)", "success");
           }
         } catch (canvasErr) {
           console.warn("Client canvas export failed, using backend renderer:", canvasErr);
@@ -1494,7 +1494,7 @@ if (typeof window !== "undefined") {
   }
 
   function downloadJpgDiagram(svgElement, filename) {
-    var finalFilename = (filename || ("clarity_diagram_" + Date.now())).replace(/\.[^.]+$/, "") + ".jpg";
+    var finalFilename = (filename || ("darkness_diagram_" + Date.now())).replace(/\.[^.]+$/, "") + ".jpg";
     var svgStr = getStandaloneSvgString(svgElement);
 
     try {
@@ -1526,8 +1526,8 @@ if (typeof window !== "undefined") {
           document.body.appendChild(a);
           a.click();
           document.body.removeChild(a);
-          if (window.Clarity && window.Clarity.toast) {
-            window.Clarity.toast.show("Diagram downloaded as high-resolution JPG", "success");
+          if (window.Darkness && window.Darkness.toast) {
+            window.Darkness.toast.show("Diagram downloaded as high-resolution JPG", "success");
           }
         } catch (canvasErr) {
           console.warn("Client canvas JPG export failed, using backend renderer:", canvasErr);
@@ -1767,7 +1767,7 @@ if (typeof window !== "undefined") {
       '        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
       '        <span>Retry Render</span>',
       '      </button>',
-      '      <button type="button" class="btn btn--xs btn--outline" style="font-size:11px; padding:3px 8px;" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-code\')).then(()=>{ if(window.Clarity && window.Clarity.toast) window.Clarity.toast.show(\'Diagram source copied\', \'success\'); })" data-code="' + escapeHtml(code) + '">',
+      '      <button type="button" class="btn btn--xs btn--outline" style="font-size:11px; padding:3px 8px;" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-code\')).then(()=>{ if(window.Darkness && window.Darkness.toast) window.Darkness.toast.show(\'Diagram source copied\', \'success\'); })" data-code="' + escapeHtml(code) + '">',
       '        Copy Source',
       '      </button>',
       '    </div>',
@@ -1781,8 +1781,8 @@ if (typeof window !== "undefined") {
     if (retryBtn) {
       retryBtn.addEventListener('click', function(e) {
         e.stopPropagation();
-        if (window.Clarity && window.Clarity.renderMermaid) {
-          window.Clarity.renderMermaid(container.closest('.message') || container.parentNode);
+        if (window.Darkness && window.Darkness.renderMermaid) {
+          window.Darkness.renderMermaid(container.closest('.message') || container.parentNode);
         }
       });
     }
@@ -1894,8 +1894,8 @@ if (typeof window !== "undefined") {
         panX = 0;
         panY = 0;
         applyTransform();
-        if (window.Clarity && window.Clarity.toast) {
-          window.Clarity.toast.show('Entered diagram full-screen view (Press Esc to exit)', 'info');
+        if (window.Darkness && window.Darkness.toast) {
+          window.Darkness.toast.show('Entered diagram full-screen view (Press Esc to exit)', 'info');
         }
       } else {
         if (document.body && document.body.style) document.body.style.overflow = '';
@@ -1917,8 +1917,8 @@ if (typeof window !== "undefined") {
 
     controls.querySelector('.m-fullscreen-btn').addEventListener('click', function (e) {
       e.stopPropagation();
-      if (window.Clarity && window.Clarity.openDiagramModalViewer) {
-        window.Clarity.openDiagramModalViewer({
+      if (window.Darkness && window.Darkness.openDiagramModalViewer) {
+        window.Darkness.openDiagramModalViewer({
           svgElement: svg,
           title: 'System Architecture Diagram',
           subtitle: 'Generated system flow and architecture visualizer',
@@ -1976,22 +1976,22 @@ if (typeof window !== "undefined") {
 
     controls.querySelector('.m-download-png').addEventListener('click', function (e) {
       e.stopPropagation();
-      downloadPngDiagram(svg, 'clarity_diagram_' + Date.now() + '.png');
+      downloadPngDiagram(svg, 'darkness_diagram_' + Date.now() + '.png');
     });
 
     controls.querySelector('.m-download-jpg').addEventListener('click', function (e) {
       e.stopPropagation();
-      downloadJpgDiagram(svg, 'clarity_diagram_' + Date.now() + '.jpg');
+      downloadJpgDiagram(svg, 'darkness_diagram_' + Date.now() + '.jpg');
     });
 
     fsHeader.querySelector('.m-fs-download-png').addEventListener('click', function (e) {
       e.stopPropagation();
-      downloadPngDiagram(svg, 'clarity_diagram_' + Date.now() + '.png');
+      downloadPngDiagram(svg, 'darkness_diagram_' + Date.now() + '.png');
     });
 
     fsHeader.querySelector('.m-fs-download-jpg').addEventListener('click', function (e) {
       e.stopPropagation();
-      downloadJpgDiagram(svg, 'clarity_diagram_' + Date.now() + '.jpg');
+      downloadJpgDiagram(svg, 'darkness_diagram_' + Date.now() + '.jpg');
     });
 
     viewport.addEventListener('dblclick', function(e) {
@@ -2090,14 +2090,14 @@ if (typeof window !== "undefined") {
   }
 
   if (typeof window !== "undefined") {
-    window.Clarity = window.Clarity || {};
-    window.Clarity.renderMermaid = async function (containerEl, retryCount) {
+    window.Darkness = window.Darkness || {};
+    window.Darkness.renderMermaid = async function (containerEl, retryCount) {
     retryCount = retryCount || 0;
     if (!window.mermaid) {
       if (retryCount < 20) {
         setTimeout(function () {
-          if (window.Clarity && window.Clarity.renderMermaid) {
-            window.Clarity.renderMermaid(containerEl, retryCount + 1);
+          if (window.Darkness && window.Darkness.renderMermaid) {
+            window.Darkness.renderMermaid(containerEl, retryCount + 1);
           }
         }, 250);
       }
@@ -2245,8 +2245,8 @@ if (typeof window !== "undefined") {
 
   _sharedRenderMarkdown = renderMarkdown;
   if (typeof window !== "undefined") {
-    window.Clarity = window.Clarity || {};
-    window.Clarity.markdown = {
+    window.Darkness = window.Darkness || {};
+    window.Darkness.markdown = {
       render: renderMarkdown,
       escapeHtml: escapeHtml,
       highlightCode: highlightCode,
@@ -2255,19 +2255,19 @@ if (typeof window !== "undefined") {
       sanitizeLatex: sanitizeLatexToReadable,
     };
 
-    window.Clarity.renderKaTeX = window.renderKaTeXPass;
-    window.Clarity.downloadSvgDiagram = downloadSvgDiagram;
-    window.Clarity.downloadPngDiagram = downloadPngDiagram;
-    window.Clarity.downloadJpgDiagram = downloadJpgDiagram;
-    window.Clarity.getStandaloneSvgString = getStandaloneSvgString;
-    window.Clarity.sanitizeAndRepairMermaid = sanitizeAndRepairMermaid;
+    window.Darkness.renderKaTeX = window.renderKaTeXPass;
+    window.Darkness.downloadSvgDiagram = downloadSvgDiagram;
+    window.Darkness.downloadPngDiagram = downloadPngDiagram;
+    window.Darkness.downloadJpgDiagram = downloadJpgDiagram;
+    window.Darkness.getStandaloneSvgString = getStandaloneSvgString;
+    window.Darkness.sanitizeAndRepairMermaid = sanitizeAndRepairMermaid;
   }
 })();
 
 export const markdown = {
   render: function(text, options) {
-    if (typeof window !== "undefined" && window.Clarity && window.Clarity.markdown && typeof window.Clarity.markdown.render === "function" && window.Clarity.markdown.render !== markdown.render) {
-      return window.Clarity.markdown.render(text, options);
+    if (typeof window !== "undefined" && window.Darkness && window.Darkness.markdown && typeof window.Darkness.markdown.render === "function" && window.Darkness.markdown.render !== markdown.render) {
+      return window.Darkness.markdown.render(text, options);
     }
     return _sharedRenderMarkdown(text, options);
   }

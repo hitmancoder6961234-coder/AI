@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 
-export const PROJECTS_DIR = process.env.CLARITY_PROJECTS_DIR || path.resolve(process.cwd(), "data", "projects");
+export const PROJECTS_DIR = process.env.DARKNESS_PROJECTS_DIR || path.resolve(process.cwd(), "data", "projects");
 
 // Ensure the root projects storage directory exists
 if (!fs.existsSync(PROJECTS_DIR)) {
@@ -49,7 +49,7 @@ export const resolveProjectFolder = getProjectStorageDir;
 /**
  * Resolves the isolated workspace directory for a user-selected project for 'Run & Test' actions.
  * Ensures execution occurs strictly within the project's directory (e.g. data/projects/<projectId> or data/runs/<projectId>),
- * explicitly preventing the execution of Clarity's own source code (process.cwd()).
+ * explicitly preventing the execution of Darkness's own source code (process.cwd()).
  */
 export function resolveProjectWorkspace(projectId: string): string {
   if (!projectId || typeof projectId !== "string") {
@@ -64,14 +64,14 @@ export function resolveProjectWorkspace(projectId: string): string {
   const appRootDir = path.resolve(process.cwd());
   const resolvedTargetDir = path.resolve(targetDir);
 
-  // Security check: explicitly prevent executing Clarity's own source code directory
+  // Security check: explicitly prevent executing Darkness's own source code directory
   if (
     resolvedTargetDir === appRootDir ||
     (resolvedTargetDir.startsWith(appRootDir) &&
       !resolvedTargetDir.includes(path.join("data", "projects")) &&
       !resolvedTargetDir.includes(path.join("data", "runs")))
   ) {
-    throw new Error(`Security exception: 'Run & Test' actions are restricted to the selected project directory. Cannot execute Clarity source code at "${appRootDir}".`);
+    throw new Error(`Security exception: 'Run & Test' actions are restricted to the selected project directory. Cannot execute Darkness source code at "${appRootDir}".`);
   }
 
   if (!fs.existsSync(resolvedTargetDir)) {

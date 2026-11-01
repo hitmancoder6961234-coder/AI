@@ -1,5 +1,5 @@
-window.Clarity = window.Clarity || {};
-window.Clarity.pages = window.Clarity.pages || {};
+window.Darkness = window.Darkness || {};
+window.Darkness.pages = window.Darkness.pages || {};
 
 (function() {
   let ragData = {
@@ -15,7 +15,7 @@ window.Clarity.pages = window.Clarity.pages || {};
   let isUploading = false;
   
   // Persist panel open/closed state in localStorage (default closed for full chat space)
-  let isDocPanelOpen = localStorage.getItem('clarity_kb_doc_panel_open') === 'true';
+  let isDocPanelOpen = localStorage.getItem('darkness_kb_doc_panel_open') === 'true';
 
   // Persistent server-backed chat history (grounded in Supabase/backend)
   let chatMessages = [];
@@ -24,7 +24,7 @@ window.Clarity.pages = window.Clarity.pages || {};
 
   async function loadKnowledgeChatHistory() {
     try {
-      const user = window.Clarity?.auth?.getUser ? window.Clarity.auth.getUser() : null;
+      const user = window.Darkness?.auth?.getUser ? window.Darkness.auth.getUser() : null;
       const cid = "knowledge_rag_chat_" + (user?.id || "default");
       const res = await fetch(`/api/conversations/${encodeURIComponent(cid)}`, { credentials: "include" });
       if (res.ok) {
@@ -47,7 +47,7 @@ window.Clarity.pages = window.Clarity.pages || {};
     // Chat messages are automatically persisted to Supabase and SQLite via the /api/knowledge/rag/ask endpoint
   }
 
-  window.Clarity.pages.knowledge = async function renderKnowledgePage() {
+  window.Darkness.pages.knowledge = async function renderKnowledgePage() {
     const main = document.getElementById('main');
     if (!main) return;
 
@@ -77,7 +77,7 @@ window.Clarity.pages = window.Clarity.pages || {};
   }
 
   function getActiveModelLabel() {
-    const modelId = window.Clarity?.store?.get?.("active_model") || window.Clarity?.chat?._activeModel;
+    const modelId = window.Darkness?.store?.get?.("active_model") || window.Darkness?.chat?._activeModel;
     if (modelId) {
       return modelId.replace('gemini-', '').replace('-preview', '');
     }
@@ -251,7 +251,7 @@ window.Clarity.pages = window.Clarity.pages || {};
               <div style="position: relative; flex-shrink: 0;">
                 <div style="display: flex; gap: 4px; align-items: center;">
                   <div style="position: relative; flex: 1;">
-                    <input type="text" id="filterSourcesInput" class="input" style="height: 28px; font-size: 11px; border-radius: 5px; padding-left: 24px; width: 100%;" placeholder="Search documents..." value="${window.Clarity.utils.escapeHtml(activeFilter)}" />
+                    <input type="text" id="filterSourcesInput" class="input" style="height: 28px; font-size: 11px; border-radius: 5px; padding-left: 24px; width: 100%;" placeholder="Search documents..." value="${window.Darkness.utils.escapeHtml(activeFilter)}" />
                     <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" style="position: absolute; left: 7px; top: 50%; transform: translateY(-50%); color: var(--ink-muted);">
                       <circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                     </svg>
@@ -279,7 +279,7 @@ window.Clarity.pages = window.Clarity.pages || {};
   }
 
   function renderDocCardHtml(d) {
-    const safeName = window.Clarity.utils.escapeHtml(d.name || d.path || 'document');
+    const safeName = window.Darkness.utils.escapeHtml(d.name || d.path || 'document');
     const ext = (d.extension || '').replace('.', '').toUpperCase() || 'DOC';
     const chunks = d.chunksCount || 0;
     const sizeStr = d.sizeFormatted || formatBytes(d.size || 0);
@@ -298,10 +298,10 @@ window.Clarity.pages = window.Clarity.pages || {};
 
           <!-- Action Buttons -->
           <div class="hstack" style="gap: 1px; flex-shrink: 0;">
-            <button class="btn btn--ghost btn--icon-sm preview-doc-btn" data-doc-path="${window.Clarity.utils.escapeHtml(d.path || d.name)}" title="Preview" aria-label="Preview" style="width: 22px; height: 22px;">
+            <button class="btn btn--ghost btn--icon-sm preview-doc-btn" data-doc-path="${window.Darkness.utils.escapeHtml(d.path || d.name)}" title="Preview" aria-label="Preview" style="width: 22px; height: 22px;">
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
             </button>
-            <button class="btn btn--ghost btn--icon-sm delete-doc-btn" data-doc-id="${d.id || ''}" data-doc-path="${window.Clarity.utils.escapeHtml(d.path || d.name)}" title="Delete" aria-label="Delete" style="width: 22px; height: 22px; color: var(--danger);">
+            <button class="btn btn--ghost btn--icon-sm delete-doc-btn" data-doc-id="${d.id || ''}" data-doc-path="${window.Darkness.utils.escapeHtml(d.path || d.name)}" title="Delete" aria-label="Delete" style="width: 22px; height: 22px; color: var(--danger);">
               <svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
             </button>
           </div>
@@ -311,7 +311,7 @@ window.Clarity.pages = window.Clarity.pages || {};
   }
 
   function renderChatMessageHtml(msg) {
-    if (window.Clarity && window.Clarity.uiChat && typeof window.Clarity.uiChat._renderMessage === "function") {
+    if (window.Darkness && window.Darkness.uiChat && typeof window.Darkness.uiChat._renderMessage === "function") {
       const copyMsg = { ...msg };
       if (copyMsg.role === 'assistant' && copyMsg.documentsUsed && copyMsg.documentsUsed.length > 0 && !copyMsg.streaming) {
         let sourcesText = "\n\n**Sources**\n";
@@ -323,11 +323,11 @@ window.Clarity.pages = window.Clarity.pages || {};
            copyMsg.content += sourcesText;
         }
       }
-      return window.Clarity.uiChat._renderMessage(copyMsg);
+      return window.Darkness.uiChat._renderMessage(copyMsg);
     }
     // Fallback if not loaded
     const isUser = msg.role === 'user';
-    const safeContent = window.Clarity.utils.escapeHtml(msg.content);
+    const safeContent = window.Darkness.utils.escapeHtml(msg.content);
     return `<div>${safeContent}</div>`;
   }
 
@@ -345,14 +345,14 @@ window.Clarity.pages = window.Clarity.pages || {};
                const msgEl = btn.closest('.message');
                if (action === 'read-aloud') {
                   const msgId = msgEl ? msgEl.getAttribute("data-msg-id") : null;
-                  if (window.Clarity && window.Clarity.narrationSync) {
-                     window.Clarity.narrationSync.toggleReadAloud(msgId, msgEl);
+                  if (window.Darkness && window.Darkness.narrationSync) {
+                     window.Darkness.narrationSync.toggleReadAloud(msgId, msgEl);
                   }
                } else if (action === 'copy') {
                   const content = msgEl ? msgEl.querySelector('.message__content')?.textContent : '';
                   if (content) {
                      navigator.clipboard.writeText(content);
-                     window.Clarity.toast.show("Copied to clipboard", "success");
+                     window.Darkness.toast.show("Copied to clipboard", "success");
                   }
                } else if (action === 'edit') {
                   const content = msgEl ? msgEl.querySelector('.message__content')?.textContent : '';
@@ -389,7 +389,7 @@ window.Clarity.pages = window.Clarity.pages || {};
             if (playerBtn) {
                e.stopPropagation();
                const pAction = playerBtn.getAttribute("data-player-action");
-               const controller = window.Clarity.speechController;
+               const controller = window.Darkness.speechController;
                const bar = playerBtn.closest(".narration-player-bar");
                const mId = bar ? bar.getAttribute("data-player-msg-id") : null;
                if (!controller) return;
@@ -401,7 +401,7 @@ window.Clarity.pages = window.Clarity.pages || {};
                   } else if (state === "paused") {
                      controller.resume();
                   } else if (mId) {
-                     window.Clarity.narrationSync?.startReadAloud(mId);
+                     window.Darkness.narrationSync?.startReadAloud(mId);
                   }
                } else if (pAction === "stop") {
                   controller.stop();
@@ -420,7 +420,7 @@ window.Clarity.pages = window.Clarity.pages || {};
                const codeEl = codeCopyBtn.closest(".code-block").querySelector("code");
                if (codeEl) {
                   navigator.clipboard.writeText(codeEl.textContent).then(() => {
-                     window.Clarity.toast.show("Code copied", "success");
+                     window.Darkness.toast.show("Code copied", "success");
                   });
                }
                return;
@@ -432,9 +432,9 @@ window.Clarity.pages = window.Clarity.pages || {};
             if (sel) {
                const act = sel.getAttribute("data-player-action");
                if (act === "speed") {
-                  window.Clarity.speechController?.setSpeed(sel.value);
+                  window.Darkness.speechController?.setSpeed(sel.value);
                } else if (act === "voice") {
-                  window.Clarity.speechController?.setVoice(sel.value);
+                  window.Darkness.speechController?.setVoice(sel.value);
                }
             }
          });
@@ -469,11 +469,11 @@ window.Clarity.pages = window.Clarity.pages || {};
             return `
               <div style="display:inline-flex; align-items:center; gap:6px; padding:3px 8px; border-radius:12px; background:var(--surface); border:1px dashed var(--accent); font-size:11.5px; color:var(--ink);">
                 <span class="spinner" style="width:11px; height:11px;"></span>
-                <span>Uploading ${window.Clarity.utils.escapeHtml(att.name)}...</span>
+                <span>Uploading ${window.Darkness.utils.escapeHtml(att.name)}...</span>
               </div>
             `;
           }
-          const safeName = window.Clarity.utils.escapeHtml(att.name || "document");
+          const safeName = window.Darkness.utils.escapeHtml(att.name || "document");
           const chipId = String(att.id || att.file_id || "");
           return `
             <div style="display:inline-flex; align-items:center; gap:5px; padding:3px 8px; border-radius:12px; background:var(--surface); border:1px solid var(--line-strong); font-size:11.5px; color:var(--ink);">
@@ -505,7 +505,7 @@ window.Clarity.pages = window.Clarity.pages || {};
       const oversized = selectedFiles.filter(f => f.size > MAX_UPLOAD_SIZE);
       if (oversized.length > 0) {
         const names = oversized.map(f => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ');
-        window.Clarity.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB.`, "danger");
+        window.Darkness.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB.`, "danger");
       }
       const validFiles = selectedFiles.filter(f => f.size <= MAX_UPLOAD_SIZE);
       if (validFiles.length === 0) return;
@@ -525,7 +525,7 @@ window.Clarity.pages = window.Clarity.pages || {};
       try {
         const formData = new FormData();
         validFiles.forEach(f => formData.append("files", f, f.name));
-        const resp = await fetch((window.Clarity.api?.base || "") + "/api/files/upload", {
+        const resp = await fetch((window.Darkness.api?.base || "") + "/api/files/upload", {
           method: "POST",
           body: formData,
           credentials: "include"
@@ -552,10 +552,10 @@ window.Clarity.pages = window.Clarity.pages || {};
             content: resItem.content || ""
           });
         }
-        window.Clarity.toast.show(`Attached ${returnedFiles.length} file(s) to Knowledge Chat`, "success");
+        window.Darkness.toast.show(`Attached ${returnedFiles.length} file(s) to Knowledge Chat`, "success");
       } catch (err) {
         knowledgeChatAttachments = knowledgeChatAttachments.filter(a => !a.isUploading);
-        window.Clarity.toast.show("File upload failed: " + (err.message || ""), "danger");
+        window.Darkness.toast.show("File upload failed: " + (err.message || ""), "danger");
       }
       renderKnowledgeChatAttachments();
     }
@@ -635,7 +635,7 @@ window.Clarity.pages = window.Clarity.pages || {};
 
     const toggleDocPanel = () => {
       isDocPanelOpen = !isDocPanelOpen;
-      localStorage.setItem('clarity_kb_doc_panel_open', isDocPanelOpen ? 'true' : 'false');
+      localStorage.setItem('darkness_kb_doc_panel_open', isDocPanelOpen ? 'true' : 'false');
       renderPage(document.getElementById('main'));
     };
 
@@ -709,9 +709,9 @@ window.Clarity.pages = window.Clarity.pages || {};
 
       try {
         await loadRagData();
-        window.Clarity?.toast?.show('Library refreshed', 'info');
+        window.Darkness?.toast?.show('Library refreshed', 'info');
       } catch (err) {
-        window.Clarity?.toast?.show('Failed to refresh library', 'danger');
+        window.Darkness?.toast?.show('Failed to refresh library', 'danger');
       } finally {
         isRefreshing = false;
         renderPage(document.getElementById('main'));
@@ -768,8 +768,8 @@ window.Clarity.pages = window.Clarity.pages || {};
             const thread = document.getElementById('knowledgeChatThread');
             if (thread) {
                thread.scrollTop = thread.scrollHeight;
-               if (window.Clarity.uiChat._bindMessageControls) {
-                  window.Clarity.uiChat._bindMessageControls(thread);
+               if (window.Darkness.uiChat._bindMessageControls) {
+                  window.Darkness.uiChat._bindMessageControls(thread);
                }
             }
          }, 10);
@@ -792,7 +792,7 @@ window.Clarity.pages = window.Clarity.pages || {};
                const content = msgEl ? msgEl.querySelector('.message__content')?.textContent : '';
                if (content) {
                   navigator.clipboard.writeText(content);
-                  window.Clarity.toast.show("Copied to clipboard", "success");
+                  window.Darkness.toast.show("Copied to clipboard", "success");
                }
             } else if (action === 'edit') {
                e.stopPropagation();
@@ -836,7 +836,7 @@ window.Clarity.pages = window.Clarity.pages || {};
           role: m.role,
           content: m.content
         }));
-        const activeModelId = window.Clarity?.store?.get?.("active_model") || window.Clarity?.chat?._activeModel || undefined;
+        const activeModelId = window.Darkness?.store?.get?.("active_model") || window.Darkness?.chat?._activeModel || undefined;
 
         const res = await fetch('/api/knowledge/rag/ask', {
           method: 'POST',
@@ -921,15 +921,15 @@ window.Clarity.pages = window.Clarity.pages || {};
         const oldText = exportChatBtn.querySelector('span').textContent;
         exportChatBtn.querySelector('span').textContent = 'Exporting...';
         
-        if (window.Clarity && window.Clarity.uiChat && window.Clarity.uiChat.exportChatToPdf) {
-          await window.Clarity.uiChat.exportChatToPdf({ feed: document.getElementById('knowledgeChatThread') });
+        if (window.Darkness && window.Darkness.uiChat && window.Darkness.uiChat.exportChatToPdf) {
+          await window.Darkness.uiChat.exportChatToPdf({ feed: document.getElementById('knowledgeChatThread') });
         } else {
-           window.Clarity.toast.show('Export not ready', 'danger');
+           window.Darkness.toast.show('Export not ready', 'danger');
         }
         
         exportChatBtn.querySelector('span').textContent = oldText;
       } catch (err) {
-        window.Clarity.toast.show('Failed to export', 'danger');
+        window.Darkness.toast.show('Failed to export', 'danger');
         console.error(err);
       }
     });
@@ -937,12 +937,12 @@ window.Clarity.pages = window.Clarity.pages || {};
     clearChatBtn?.addEventListener('click', async () => {
       chatMessages = [];
       try {
-        const user = window.Clarity?.auth?.getUser ? window.Clarity.auth.getUser() : null;
+        const user = window.Darkness?.auth?.getUser ? window.Darkness.auth.getUser() : null;
         const cid = "knowledge_rag_chat_" + (user?.id || "default");
         await fetch(`/api/conversations/${encodeURIComponent(cid)}`, { method: "DELETE", credentials: "include" });
       } catch (e) {}
       renderPage(document.getElementById('main'));
-      window.Clarity.toast.show('Chat cleared', 'info');
+      window.Darkness.toast.show('Chat cleared', 'info');
     });
 
     // Copy Message Text
@@ -950,9 +950,9 @@ window.Clarity.pages = window.Clarity.pages || {};
       btn.addEventListener('click', () => {
         const content = btn.getAttribute('data-content') || '';
         navigator.clipboard.writeText(content).then(() => {
-          window.Clarity.toast.show('Copied to clipboard', 'success');
+          window.Darkness.toast.show('Copied to clipboard', 'success');
         }).catch(() => {
-          window.Clarity.toast.show('Could not copy', 'danger');
+          window.Darkness.toast.show('Could not copy', 'danger');
         });
       });
     });
@@ -967,13 +967,13 @@ window.Clarity.pages = window.Clarity.pages || {};
           const chunks = data.chunks || [];
           const fullText = chunks.map(c => c.content).join('\n\n') || '(No content available)';
           
-          window.Clarity.modal.open(
+          window.Darkness.modal.open(
             `Document: ${docName}`,
-            `<pre style="white-space: pre-wrap; max-height: 55vh; overflow: auto; background: var(--surface-muted); padding: 12px; border-radius: 8px; font-size: 12px; font-family: var(--font-mono);">${window.Clarity.utils.escapeHtml(fullText)}</pre>`,
+            `<pre style="white-space: pre-wrap; max-height: 55vh; overflow: auto; background: var(--surface-muted); padding: 12px; border-radius: 8px; font-size: 12px; font-family: var(--font-mono);">${window.Darkness.utils.escapeHtml(fullText)}</pre>`,
             `<button class="btn btn--primary" data-modal-close="true">Close</button>`
           );
         } catch {
-          window.Clarity.toast.show('Preview unavailable', 'danger');
+          window.Darkness.toast.show('Preview unavailable', 'danger');
         }
       });
     });
@@ -992,13 +992,13 @@ window.Clarity.pages = window.Clarity.pages || {};
           const chunks = data.chunks || [];
           const fullText = chunks.map(c => c.content).join('\n\n') || '(No preview content available)';
           
-          window.Clarity.modal.open(
+          window.Darkness.modal.open(
             `Preview: ${docPath}`,
-            `<pre style="white-space: pre-wrap; max-height: 55vh; overflow: auto; background: var(--surface-muted); padding: 12px; border-radius: 8px; font-size: 12px; font-family: var(--font-mono);">${window.Clarity.utils.escapeHtml(fullText)}</pre>`,
+            `<pre style="white-space: pre-wrap; max-height: 55vh; overflow: auto; background: var(--surface-muted); padding: 12px; border-radius: 8px; font-size: 12px; font-family: var(--font-mono);">${window.Darkness.utils.escapeHtml(fullText)}</pre>`,
             `<button class="btn btn--primary" data-modal-close="true">Close</button>`
           );
         } catch {
-          window.Clarity.toast.show('Preview unavailable', 'danger');
+          window.Darkness.toast.show('Preview unavailable', 'danger');
         }
       });
     });
@@ -1009,10 +1009,10 @@ window.Clarity.pages = window.Clarity.pages || {};
         const docId = btn.getAttribute('data-doc-id');
         const docPath = btn.getAttribute('data-doc-path');
         
-        window.Clarity.modal.open(
+        window.Darkness.modal.open(
           'Delete Document?',
           `<div style="font-size: 13px; line-height: 1.5; color: var(--ink);">
-             Are you sure you want to permanently delete <strong>${window.Clarity.utils.escapeHtml(docPath)}</strong>?
+             Are you sure you want to permanently delete <strong>${window.Darkness.utils.escapeHtml(docPath)}</strong>?
            </div>`,
           `<div class="hstack" style="gap: 8px; justify-content: flex-end;">
              <button class="btn btn--outline" data-modal-close="true">Cancel</button>
@@ -1021,8 +1021,8 @@ window.Clarity.pages = window.Clarity.pages || {};
         );
 
         document.getElementById('confirmDeleteKbDocBtn')?.addEventListener('click', async () => {
-          window.Clarity.modal.close();
-          window.Clarity.toast.show('Deleting document...', 'info');
+          window.Darkness.modal.close();
+          window.Darkness.toast.show('Deleting document...', 'info');
           try {
             const res = await fetch('/api/knowledge/rag/documents', {
               method: 'DELETE',
@@ -1031,14 +1031,14 @@ window.Clarity.pages = window.Clarity.pages || {};
             });
             const data = await res.json();
             if (data.success) {
-              window.Clarity.toast.show('Document deleted', 'success');
+              window.Darkness.toast.show('Document deleted', 'success');
               await loadRagData();
               renderPage(document.getElementById('main'));
             } else {
-              window.Clarity.toast.show(data.error || 'Deletion failed', 'danger');
+              window.Darkness.toast.show(data.error || 'Deletion failed', 'danger');
             }
           } catch (err) {
-            window.Clarity.toast.show('Failed to delete: ' + err.message, 'danger');
+            window.Darkness.toast.show('Failed to delete: ' + err.message, 'danger');
           }
         }, { once: true });
       });
@@ -1053,7 +1053,7 @@ window.Clarity.pages = window.Clarity.pages || {};
     const oversized = fileList.filter(f => f.size > MAX_UPLOAD_SIZE);
     if (oversized.length > 0) {
       const names = oversized.map(f => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ');
-      window.Clarity.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB (104,857,600 bytes).`, 'danger');
+      window.Darkness.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB (104,857,600 bytes).`, 'danger');
     }
 
     const validFiles = fileList.filter(f => f.size <= MAX_UPLOAD_SIZE);
@@ -1061,7 +1061,7 @@ window.Clarity.pages = window.Clarity.pages || {};
 
     isUploading = true;
     renderPage(document.getElementById('main'));
-    window.Clarity.toast.show(`Uploading ${validFiles.length} document(s)...`, 'info');
+    window.Darkness.toast.show(`Uploading ${validFiles.length} document(s)...`, 'info');
 
     const fd = new FormData();
     validFiles.forEach(f => fd.append('files', f, f.name));
@@ -1073,19 +1073,19 @@ window.Clarity.pages = window.Clarity.pages || {};
       });
 
       if (res.status === 413) {
-        window.Clarity.toast.show('Upload rejected: File exceeds the 100 MB maximum size limit.', 'danger');
+        window.Darkness.toast.show('Upload rejected: File exceeds the 100 MB maximum size limit.', 'danger');
         return;
       }
 
       const data = await res.json();
       if (data.success) {
-        window.Clarity.toast.show(data.message || 'Files saved and indexed!', 'success');
+        window.Darkness.toast.show(data.message || 'Files saved and indexed!', 'success');
         await loadRagData();
       } else {
-        window.Clarity.toast.show(data.error || 'Upload failed', 'danger');
+        window.Darkness.toast.show(data.error || 'Upload failed', 'danger');
       }
     } catch (err) {
-      window.Clarity.toast.show('Upload failed: ' + err.message, 'danger');
+      window.Darkness.toast.show('Upload failed: ' + err.message, 'danger');
     } finally {
       isUploading = false;
       renderPage(document.getElementById('main'));

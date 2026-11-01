@@ -1,6 +1,6 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.composer = {
+window.Darkness.composer = {
   _attachedFiles: [],
   _isStreaming: false,
   _onStop: null,
@@ -56,10 +56,10 @@ window.Clarity.composer = {
     const input = container.querySelector("#composerInput");
     if (input) {
       let projName = "";
-      const conv = window.Clarity?.state?.activeConversation;
+      const conv = window.Darkness?.state?.activeConversation;
       if (conv && conv.project_id) {
         const projId = conv.project_id;
-        const proj = window.Clarity?.state?.projects?.find(p => p.id === projId);
+        const proj = window.Darkness?.state?.projects?.find(p => p.id === projId);
         if (proj) {
           projName = proj.name;
         }
@@ -96,12 +96,12 @@ window.Clarity.composer = {
       input.addEventListener("input", () => {
         autoResize();
         updateSendState();
-        if (window.Clarity && window.Clarity.chat && window.Clarity.chat.setRobotState) {
-          window.Clarity.chat.setRobotState("listening");
-          clearTimeout(window.Clarity.composer._typingTimeout);
-          window.Clarity.composer._typingTimeout = setTimeout(() => {
-            if (!window.Clarity.composer._isStreaming) {
-              window.Clarity.chat.setRobotState("idle");
+        if (window.Darkness && window.Darkness.chat && window.Darkness.chat.setRobotState) {
+          window.Darkness.chat.setRobotState("listening");
+          clearTimeout(window.Darkness.composer._typingTimeout);
+          window.Darkness.composer._typingTimeout = setTimeout(() => {
+            if (!window.Darkness.composer._isStreaming) {
+              window.Darkness.chat.setRobotState("idle");
             }
           }, 3000);
         }
@@ -113,19 +113,19 @@ window.Clarity.composer = {
 
       input.addEventListener("focus", () => {
         autoResize();
-        if (window.Clarity && window.Clarity.chat && window.Clarity.chat.setRobotState && !window.Clarity.composer._isStreaming) {
-          window.Clarity.chat.setRobotState("attention");
+        if (window.Darkness && window.Darkness.chat && window.Darkness.chat.setRobotState && !window.Darkness.composer._isStreaming) {
+          window.Darkness.chat.setRobotState("attention");
           setTimeout(() => {
-            if (!window.Clarity.composer._isStreaming && document.activeElement === input) {
-              window.Clarity.chat.setRobotState("listening");
+            if (!window.Darkness.composer._isStreaming && document.activeElement === input) {
+              window.Darkness.chat.setRobotState("listening");
             }
           }, 800);
         }
       });
 
       input.addEventListener("blur", () => {
-        if (window.Clarity && window.Clarity.chat && window.Clarity.chat.setRobotState && !window.Clarity.composer._isStreaming) {
-          window.Clarity.chat.setRobotState("idle");
+        if (window.Darkness && window.Darkness.chat && window.Darkness.chat.setRobotState && !window.Darkness.composer._isStreaming) {
+          window.Darkness.chat.setRobotState("idle");
         }
       });
 
@@ -198,11 +198,11 @@ window.Clarity.composer = {
 
     // Clipboard Paste (Ctrl+V) handler for images, screenshots, and files
     const handlePaste = async (event) => {
-      if (event._clarityHandled) return;
+      if (event._darknessHandled) return;
       if (!card || (!card.contains(event.target) && event.target !== input)) {
         return;
       }
-      event._clarityHandled = true;
+      event._darknessHandled = true;
 
       const clipboardData = event.clipboardData || window.clipboardData;
       if (!clipboardData) return;
@@ -252,10 +252,10 @@ window.Clarity.composer = {
 
     // Attach paste handler ONLY once on the card wrapper to avoid double-firing via bubbling
     if (card) {
-      if (card._clarityPasteHandler) {
-        card.removeEventListener("paste", card._clarityPasteHandler);
+      if (card._darknessPasteHandler) {
+        card.removeEventListener("paste", card._darknessPasteHandler);
       }
-      card._clarityPasteHandler = handlePaste;
+      card._darknessPasteHandler = handlePaste;
       card.addEventListener("paste", handlePaste);
     }
 
@@ -336,7 +336,7 @@ window.Clarity.composer = {
     }
 
     for (const err of errors) {
-      window.Clarity.toast.show(err, "danger");
+      window.Darkness.toast.show(err, "danger");
     }
     if (validFiles.length === 0) return;
 
@@ -368,7 +368,7 @@ window.Clarity.composer = {
       const formData = new FormData();
       validFiles.forEach(f => formData.append("files", f, f.name));
 
-      const resp = await fetch((window.Clarity.api?.base || "") + "/api/files/upload", {
+      const resp = await fetch((window.Darkness.api?.base || "") + "/api/files/upload", {
         method: "POST",
         body: formData,
         credentials: "include",
@@ -404,7 +404,7 @@ window.Clarity.composer = {
 
         if (result.file_type === "archive") {
           const projectName = fileName || "Uploaded Project";
-          const projResp = await fetch((window.Clarity.api?.base || "") + "/api/projects", {
+          const projResp = await fetch((window.Darkness.api?.base || "") + "/api/projects", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
@@ -414,7 +414,7 @@ window.Clarity.composer = {
           const projectId = projData.id;
 
           if (result.extracted && result.extracted.length > 0) {
-            await fetch((window.Clarity.api?.base || "") + `/api/projects/${projectId}/index`, { method: "POST", credentials: "include" });
+            await fetch((window.Darkness.api?.base || "") + `/api/projects/${projectId}/index`, { method: "POST", credentials: "include" });
           }
 
           this._attachedFiles.push({
@@ -444,10 +444,10 @@ window.Clarity.composer = {
       }
 
       if (this._attachedFiles.length > 0) {
-        if (window.Clarity.uiChat) {
-          window.Clarity.uiChat._attachedFiles = this._attachedFiles;
-          if (typeof window.Clarity.uiChat._saveState === "function") {
-            window.Clarity.uiChat._saveState();
+        if (window.Darkness.uiChat) {
+          window.Darkness.uiChat._attachedFiles = this._attachedFiles;
+          if (typeof window.Darkness.uiChat._saveState === "function") {
+            window.Darkness.uiChat._saveState();
           }
         }
         this._refreshAttachments();
@@ -457,17 +457,17 @@ window.Clarity.composer = {
       this._attachedFiles = this._attachedFiles.filter(f => !f.isUploading);
       this._refreshAttachments();
       console.error("File upload error:", err);
-      window.Clarity.toast.show("Upload failed: " + (err.message || "network error"), "danger");
+      window.Darkness.toast.show("Upload failed: " + (err.message || "network error"), "danger");
     }
   },
 
   async _getFileUrl(fileId) {
-    return window.Clarity.api.base + `/api/files/${fileId}/raw`;
+    return window.Darkness.api.base + `/api/files/${fileId}/raw`;
   },
 
   async _getFileContent(fileId) {
     try {
-      const data = await window.Clarity.api.get(`/api/files/${fileId}/content`);
+      const data = await window.Darkness.api.get(`/api/files/${fileId}/content`);
       return data.content || "";
     } catch (err) {
       return "";
@@ -481,10 +481,10 @@ window.Clarity.composer = {
       try { URL.revokeObjectURL(removed.localPreview); } catch (_) {}
     }
     this._attachedFiles = this._attachedFiles.filter(f => String(f.id) !== String(fileId) && String(f.file_id) !== String(fileId));
-    if (window.Clarity.uiChat) {
-      window.Clarity.uiChat._attachedFiles = this._attachedFiles;
-      if (typeof window.Clarity.uiChat._saveState === "function") {
-        window.Clarity.uiChat._saveState();
+    if (window.Darkness.uiChat) {
+      window.Darkness.uiChat._attachedFiles = this._attachedFiles;
+      if (typeof window.Darkness.uiChat._saveState === "function") {
+        window.Darkness.uiChat._saveState();
       }
     }
     this._refreshAttachments();
@@ -512,7 +512,7 @@ window.Clarity.composer = {
   _renderAttachments() {
     if (this._attachedFiles.length === 0) return "";
     const items = this._attachedFiles.map(att => {
-      const safeName = window.Clarity.utils.escapeHtml(att.name || "attachment");
+      const safeName = window.Darkness.utils.escapeHtml(att.name || "attachment");
       const sizeText = att.size ? formatBytes(att.size) : "";
       const chipId = String(att.id || att.file_id || "");
       const isImage = att.type === "image" || (att.mime && att.mime.startsWith("image/")) || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(att.name || "");
@@ -605,7 +605,7 @@ window.Clarity.composer = {
     recognition.onstart = () => {
       this._isRecording = true;
       micBtn.classList.add("is-recording");
-      window.Clarity.toast.show("Listening... Speak now", "info");
+      window.Darkness.toast.show("Listening... Speak now", "info");
     };
 
     recognition.onerror = (e) => {

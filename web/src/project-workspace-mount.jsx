@@ -4,9 +4,9 @@ import ProjectWorkspace from "./project-workspace";
 import { ErrorBoundary } from "./ErrorBoundary.jsx";
 
 let workspaceRoot = null;
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.projectWorkspace = {
+window.Darkness.projectWorkspace = {
   render(containerId = "main", route = null) {
     const container = document.getElementById(containerId);
     if (!container) return;

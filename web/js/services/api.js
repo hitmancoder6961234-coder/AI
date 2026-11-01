@@ -1,16 +1,16 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
 /**
- * HTTP client for the Clarity backend.
+ * HTTP client for the Darkness backend.
  *
  * Supports cross-origin production deployment between Render frontend
- * (clarity-1-6ir1.onrender.com) and Render backend (clarity-sznp.onrender.com).
+ * (darkness-1-6ir1.onrender.com) and Render backend (darkness-sznp.onrender.com).
  * Includes automatic URL rewriting, credential inclusion, and Bearer token fallback.
  */
 (function() {
   const getDetectedBase = function() {
     if (typeof window !== "undefined") {
-      if (window.__CLARITY_API_BASE__) return window.__CLARITY_API_BASE__;
+      if (window.__DARKNESS_API_BASE__) return window.__DARKNESS_API_BASE__;
       try {
         if (window.env && window.env.VITE_API_URL) {
           return window.env.VITE_API_URL;
@@ -22,12 +22,12 @@ window.Clarity = window.Clarity || {};
 
   const detectedBase = getDetectedBase();
 
-  window.Clarity.api = {
+  window.Darkness.api = {
     base: detectedBase,
 
     _getAuthHeaders() {
       try {
-        const token = localStorage.getItem("clarity_token");
+        const token = localStorage.getItem("darkness_token");
         if (token) return { "Authorization": `Bearer ${token}` };
       } catch (e) {}
       return {};
@@ -36,7 +36,7 @@ window.Clarity = window.Clarity || {};
     _url(path) {
       if (!path) return "/";
       if (path.startsWith("http://") || path.startsWith("https://")) return path;
-      const base = (typeof this.base === "string" ? this.base : "") || (typeof window.Clarity?.api?.base === "string" ? window.Clarity.api.base : detectedBase);
+      const base = (typeof this.base === "string" ? this.base : "") || (typeof window.Darkness?.api?.base === "string" ? window.Darkness.api.base : detectedBase);
       const cleanPath = path.startsWith("/") ? path : "/" + path;
       return (base ? base.replace(/\/+$/, "") : "") + cleanPath;
     },
@@ -89,7 +89,7 @@ window.Clarity = window.Clarity || {};
         err.type = (data && data.type) || null;
         err.data = data;
         if (resp.status === 401 && !path.startsWith("/api/auth/")) {
-          window.Clarity.auth?.handleSessionExpired?.();
+          window.Darkness.auth?.handleSessionExpired?.();
         }
         throw err;
       }
@@ -139,7 +139,7 @@ window.Clarity = window.Clarity || {};
         const err = new Error((data && data.error) || resp.statusText || "Upload failed");
         err.status = resp.status;
         err.type = (data && data.type) || null;
-        if (resp.status === 401) window.Clarity.auth?.handleSessionExpired?.();
+        if (resp.status === 401) window.Darkness.auth?.handleSessionExpired?.();
         throw err;
       }
       return data;
@@ -173,7 +173,7 @@ window.Clarity = window.Clarity || {};
             } catch (e) { detail = txt; }
           }
         } catch (e) { /* body unavailable */ }
-        if (resp.status === 401) window.Clarity.auth?.handleSessionExpired?.();
+        if (resp.status === 401) window.Darkness.auth?.handleSessionExpired?.();
         if (onError) onError({ message: detail, type, status: resp.status });
         return "";
       }
@@ -209,11 +209,11 @@ window.Clarity = window.Clarity || {};
     },
   };
 
-  // Provide a safe, wrapped fetch on window.Clarity.api that handles base URL and auth
+  // Provide a safe, wrapped fetch on window.Darkness.api that handles base URL and auth
   const customFetch = function(input, init) {
     init = Object.assign({}, init || {});
     let url = typeof input === "string" ? input : (input instanceof Request ? input.url : String(input));
-    const currentBase = window.Clarity?.api?.base || detectedBase;
+    const currentBase = window.Darkness?.api?.base || detectedBase;
 
     if (url.startsWith("/api/")) {
       if (currentBase) {
@@ -231,7 +231,7 @@ window.Clarity = window.Clarity || {};
     }
 
     try {
-      const token = localStorage.getItem("clarity_token");
+      const token = localStorage.getItem("darkness_token");
       if (token) {
         if (!init.headers) {
           init.headers = { "Authorization": `Bearer ${token}` };
@@ -255,18 +255,18 @@ window.Clarity = window.Clarity || {};
     return nativeFn.call(this, input, init);
   };
 
-  window.Clarity.api.fetch = customFetch;
+  window.Darkness.api.fetch = customFetch;
 
   // Safely attempt to intercept global fetch if the environment allows redefinition.
   // In environments where window.fetch has only a getter (e.g. sandboxed iframes),
   // this is safely caught without throwing an uncaught TypeError.
-  if (typeof window !== "undefined" && typeof window.fetch === "function" && !window.__clarity_fetch_intercepted__) {
+  if (typeof window !== "undefined" && typeof window.fetch === "function" && !window.__darkness_fetch_intercepted__) {
     try {
       const nativeFetch = window.fetch.bind(window);
       const wrappedGlobalFetch = function(input, init) {
         init = Object.assign({}, init || {});
         let url = typeof input === "string" ? input : (input instanceof Request ? input.url : String(input));
-        const currentBase = window.Clarity?.api?.base || detectedBase;
+        const currentBase = window.Darkness?.api?.base || detectedBase;
 
         if (url.startsWith("/api/")) {
           if (currentBase) {
@@ -284,7 +284,7 @@ window.Clarity = window.Clarity || {};
         }
 
         try {
-          const token = localStorage.getItem("clarity_token");
+          const token = localStorage.getItem("darkness_token");
           if (token) {
             if (!init.headers) {
               init.headers = { "Authorization": `Bearer ${token}` };
@@ -324,7 +324,7 @@ window.Clarity = window.Clarity || {};
         }
       }
       if (intercepted) {
-        window.__clarity_fetch_intercepted__ = true;
+        window.__darkness_fetch_intercepted__ = true;
       }
     } catch (e) {
       // Ignored to guarantee zero unhandled exceptions on window initialization

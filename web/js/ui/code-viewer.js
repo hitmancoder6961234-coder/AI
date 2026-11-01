@@ -1,7 +1,7 @@
-// Clarity Professional AI Code Experience
+// Darkness Professional AI Code Experience
 // Clean Interactive Code Cells and Full-Featured Code Workspace
 
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
 (function () {
   // In-memory registry for exact raw code snippets across messages and cells
@@ -32,7 +32,7 @@ window.Clarity = window.Clarity || {};
   }
 
   function getHighlighter() {
-    return window.Clarity.highlighter || {
+    return window.Darkness.highlighter || {
       getLanguageInfo: (l) => ({ id: l || "text", name: (l || "TEXT").toUpperCase(), ext: ".txt", mime: "text/plain" }),
       detectFilename: (l) => `file_${Date.now()}.txt`,
       renderLineNumberedHtml: (code) => escapeHtml(code),
@@ -136,13 +136,13 @@ window.Clarity = window.Clarity || {};
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(url), 1000);
 
-      if (window.Clarity.toast) {
-        window.Clarity.toast.show(`Downloaded ${cleanFilename}`, "success");
+      if (window.Darkness.toast) {
+        window.Darkness.toast.show(`Downloaded ${cleanFilename}`, "success");
       }
     } catch (err) {
       console.error("Failed to download code file", err);
-      if (window.Clarity.toast) {
-        window.Clarity.toast.show("Download failed", "error");
+      if (window.Darkness.toast) {
+        window.Darkness.toast.show("Download failed", "error");
       }
     }
   }
@@ -177,8 +177,8 @@ window.Clarity = window.Clarity || {};
       }, 2000);
     }
 
-    if (window.Clarity.toast) {
-      window.Clarity.toast.show("Code copied to clipboard", "success");
+    if (window.Darkness.toast) {
+      window.Darkness.toast.show("Code copied to clipboard", "success");
     }
   }
 
@@ -250,7 +250,7 @@ window.Clarity = window.Clarity || {};
       </div>
     </div>
     <div class="code-file-card__actions">
-      <button class="code-file-card__open-btn" type="button" data-code-action="expand" data-cell-id="${cellId}" onclick="event.preventDefault(); event.stopPropagation(); window.Clarity.codeViewer.openWorkspace('${cellId}', 'code', this); return false;" title="Open code in resizable side panel (Click to view or drag left to resize)" aria-label="View code">
+      <button class="code-file-card__open-btn" type="button" data-code-action="expand" data-cell-id="${cellId}" onclick="event.preventDefault(); event.stopPropagation(); window.Darkness.codeViewer.openWorkspace('${cellId}', 'code', this); return false;" title="Open code in resizable side panel (Click to view or drag left to resize)" aria-label="View code">
         ${ICONS.expand}
         <span>View</span>
       </button>
@@ -270,7 +270,7 @@ window.Clarity = window.Clarity || {};
     </div>
   </div>
   ${isVeryLongFile ? `
-  <div class="code-file-card__preview-bar" onclick="event.preventDefault(); event.stopPropagation(); window.Clarity.codeViewer.openWorkspace('${cellId}', 'code', this); return false;" title="Click to view full code in right side panel">
+  <div class="code-file-card__preview-bar" onclick="event.preventDefault(); event.stopPropagation(); window.Darkness.codeViewer.openWorkspace('${cellId}', 'code', this); return false;" title="Click to view full code in right side panel">
     <span class="code-file-card__preview-text">Showing snippet (${linesCount} lines)</span>
     <span class="code-file-card__view-link">Open in Resizable Side Panel (${linesCount} lines) →</span>
   </div>` : ""}
@@ -322,11 +322,11 @@ window.Clarity = window.Clarity || {};
 
   function renderWorkspaceDom() {
     // Remove existing side panel if open
-    const existingPanel = document.getElementById("clarityCodeSidePanel");
+    const existingPanel = document.getElementById("darknessCodeSidePanel");
     if (existingPanel) {
       existingPanel.remove();
     }
-    const existingBackdrop = document.getElementById("clarityCodeWorkspaceBackdrop");
+    const existingBackdrop = document.getElementById("darknessCodeWorkspaceBackdrop");
     if (existingBackdrop) {
       existingBackdrop.remove();
     }
@@ -341,7 +341,7 @@ window.Clarity = window.Clarity || {};
     const charsCount = codeStr.length;
 
     // Calculate or retrieve stored panel width
-    const savedW = localStorage.getItem("clarity_code_panel_width");
+    const savedW = localStorage.getItem("darkness_code_panel_width");
     let widthPx = savedW ? parseInt(savedW, 10) : 560;
     if (isNaN(widthPx) || widthPx < 320) widthPx = 560;
     const maxW = Math.max(360, Math.min(Math.floor(window.innerWidth * 0.9), window.innerWidth - 60));
@@ -353,14 +353,14 @@ window.Clarity = window.Clarity || {};
 
     // Optional Backdrop for mobile or high-focus viewing
     const backdrop = document.createElement("div");
-    backdrop.id = "clarityCodeWorkspaceBackdrop";
+    backdrop.id = "darknessCodeWorkspaceBackdrop";
     backdrop.className = "code-workspace-backdrop";
     backdrop.onclick = () => closeWorkspace();
     document.body.appendChild(backdrop);
 
     const panel = document.createElement("div");
     panel.className = "code-side-panel" + (state.isFullscreen ? " is-fullscreen" : "") + (state.isWrapped ? " is-wrapped" : "");
-    panel.id = "clarityCodeSidePanel";
+    panel.id = "darknessCodeSidePanel";
     panel.style.width = widthPx + "px";
 
     // Resizer along left edge with visual grip handle
@@ -447,15 +447,15 @@ window.Clarity = window.Clarity || {};
       activeCleanupFn();
       activeCleanupFn = null;
     }
-    const panel = document.getElementById("clarityCodeSidePanel");
+    const panel = document.getElementById("darknessCodeSidePanel");
     if (panel) {
       panel.remove();
     }
-    const backdrop = document.getElementById("clarityCodeWorkspaceBackdrop");
+    const backdrop = document.getElementById("darknessCodeWorkspaceBackdrop");
     if (backdrop) {
       backdrop.remove();
     }
-    const shield = document.getElementById("clarityDragShield");
+    const shield = document.getElementById("darknessDragShield");
     if (shield) {
       shield.remove();
     }
@@ -473,7 +473,7 @@ window.Clarity = window.Clarity || {};
       activeCleanupFn = null;
     }
 
-    const panel = document.getElementById("clarityCodeSidePanel");
+    const panel = document.getElementById("darknessCodeSidePanel");
     const resizer = document.getElementById("wsResizeLeft");
     if (!panel || !resizer) return;
 
@@ -492,7 +492,7 @@ window.Clarity = window.Clarity || {};
 
       // Create invisible drag shield to capture mouse events even over iframes/pre/code
       dragShield = document.createElement("div");
-      dragShield.id = "clarityDragShield";
+      dragShield.id = "darknessDragShield";
       dragShield.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;z-index:999999;cursor:col-resize;user-select:none;-webkit-user-select:none;background:transparent;";
       document.body.appendChild(dragShield);
     };
@@ -509,7 +509,7 @@ window.Clarity = window.Clarity || {};
       document.body.style.setProperty("--code-panel-width", newW + "px");
 
       try {
-        localStorage.setItem("clarity_code_panel_width", String(newW));
+        localStorage.setItem("darkness_code_panel_width", String(newW));
       } catch (err) {}
     };
 
@@ -661,7 +661,7 @@ window.Clarity = window.Clarity || {};
           e.stopPropagation();
           if (activeWorkspaceState) {
             activeWorkspaceState.isWrapped = !activeWorkspaceState.isWrapped;
-            const ws = document.getElementById("clarityCodeSidePanel") || document.querySelector(".code-side-panel");
+            const ws = document.getElementById("darknessCodeSidePanel") || document.querySelector(".code-side-panel");
             if (ws) {
               ws.classList.toggle("is-wrapped", activeWorkspaceState.isWrapped);
             }
@@ -677,7 +677,7 @@ window.Clarity = window.Clarity || {};
           e.stopPropagation();
           if (activeWorkspaceState) {
             activeWorkspaceState.isFullscreen = !activeWorkspaceState.isFullscreen;
-            const ws = document.getElementById("clarityCodeSidePanel") || document.querySelector(".code-side-panel");
+            const ws = document.getElementById("darknessCodeSidePanel") || document.querySelector(".code-side-panel");
             if (ws) {
               ws.classList.toggle("is-fullscreen", activeWorkspaceState.isFullscreen);
             }
@@ -717,7 +717,7 @@ window.Clarity = window.Clarity || {};
   }
 
   // Export module
-  window.Clarity.codeViewer = {
+  window.Darkness.codeViewer = {
     renderCell,
     openWorkspace,
     closeWorkspace,

@@ -1,9 +1,9 @@
 /**
- * Clarity Icon Library — Standard Lucide icons
+ * Darkness Icon Library — Standard Lucide icons
  * All icons: 24x24 viewBox, stroke-width="2", stroke-linecap="round", stroke-linejoin="round"
  * Theme-aware: uses currentColor for fill/stroke
  */
-window.Clarity.icons = {
+window.Darkness.icons = {
   edit: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>',
   refresh: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>',
   settings: '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
@@ -61,12 +61,12 @@ window.Clarity.icons = {
   settingsGear: null,
 };
 
-window.Clarity.icons.regenerate = window.Clarity.icons.refresh;
-window.Clarity.icons.delete = window.Clarity.icons.trash;
-window.Clarity.icons.close = window.Clarity.icons.x;
-window.Clarity.icons.settingsGear = window.Clarity.icons.settings;
+window.Darkness.icons.regenerate = window.Darkness.icons.refresh;
+window.Darkness.icons.delete = window.Darkness.icons.trash;
+window.Darkness.icons.close = window.Darkness.icons.x;
+window.Darkness.icons.settingsGear = window.Darkness.icons.settings;
 
-window.Clarity.getIcon = function(name, size) {
+window.Darkness.getIcon = function(name, size) {
   const icon = this.icons[name];
   if (!icon) return '';
   if (size && size !== 16) {

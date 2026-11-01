@@ -47,13 +47,13 @@ function loadCa(): string | undefined {
 }
 
 const SCHEMA = `
-CREATE TABLE IF NOT EXISTS clarity_conversations (
+CREATE TABLE IF NOT EXISTS darkness_conversations (
   id          TEXT PRIMARY KEY,
   user_hash   TEXT NOT NULL,
   title_sealed TEXT,
   updated_at  BIGINT NOT NULL
 );
-CREATE TABLE IF NOT EXISTS clarity_messages (
+CREATE TABLE IF NOT EXISTS darkness_messages (
   id              TEXT PRIMARY KEY,
   conversation_id TEXT NOT NULL,
   user_hash       TEXT NOT NULL,
@@ -61,8 +61,8 @@ CREATE TABLE IF NOT EXISTS clarity_messages (
   content_sealed  TEXT NOT NULL,
   created_at      BIGINT NOT NULL
 );
-CREATE INDEX IF NOT EXISTS idx_clarity_messages_conv ON clarity_messages (conversation_id, created_at);
-CREATE INDEX IF NOT EXISTS idx_clarity_messages_user ON clarity_messages (user_hash);
+CREATE INDEX IF NOT EXISTS idx_darkness_messages_conv ON darkness_messages (conversation_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_darkness_messages_user ON darkness_messages (user_hash);
 `;
 
 /** Aiven never sees a raw user id: it is stored as a keyed HMAC-SHA256 (encryption key as the secret). */
@@ -137,7 +137,7 @@ export function mirrorMessage(m: {
     const uh = await userHash(m.user_id || "unknown");
     const sealed = vaultEnabled() ? seal(m.content, m.id) : m.content;
     await p.query(
-      `INSERT INTO clarity_messages (id, conversation_id, user_hash, role, content_sealed, created_at)
+      `INSERT INTO darkness_messages (id, conversation_id, user_hash, role, content_sealed, created_at)
        VALUES ($1,$2,$3,$4,$5,$6)
        ON CONFLICT (id) DO UPDATE SET content_sealed = EXCLUDED.content_sealed`,
       [m.id, m.conversation_id, uh, m.role, sealed, m.created_at]
@@ -150,8 +150,8 @@ export function eraseMirroredUser(userId: string): void {
   if (state !== "ready") return;
   void run(async (p) => {
     const uh = await userHash(userId);
-    await p.query("DELETE FROM clarity_messages WHERE user_hash = $1", [uh]);
-    await p.query("DELETE FROM clarity_conversations WHERE user_hash = $1", [uh]);
+    await p.query("DELETE FROM darkness_messages WHERE user_hash = $1", [uh]);
+    await p.query("DELETE FROM darkness_conversations WHERE user_hash = $1", [uh]);
   });
 }
 
@@ -159,7 +159,7 @@ export function eraseMirroredUser(userId: string): void {
 export async function recoverConversation(conversationId: string): Promise<Array<{ id: string; role: string; content: string; created_at: number }>> {
   if (state !== "ready" || !pool) return [];
   const r = await pool.query(
-    "SELECT id, role, content_sealed, created_at FROM clarity_messages WHERE conversation_id = $1 ORDER BY created_at",
+    "SELECT id, role, content_sealed, created_at FROM darkness_messages WHERE conversation_id = $1 ORDER BY created_at",
     [conversationId]
   );
   return r.rows.map((row) => ({

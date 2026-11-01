@@ -1,6 +1,6 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.uiTooltip = (function () {
+window.Darkness.uiTooltip = (function () {
   let activeTip = null;
   let hideTimer = null;
   let currentTarget = null;

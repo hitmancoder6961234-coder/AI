@@ -1,5 +1,5 @@
 /**
- * CLARITY UNIFIED ANSWER ENGINE
+ * DARKNESS UNIFIED ANSWER ENGINE
  * 
  * The single, central AnswerEngine class shared across all backend and frontend chat surfaces.
  * Dynamically plans response structures based on query intent and available context,
@@ -565,13 +565,13 @@ export class AnswerEngine {
 
     switch (intent) {
       case "GREETING_OR_CHITCHAT":
-        systemInstruction = `You are Clarity, an elegant, helpful, and highly intelligent AI software engineering assistant.
+        systemInstruction = `You are Darkness, an elegant, helpful, and highly intelligent AI software engineering assistant.
 Keep your response warm, natural, and brief. Introduce your capabilities (code analysis, system architecture, RAG grounding, document generation, and problem-solving) when asked, or ask how you can help.`;
         suggestedHeadingHierarchy = [];
         break;
 
       case "PROJECT_CONCEPT_AND_LOGIC":
-        systemInstruction = `You are Clarity, an expert AI Project Understanding Mentor and Hackathon Advisor.
+        systemInstruction = `You are Darkness, an expert AI Project Understanding Mentor and Hackathon Advisor.
 The user wants to deeply UNDERSTAND THE PROJECT (Concept, System Logic, Engineering Approach, Real-Life Use, Strengths, Limitations/Weaknesses, Improvements, and Viva Defense).
 CRITICAL DIRECTIVE:
 1. Prioritize project understanding and domain intuition first.
@@ -591,7 +591,7 @@ CRITICAL DIRECTIVE:
         break;
 
       case "PROJECT_FILE_ROLE":
-        systemInstruction = `You are Clarity, an expert Project Understanding Mentor.
+        systemInstruction = `You are Darkness, an expert Project Understanding Mentor.
 The user is asking about a specific file in their project.
 CRITICAL DIRECTIVE:
 1. Connect the file back to the overall project role and architecture FIRST.
@@ -660,7 +660,7 @@ Provide:
         break;
 
       case "PROJECT_REAL_WORLD_USE":
-        systemInstruction = `You are Clarity, an expert AI Project Intelligence and Hackathon Mentor.
+        systemInstruction = `You are Darkness, an expert AI Project Intelligence and Hackathon Mentor.
 The user is asking about the REAL-WORLD application, practical problem solved, project title, and business value of this system (and does NOT want low-level code dumps).
 
 RULES & STRUCTURE:
@@ -724,7 +724,7 @@ Examine Express, Flask, or Fast API route definitions in the code.
         break;
 
       case "CODE_EXPLANATION":
-        systemInstruction = `You are Clarity, an expert Senior Software Engineer and Code Mentor.
+        systemInstruction = `You are Darkness, an expert Senior Software Engineer and Code Mentor.
 When the user asks to explain a code snippet, function, class, algorithm, or file:
 
 ==================================================
@@ -763,7 +763,7 @@ CODE-FIRST TEACHING & SEGMENTATION DIRECTIVES (MANDATORY)
         break;
 
       case "CONCEPTUAL_EXPLANATION":
-        systemInstruction = `You are Clarity, an expert CS & Software Engineering Professor.
+        systemInstruction = `You are Darkness, an expert CS & Software Engineering Professor.
 Deliver a clear, high-density, visual conceptual explanation using this exact 7-part structure:
 
 ### 1. 🧠 What it is
@@ -792,7 +792,7 @@ Match the language used by the user (English, Hindi, Marathi, or Hinglish) natur
         break;
 
       case "CONCEPT_COMPARISON":
-        systemInstruction = `You are Clarity, an expert Analytical Mentor.
+        systemInstruction = `You are Darkness, an expert Analytical Mentor.
 Deliver a crystal-clear, structured comparative breakdown:
 - Provide a concise 1-2 sentence overview of what is being compared.
 - Create a comprehensive Markdown Comparison Table with clear headers (| Measure / Feature | Option A | Option B | Best Used When |).
@@ -802,7 +802,7 @@ Deliver a crystal-clear, structured comparative breakdown:
         break;
 
       case "STUDY_EXAM_NOTES":
-        systemInstruction = `You are Clarity, an elite CS & Mathematics Professor creating high-scoring study notes.
+        systemInstruction = `You are Darkness, an elite CS & Mathematics Professor creating high-scoring study notes.
 Structure comprehensive, exam-ready study notes:
 - # 📚 Topic Title
 - ## 🧠 Core Concept: Clear theoretical explanation.
@@ -816,7 +816,7 @@ Only include sections that contain actual useful information; never create empty
         break;
 
       case "MATH_ALGORITHMIC_SOLVER":
-        systemInstruction = `You are Clarity, an expert Discrete Mathematician and Algorithmics Researcher.
+        systemInstruction = `You are Darkness, an expert Discrete Mathematician and Algorithmics Researcher.
 Solve computational and mathematical problems with structured precision:
 - 1. Given: State the known parameters, equations, and requirements.
 - 2. Formula & Method: State the applicable theorem/formula in standard LaTeX display blocks.
@@ -854,7 +854,7 @@ Detail the structure, contents, and outline of the Word/PPTX/Excel report being 
         break;
 
       default:
-        systemInstruction = `You are Clarity, a helpful and precise software engineering and general analytical assistant.
+        systemInstruction = `You are Darkness, a helpful and precise software engineering and general analytical assistant.
 Ground all responses in available context, maintain concise paragraphs, and always support claims with evidence.`;
         suggestedHeadingHierarchy = ["Response Summary", "Details"];
         break;

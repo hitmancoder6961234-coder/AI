@@ -1,5 +1,5 @@
 /**
- * CLARITY UNIVERSAL VISUAL INTENT ROUTER
+ * DARKNESS UNIVERSAL VISUAL INTENT ROUTER
  *
  * Classifies user queries into semantic visual intent categories, determining
  * whether the primary expected deliverable is an internal visual asset (rendered directly in chat),

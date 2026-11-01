@@ -1,6 +1,6 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.theme = {
+window.Darkness.theme = {
   state: {
     mode: 'light',
     current: 'light',
@@ -9,7 +9,7 @@ window.Clarity.theme = {
 
   init() {
     this.state.system = this.getSystemPreference();
-    const saved = (window.Clarity.settings && window.Clarity.settings.get().theme) || null;
+    const saved = (window.Darkness.settings && window.Darkness.settings.get().theme) || null;
     if (saved && ['light', 'dark', 'system'].includes(saved)) {
       this.state.mode = saved;
     } else {
@@ -61,7 +61,7 @@ window.Clarity.theme = {
       flag.parentElement.classList.toggle('is-active', isActive);
     });
 
-    window.dispatchEvent(new CustomEvent('clarity-theme-change', { detail: { theme } }));
-    document.dispatchEvent(new CustomEvent('clarity-theme-change', { detail: { theme } }));
+    window.dispatchEvent(new CustomEvent('darkness-theme-change', { detail: { theme } }));
+    document.dispatchEvent(new CustomEvent('darkness-theme-change', { detail: { theme } }));
   }
 };

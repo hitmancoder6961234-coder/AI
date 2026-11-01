@@ -73,8 +73,8 @@ export default function ProjectWorkspace({ route }) {
                   fd.append("name", f.name.replace(/\.zip$/i, ""));
                   try {
                     let resData;
-                    if (window.Clarity?.api?.upload) {
-                      resData = await window.Clarity.api.upload("/api/projects/upload-zip", fd);
+                    if (window.Darkness?.api?.upload) {
+                      resData = await window.Darkness.api.upload("/api/projects/upload-zip", fd);
                     } else {
                       const res = await fetch("/api/projects/upload-zip", { method: "POST", body: fd, credentials: "include" });
                       const text = await res.text();
@@ -86,8 +86,8 @@ export default function ProjectWorkspace({ route }) {
                     }
                   } catch (err) {
                     console.error("ZIP upload error:", err);
-                    if (window.Clarity?.toast?.show) {
-                      window.Clarity.toast.show("ZIP upload failed: " + (err.message || "Unknown error"), "danger");
+                    if (window.Darkness?.toast?.show) {
+                      window.Darkness.toast.show("ZIP upload failed: " + (err.message || "Unknown error"), "danger");
                     } else {
                       alert("ZIP upload failed: " + (err.message || "Unknown error"));
                     }

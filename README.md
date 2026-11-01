@@ -1,7 +1,7 @@
 # Darkness AI
 
 A private, multi-model AI workspace: chat with citations, a knowledge base (RAG), projects, document and
-slide studios, diagrams, exports, and a **working tool-using agent**. Built on the Clarity engine, hardened
+slide studios, diagrams, exports, and a **working tool-using agent**. Built on the Darkness engine, hardened
 for public deployment, with dynamic backgrounds.
 
 | | |
@@ -18,7 +18,7 @@ for public deployment, with dynamic backgrounds.
 Requires **Node 22.13+** (uses the built-in `node:sqlite`).
 
 ```bash
-cd clarity-ai
+cd darkness-ai
 cp .env.example .env        # add at least one provider key, e.g. GEMINI_API_KEY
 npm install
 npm run dev                 # http://localhost:3000
@@ -66,12 +66,12 @@ agent/        working agent: core loop, providers, tools, SSRF-safe fetch, route
 security/     privacy layer: strict mode, headers, rate limits, redaction, vault, Aiven mirror, export/erase
 public/       static assets: atmosphere engine, agent page, brand, icons
 js/ css/ src/ the web UI (vanilla modules + React islands, built with Vite)
-server.ts     API server (Express 5) - db.ts, supabase.ts, rag-engine.ts, ... are the Clarity engine
+server.ts     API server (Express 5) - db.ts, supabase.ts, rag-engine.ts, ... are the Darkness engine
 deploy/       Aiven (Terraform), Caddy example     scripts/  PowerShell + smoke test
 ```
 
-## What was changed from upstream Clarity
+## What was changed from upstream Darkness
 
-Clarity's own behaviour is unchanged unless noted here. The privacy hardening (strict mode, closed
+Darkness's own behaviour is unchanged unless noted here. The privacy hardening (strict mode, closed
 diagnostics, code-execution gate, CORS allow-list, SameSite=Lax cookies, no argument dumps in SQL error
 logs) is documented in [SECURITY.md](SECURITY.md).

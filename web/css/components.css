@@ -2246,8 +2246,8 @@
 .chat-empty { flex: 1; display: flex; align-items: center; justify-content: center; padding: 40px 24px; min-height: 0; transition: opacity 0.5s ease; }
 .chat-empty__inner { max-width: 640px; width: 100%; text-align: center; animation: messageIn 0.5s var(--ease); }
 
-/* Clarity Robot Animated UI Character - Premium Refinement */
-.clarity-robot {
+/* Darkness Robot Animated UI Character - Premium Refinement */
+.darkness-robot {
   width: 92px;
   height: 92px;
   margin: 0 auto 26px auto;
@@ -2260,7 +2260,7 @@
   animation: robot-idle-float 4s ease-in-out infinite;
 }
 
-.clarity-robot__img {
+.darkness-robot__img {
   width: 100%;
   height: 100%;
   object-fit: contain;
@@ -2271,63 +2271,63 @@
 }
 
 /* Emotion & Activity States */
-.clarity-robot[data-state="listening"] {
+.darkness-robot[data-state="listening"] {
   animation: robot-listening 1.8s ease-in-out infinite;
 }
-.clarity-robot[data-state="listening"] .clarity-robot__img {
+.darkness-robot[data-state="listening"] .darkness-robot__img {
   transform: scale(1.06) translateY(-3px);
   filter: drop-shadow(0 20px 32px rgba(6, 182, 212, 0.3));
 }
 
-.clarity-robot[data-state="thinking"] {
+.darkness-robot[data-state="thinking"] {
   animation: robot-thinking 1.2s ease-in-out infinite;
 }
-.clarity-robot[data-state="thinking"] .clarity-robot__img {
+.darkness-robot[data-state="thinking"] .darkness-robot__img {
   transform: scale(1.08) rotate(-3deg);
   filter: drop-shadow(0 20px 32px rgba(124, 58, 237, 0.35));
 }
 
-.clarity-robot[data-state="responding"] {
+.darkness-robot[data-state="responding"] {
   animation: robot-happy 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.clarity-robot[data-state="responding"] .clarity-robot__img {
+.darkness-robot[data-state="responding"] .darkness-robot__img {
   transform: scale(1.12) translateY(-4px);
   filter: drop-shadow(0 22px 36px rgba(16, 185, 129, 0.35));
 }
 
-.clarity-robot[data-state="confused"] {
+.darkness-robot[data-state="confused"] {
   animation: robot-confused 1.5s ease-in-out infinite;
 }
-.clarity-robot[data-state="confused"] .clarity-robot__img {
+.darkness-robot[data-state="confused"] .darkness-robot__img {
   transform: scale(1.02) rotate(7deg) translateY(2px);
 }
 
-.clarity-robot[data-state="error"] {
+.darkness-robot[data-state="error"] {
   animation: robot-error 0.5s ease-in-out;
 }
-.clarity-robot[data-state="error"] .clarity-robot__img {
+.darkness-robot[data-state="error"] .darkness-robot__img {
   transform: scale(0.96) translateY(4px) rotate(-4deg);
   filter: drop-shadow(0 10px 20px rgba(239, 68, 68, 0.35));
 }
 
 /* Looking directions */
-.clarity-robot[data-look="left"] .clarity-robot__img {
+.darkness-robot[data-look="left"] .darkness-robot__img {
   transform: translateX(-6px) rotate(-5deg);
 }
 
-.clarity-robot[data-look="right"] .clarity-robot__img {
+.darkness-robot[data-look="right"] .darkness-robot__img {
   transform: translateX(6px) rotate(5deg);
 }
 
-.dark .clarity-robot__img {
+.dark .darkness-robot__img {
   filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.65));
 }
 
-.dark .clarity-robot[data-state="listening"] .clarity-robot__img {
+.dark .darkness-robot[data-state="listening"] .darkness-robot__img {
   filter: drop-shadow(0 20px 34px rgba(6, 182, 212, 0.45));
 }
 
-.dark .clarity-robot[data-state="thinking"] .clarity-robot__img {
+.dark .darkness-robot[data-state="thinking"] .darkness-robot__img {
   filter: drop-shadow(0 20px 34px rgba(167, 139, 250, 0.45));
 }
 
@@ -2364,12 +2364,12 @@
   75% { transform: translateX(4px) rotate(3deg); }
 }
 
-.clarity-robot__ring {
+.darkness-robot__ring {
   position: absolute;
   width: 82%;
   height: 60%;
   border-radius: 50%;
-  /* Clarity brand colors: Purple #7C3AED, Cyan #06B6D4 */
+  /* Darkness brand colors: Purple #7C3AED, Cyan #06B6D4 */
   background: linear-gradient(90deg, #7C3AED, #06B6D4, #7C3AED);
   background-size: 200% 100%;
   animation: robot-ring-spin 4s linear infinite;
@@ -2380,12 +2380,12 @@
   transform: translateY(2px);
 }
 
-.dark .clarity-robot__ring {
+.dark .darkness-robot__ring {
   opacity: 0.6; /* Slightly stronger in dark mode but still subtle */
   filter: blur(10px);
 }
 
-.clarity-robot__face {
+.darkness-robot__face {
   position: absolute;
   width: 66%;
   height: 44%;
@@ -2403,7 +2403,7 @@
   z-index: 3;
 }
 
-.dark .clarity-robot__face {
+.dark .darkness-robot__face {
   background: #000000;
   box-shadow:
     inset 0 4px 12px rgba(0, 0, 0, 0.9),
@@ -2412,7 +2412,7 @@
 }
 
 /* Glass reflection on the face */
-.clarity-robot__face::after {
+.darkness-robot__face::after {
   content: '';
   position: absolute;
   top: 0;
@@ -2424,7 +2424,7 @@
   pointer-events: none;
 }
 
-.clarity-robot__eyes {
+.darkness-robot__eyes {
   display: flex;
   gap: 12px;
   align-items: center;
@@ -2433,7 +2433,7 @@
   z-index: 4;
 }
 
-.clarity-robot__eye {
+.darkness-robot__eye {
   width: 10px;
   height: 14px;
   background: #ffffff;
@@ -2447,63 +2447,63 @@
 }
 
 /* Animations & States */
-.clarity-robot[data-state="idle"] {
+.darkness-robot[data-state="idle"] {
   animation: robot-float-idle 5s ease-in-out infinite;
 }
-.clarity-robot[data-state="listening"] {
+.darkness-robot[data-state="listening"] {
   transform: translateY(2px) scale(1.02);
 }
-.clarity-robot[data-state="listening"] .clarity-robot__head {
+.darkness-robot[data-state="listening"] .darkness-robot__head {
   transform: rotate(-2deg);
 }
-.clarity-robot[data-state="listening"] .clarity-robot__eye {
+.darkness-robot[data-state="listening"] .darkness-robot__eye {
   height: 16px;
   box-shadow: 0 0 12px 2px rgba(255, 255, 255, 0.8);
 }
-.clarity-robot[data-state="thinking"] {
+.darkness-robot[data-state="thinking"] {
   animation: robot-float-thinking 2.5s ease-in-out infinite;
 }
-.clarity-robot[data-state="thinking"] .clarity-robot__ring {
+.darkness-robot[data-state="thinking"] .darkness-robot__ring {
   animation: robot-ring-spin 1.5s linear infinite;
   filter: blur(10px);
   opacity: 0.6;
 }
-.dark .clarity-robot[data-state="thinking"] .clarity-robot__ring {
+.dark .darkness-robot[data-state="thinking"] .darkness-robot__ring {
   opacity: 0.8;
 }
-.clarity-robot[data-state="attention"] {
+.darkness-robot[data-state="attention"] {
   transform: translateY(-4px) scale(1.04);
 }
-.clarity-robot[data-state="attention"] .clarity-robot__eye {
+.darkness-robot[data-state="attention"] .darkness-robot__eye {
   height: 16px;
   width: 12px;
   box-shadow: 0 0 14px 3px rgba(255, 255, 255, 0.9);
 }
-.clarity-robot[data-state="confused"] .clarity-robot__head {
+.darkness-robot[data-state="confused"] .darkness-robot__head {
   animation: robot-confused-head 3s ease-in-out forwards;
 }
-.clarity-robot[data-state="confused"] .clarity-robot__eyes {
+.darkness-robot[data-state="confused"] .darkness-robot__eyes {
   transform: scale(0.9) translateY(2px);
 }
-.clarity-robot[data-state="responding"] {
+.darkness-robot[data-state="responding"] {
   animation: robot-respond 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.clarity-robot[data-state="responding"] .clarity-robot__eye {
+.darkness-robot[data-state="responding"] .darkness-robot__eye {
   height: 16px;
 }
-.clarity-robot[data-state="error"] .clarity-robot__ring {
+.darkness-robot[data-state="error"] .darkness-robot__ring {
   background: linear-gradient(90deg, #ef4444, #f87171, #ef4444);
   opacity: 0.6;
 }
-.clarity-robot[data-state="error"] .clarity-robot__head {
+.darkness-robot[data-state="error"] .darkness-robot__head {
   transform: rotate(10deg);
 }
 
 /* Looking directions */
-.clarity-robot[data-look="left"] .clarity-robot__face { transform: translateX(-4px); }
-.clarity-robot[data-look="right"] .clarity-robot__face { transform: translateX(4px); }
-.clarity-robot[data-look="left"] .clarity-robot__eyes { transform: translateX(-2px); }
-.clarity-robot[data-look="right"] .clarity-robot__eyes { transform: translateX(2px); }
+.darkness-robot[data-look="left"] .darkness-robot__face { transform: translateX(-4px); }
+.darkness-robot[data-look="right"] .darkness-robot__face { transform: translateX(4px); }
+.darkness-robot[data-look="left"] .darkness-robot__eyes { transform: translateX(-2px); }
+.darkness-robot[data-look="right"] .darkness-robot__eyes { transform: translateX(2px); }
 
 /* Keyframes */
 @keyframes robot-float-idle {
@@ -2535,12 +2535,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .clarity-robot, .clarity-robot__ring, .clarity-robot__eye, .clarity-robot__head, .clarity-robot__face, .clarity-robot__eyes {
+  .darkness-robot, .darkness-robot__ring, .darkness-robot__eye, .darkness-robot__head, .darkness-robot__face, .darkness-robot__eyes {
     animation: none !important;
     transition: none !important;
     transform: none !important;
   }
-  .clarity-robot__ring {
+  .darkness-robot__ring {
     opacity: 0.3;
     background-size: 100% 100%;
   }

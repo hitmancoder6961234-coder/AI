@@ -37,7 +37,7 @@ import "prismjs/components/prism-graphql.js";
 import "prismjs/components/prism-diff.js";
 
 if (typeof window !== "undefined") {
-  window.Clarity = window.Clarity || {};
+  window.Darkness = window.Darkness || {};
   window.Prism = Prism;
 }
 
@@ -364,8 +364,8 @@ const highlighterObj = {
 };
 
 if (typeof window !== "undefined") {
-  window.Clarity = window.Clarity || {};
-  window.Clarity.highlighter = highlighterObj;
+  window.Darkness = window.Darkness || {};
+  window.Darkness.highlighter = highlighterObj;
 }
 
 export default highlighterObj;

@@ -19,8 +19,8 @@ export class StorageManager {
   }
 
   private resolveStorageRoot(): string {
-    if (process.env.CLARITY_STORAGE_ROOT) {
-      return path.resolve(process.env.CLARITY_STORAGE_ROOT);
+    if (process.env.DARKNESS_STORAGE_ROOT) {
+      return path.resolve(process.env.DARKNESS_STORAGE_ROOT);
     }
     // Default to workspace persistent data folder
     return path.resolve(process.cwd(), "data");
@@ -54,14 +54,14 @@ export class StorageManager {
       const legacyPaths: string[] = [];
       if (process.platform === "win32") {
         const appData = process.env.APPDATA || (home ? path.join(home, "AppData", "Roaming") : "");
-        if (appData) legacyPaths.push(path.join(appData, "Clarity"));
+        if (appData) legacyPaths.push(path.join(appData, "Darkness"));
       } else if (process.platform === "darwin") {
-        if (home) legacyPaths.push(path.join(home, "Library", "Application Support", "Clarity"));
+        if (home) legacyPaths.push(path.join(home, "Library", "Application Support", "Darkness"));
       } else {
         const xdgData = process.env.XDG_DATA_HOME || (home ? path.join(home, ".local", "share") : "");
-        if (xdgData) legacyPaths.push(path.join(xdgData, "clarity"));
-        if (home && home !== "/root") legacyPaths.push(path.join(home, ".local", "share", "clarity"));
-        legacyPaths.push("/root/.local/share/clarity");
+        if (xdgData) legacyPaths.push(path.join(xdgData, "darkness"));
+        if (home && home !== "/root") legacyPaths.push(path.join(home, ".local", "share", "darkness"));
+        legacyPaths.push("/root/.local/share/darkness");
       }
 
       const targetDbPath = this.getDatabasePath();
@@ -73,8 +73,8 @@ export class StorageManager {
       // Check if target DB is missing and can be migrated from a legacy location
       if (!fs.existsSync(targetDbPath)) {
         for (const legacyRoot of legacyPaths) {
-          const legacyDb = path.join(legacyRoot, "database", "clarity.db");
-          const legacyDbRoot = path.join(legacyRoot, "clarity.db");
+          const legacyDb = path.join(legacyRoot, "database", "darkness.db");
+          const legacyDbRoot = path.join(legacyRoot, "darkness.db");
           const candidate = fs.existsSync(legacyDb) ? legacyDb : fs.existsSync(legacyDbRoot) ? legacyDbRoot : null;
           if (candidate) {
             console.log(`[StorageManager] Migrating existing database from ${candidate} to ${targetDbPath}...`);
@@ -96,7 +96,7 @@ export class StorageManager {
   }
 
   public getDatabasePath(): string {
-    return path.join(this.storageRoot, "database", "clarity.db");
+    return path.join(this.storageRoot, "database", "darkness.db");
   }
 
   public getStorageLimit(): number {
@@ -182,7 +182,7 @@ export class StorageManager {
       return {
         allowed: false,
         status: "blocked",
-        message: "Clarity storage limit reached (50 GB). Free up space or increase the storage limit.",
+        message: "Darkness storage limit reached (50 GB). Free up space or increase the storage limit.",
       };
     }
 
@@ -190,7 +190,7 @@ export class StorageManager {
       return {
         allowed: false,
         status: "critical",
-        message: "Clarity storage is 100% full. New uploads and generations are blocked.",
+        message: "Darkness storage is 100% full. New uploads and generations are blocked.",
       };
     }
 

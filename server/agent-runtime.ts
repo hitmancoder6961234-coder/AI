@@ -1,6 +1,6 @@
 /**
- * CLARITY UNIFIED AI AGENT RUNTIME
- * Single shared, production-grade AI Agent Runtime powering all chat shells in Clarity:
+ * DARKNESS UNIFIED AI AGENT RUNTIME
+ * Single shared, production-grade AI Agent Runtime powering all chat shells in Darkness:
  * - Home / Main Chat
  * - Knowledge RAG Chat
  * - Project AI Assistant / Chat Cell
@@ -326,7 +326,7 @@ MATCH USER LANGUAGE: Answer naturally in the language used by the user (English,
           bufferBase64: Buffer.from(svgStr).toString("base64"),
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          source: "Clarity Architecture Diagram Engine",
+          source: "Darkness Architecture Diagram Engine",
           validation: { status: "passed", message: "Verified SVG diagram" },
         };
 
@@ -391,7 +391,7 @@ MATCH USER LANGUAGE: Answer naturally in the language used by the user (English,
         promptText = `User Question: ${activeUserQuery}\n\n=== SELECTED SOURCE CODE (${fPath}${lineRangeStr ? `, ${lineRangeStr}` : ""}) ===\n\`\`\`${sc.language || "typescript"}\n${sc.selectedCode.trim()}\n\`\`\`${sc.surroundingContext ? `\n\n=== SURROUNDING FILE CONTEXT ===\n\`\`\`${sc.language || "typescript"}\n${sc.surroundingContext.trim()}\n\`\`\`` : ""}`;
 
         systemInstruction = `${responsePlan.systemInstruction}\n\nYou are an expert AI Master Coding Tutor and Senior Engineer. Ground your response DIRECTLY in the selected code snippet (${fPath}${lineRangeStr ? ` ${lineRangeStr}` : ""}).
-Do NOT output generic whole-project overviews. Answer the user's question ("${activeUserQuery}") with deep, clear, beginner-friendly pedagogical clarity.
+Do NOT output generic whole-project overviews. Answer the user's question ("${activeUserQuery}") with deep, clear, beginner-friendly pedagogical darkness.
 
 ========================================================================
 MANDATORY CODE-FIRST TEACHING FORMAT (STRICT RULE):
@@ -499,7 +499,7 @@ DO NOT write a long generic text summary before showing the code block! ALWAYS s
 Focus directly on explaining the snippet, its variables, parameters, logic, failure modes, and execution flow to answer the user's question: "${activeUserQuery}".`;
       } else if (hasAttachedDocs && unifiedIntent === "DOCUMENT_RAG_QUERY") {
         promptText = `=== USER ATTACHED DOCUMENTS FOR THIS CHAT ===\n${attachedDocsContext}\n=== END OF ATTACHED DOCUMENTS ===\n\nUser Question: ${activeUserQuery}`;
-        systemInstruction = responsePlan.systemInstruction + "\n\n" + "You are Darkness AI. The user has attached files to this conversation. Answer their question based on the attached files with clarity, structure, and precision.";
+        systemInstruction = responsePlan.systemInstruction + "\n\n" + "You are Darkness AI. The user has attached files to this conversation. Answer their question based on the attached files with darkness, structure, and precision.";
       } else {
         // Universal Explanation Engine Directives
         const engineCtx = UniversalExplanationEngine.orchestrate(activeUserQuery);
@@ -762,7 +762,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
           },
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          source: "Clarity Document Engine",
+          source: "Darkness Document Engine",
           validation: { status: "passed", message: "Verified OpenXML Word document package" }
         };
 
@@ -819,7 +819,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
           },
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          source: "Clarity PDF Engine",
+          source: "Darkness PDF Engine",
           validation: { status: "passed", message: "Verified PDF Document structure" }
         };
 
@@ -882,7 +882,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
             bufferBase64: b64,
             createdAt: Date.now(),
             updatedAt: Date.now(),
-            source: "Clarity Visual Learning Engine",
+            source: "Darkness Visual Learning Engine",
             validation: { status: "passed", message: "Verified visual asset" }
           };
 
@@ -988,7 +988,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
             bufferBase64: b64,
             createdAt: Date.now(),
             updatedAt: Date.now(),
-            source: "Clarity Visual Learning Engine",
+            source: "Darkness Visual Learning Engine",
             validation: { status: "passed", message: "Verified image binary" }
           };
 
@@ -1088,7 +1088,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
           bufferBase64: pptxBuf.toString("base64"),
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          source: "Clarity Presentation Engine",
+          source: "Darkness Presentation Engine",
           validation: { status: "passed", message: "Verified OpenXML presentation package" }
         };
 
@@ -1167,7 +1167,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
           bufferBase64: xlsxBuf.toString("base64"),
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          source: "Clarity Excel Engine",
+          source: "Darkness Excel Engine",
           validation: { status: "passed", message: "Verified OpenXML Spreadsheet package" }
         };
 
@@ -1275,7 +1275,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
     const imgArt = imageArtifact || artifacts.find(a => a.category === "image");
 
     return `# 🎓 Student Project & Technical Report: ${cleanTopic}
-> **Domain:** Software Engineering & Systems Design | **Platform:** Clarity Student Learning Platform | **Status:** ✅ Complete Project Deliverable | **Date:** ${dateStr}
+> **Domain:** Software Engineering & Systems Design | **Platform:** Darkness Student Learning Platform | **Status:** ✅ Complete Project Deliverable | **Date:** ${dateStr}
 
 ---
 
@@ -1437,7 +1437,7 @@ ${imgArt ? `- 🖼️ **Visual Architecture Concept (\`.png\`):** \`${imgArt.fil
 }
 
 // ============================================================================
-// 4. CORE PLANNING PROTOCOL & RESPONSE FORMATTING RULES (CLARITY ENGINE)
+// 4. CORE PLANNING PROTOCOL & RESPONSE FORMATTING RULES (DARKNESS ENGINE)
 // ============================================================================
 
 export const CORE_PLANNING_SYSTEM_INSTRUCTION = `

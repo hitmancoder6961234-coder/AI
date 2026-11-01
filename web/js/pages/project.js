@@ -32,7 +32,7 @@ function getKnowledgeSourceIcon(ext, name) {
 }
 
 async function renderKnowledgeTab(container, explicitProjectId) {
-  const currentPid = explicitProjectId || window.Clarity.currentProjectId;
+  const currentPid = explicitProjectId || window.Darkness.currentProjectId;
   container.innerHTML = '<div style="padding:40px; text-align:center; color:var(--ink-muted);">Loading Knowledge Base...</div>';
   
   try {
@@ -126,33 +126,33 @@ async function renderKnowledgeTab(container, explicitProjectId) {
                 </thead>
                 <tbody>
                   ${documents.map(doc => `
-                    <tr class="knowledge-source-row" data-name="${window.Clarity.utils.escapeHtml((doc.name || '').toLowerCase())}" data-path="${window.Clarity.utils.escapeHtml((doc.path || '').toLowerCase())}" style="border-bottom: 1px solid var(--line);">
+                    <tr class="knowledge-source-row" data-name="${window.Darkness.utils.escapeHtml((doc.name || '').toLowerCase())}" data-path="${window.Darkness.utils.escapeHtml((doc.path || '').toLowerCase())}" style="border-bottom: 1px solid var(--line);">
                       <td style="padding: 12px 20px;">
                         <div style="display: flex; align-items: center; gap: 12px;">
                           ${getKnowledgeSourceIcon(doc.extension, doc.name)}
                           <div style="min-width: 0;">
-                            <div style="font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;" title="${window.Clarity.utils.escapeHtml(doc.path)}">${window.Clarity.utils.escapeHtml(doc.name)}</div>
-                            <div style="font-size: 11.5px; color: var(--ink-muted); margin-top: 2px; font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;">${window.Clarity.utils.escapeHtml(doc.path)}</div>
+                            <div style="font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;" title="${window.Darkness.utils.escapeHtml(doc.path)}">${window.Darkness.utils.escapeHtml(doc.name)}</div>
+                            <div style="font-size: 11.5px; color: var(--ink-muted); margin-top: 2px; font-family: var(--font-mono); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 280px;">${window.Darkness.utils.escapeHtml(doc.path)}</div>
                           </div>
                         </div>
                       </td>
                       <td style="padding: 12px 16px;">
-                        <span style="color: var(--ink); font-weight: 500; font-size: 12.5px;">${window.Clarity.utils.escapeHtml(doc.fileType || doc.extension || 'Document')}</span>
+                        <span style="color: var(--ink); font-weight: 500; font-size: 12.5px;">${window.Darkness.utils.escapeHtml(doc.fileType || doc.extension || 'Document')}</span>
                       </td>
                       <td style="padding: 12px 16px;">
-                        <span class="tag tag--sm" style="background: ${doc.status === 'Indexed' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)'}; color: ${doc.status === 'Indexed' ? '#059669' : '#d97706'}; font-weight: 600;">${window.Clarity.utils.escapeHtml(doc.status)}</span>
+                        <span class="tag tag--sm" style="background: ${doc.status === 'Indexed' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)'}; color: ${doc.status === 'Indexed' ? '#059669' : '#d97706'}; font-weight: 600;">${window.Darkness.utils.escapeHtml(doc.status)}</span>
                       </td>
                       <td style="padding: 12px 16px; text-align: right;">
-                        <button class="btn btn--ghost btn--sm view-chunks-btn" data-path="${window.Clarity.utils.escapeHtml(doc.path)}" data-name="${window.Clarity.utils.escapeHtml(doc.name)}" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent); padding: 2px 6px;">
+                        <button class="btn btn--ghost btn--sm view-chunks-btn" data-path="${window.Darkness.utils.escapeHtml(doc.path)}" data-name="${window.Darkness.utils.escapeHtml(doc.name)}" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent); padding: 2px 6px;">
                           ${doc.chunksCount} chunks
                         </button>
                       </td>
                       <td style="padding: 12px 16px; font-size: 12px; color: var(--ink-muted); white-space: nowrap;">
-                        ${window.Clarity.utils.escapeHtml(doc.sizeFormatted || '')} • ${window.Clarity.utils.escapeHtml(doc.updatedAtFormatted || '')}
+                        ${window.Darkness.utils.escapeHtml(doc.sizeFormatted || '')} • ${window.Darkness.utils.escapeHtml(doc.updatedAtFormatted || '')}
                       </td>
                       <td style="padding: 12px 20px; text-align: right; white-space: nowrap;">
-                        <button class="btn btn--ghost btn--sm view-chunks-btn" data-path="${window.Clarity.utils.escapeHtml(doc.path)}" data-name="${window.Clarity.utils.escapeHtml(doc.name)}" style="padding: 2px 8px; margin-right: 4px; font-size: 12px;">View</button>
-                        <button class="btn btn--ghost btn--sm delete-rag-doc-btn" data-id="${window.Clarity.utils.escapeHtml(doc.id || '')}" data-path="${window.Clarity.utils.escapeHtml(doc.path)}" data-name="${window.Clarity.utils.escapeHtml(doc.name)}" style="color: var(--danger); padding: 2px 8px; font-size: 12px;">Delete</button>
+                        <button class="btn btn--ghost btn--sm view-chunks-btn" data-path="${window.Darkness.utils.escapeHtml(doc.path)}" data-name="${window.Darkness.utils.escapeHtml(doc.name)}" style="padding: 2px 8px; margin-right: 4px; font-size: 12px;">View</button>
+                        <button class="btn btn--ghost btn--sm delete-rag-doc-btn" data-id="${window.Darkness.utils.escapeHtml(doc.id || '')}" data-path="${window.Darkness.utils.escapeHtml(doc.path)}" data-name="${window.Darkness.utils.escapeHtml(doc.name)}" style="color: var(--danger); padding: 2px 8px; font-size: 12px;">Delete</button>
                       </td>
                     </tr>
                   `).join('')}
@@ -278,7 +278,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
         
         const modalBody = `
           <div style="font-size: 13.5px; line-height: 1.5; color: var(--ink);">
-            Are you sure you want to remove <strong style="font-family: var(--font-mono); color: var(--accent);">${window.Clarity.utils.escapeHtml(name)}</strong> from the Knowledge Base?
+            Are you sure you want to remove <strong style="font-family: var(--font-mono); color: var(--accent);">${window.Darkness.utils.escapeHtml(name)}</strong> from the Knowledge Base?
             <p style="margin-top: 8px; font-size: 12.5px; color: var(--ink-muted); margin-bottom: 0;">
               This will remove all indexed chunks and embeddings from the retrieval store.
             </p>
@@ -289,22 +289,22 @@ async function renderKnowledgeTab(container, explicitProjectId) {
           <button class="btn btn--danger" id="confirmRagDocDeleteBtn" type="button">Remove Document</button>
         `;
 
-        window.Clarity.modal.open(`Remove ${name}?`, modalBody, modalActions);
+        window.Darkness.modal.open(`Remove ${name}?`, modalBody, modalActions);
 
         document.getElementById('confirmRagDocDeleteBtn')?.addEventListener('click', async () => {
-          window.Clarity.modal.close();
+          window.Darkness.modal.close();
           btn.disabled = true;
           btn.textContent = '...';
           try {
-            const res = await window.Clarity.api.del(`/api/projects/${currentPid}/rag/documents?id=${encodeURIComponent(id)}&path=${encodeURIComponent(path)}`);
+            const res = await window.Darkness.api.del(`/api/projects/${currentPid}/rag/documents?id=${encodeURIComponent(id)}&path=${encodeURIComponent(path)}`);
             if (res && (res.success || res.status)) {
-              window.Clarity.toast.show(res.message || "Document removed from knowledge base", "success");
+              window.Darkness.toast.show(res.message || "Document removed from knowledge base", "success");
               renderKnowledgeTab(container, currentPid);
             } else {
               throw new Error((res && res.error) || 'Failed to delete document');
             }
           } catch (err) {
-            window.Clarity.toast.show(err.message || 'Failed to delete document', "danger");
+            window.Darkness.toast.show(err.message || 'Failed to delete document', "danger");
             btn.disabled = false;
             btn.textContent = 'Delete';
           }
@@ -387,7 +387,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
               <div class="rag-chunk-card__header">
                 <div class="rag-chunk-card__info">
                   <span class="rag-rank-badge">#${i + 1}</span>
-                  <span class="rag-chunk-filename">${window.Clarity.utils.escapeHtml(item.filename)}</span>
+                  <span class="rag-chunk-filename">${window.Darkness.utils.escapeHtml(item.filename)}</span>
                   <span class="rag-chunk-lines">L${item.startLine || 1}–L${item.endLine || 1}</span>
                 </div>
                 <div class="rag-chunk-card__actions">
@@ -403,10 +403,10 @@ async function renderKnowledgeTab(container, explicitProjectId) {
               </div>
               ${item.reason ? `
                 <div class="rag-chunk-reason-bar">
-                  <strong>Semantic Match:</strong> ${window.Clarity.utils.escapeHtml(item.reason)}
+                  <strong>Semantic Match:</strong> ${window.Darkness.utils.escapeHtml(item.reason)}
                 </div>
               ` : ''}
-              <pre id="${snippetId}" class="rag-chunk-content-pre">${window.Clarity.utils.escapeHtml(item.snippet)}</pre>
+              <pre id="${snippetId}" class="rag-chunk-content-pre">${window.Darkness.utils.escapeHtml(item.snippet)}</pre>
             </div>
           `;
         }
@@ -436,7 +436,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
       } catch (err) {
         resContainer.innerHTML = `
           <div style="color:var(--danger); padding:16px; border:1px solid rgba(239,68,68,0.2); border-radius:var(--r-md); background:rgba(239,68,68,0.06); font-size:13px;">
-            Error querying retrieval engine: ${window.Clarity.utils.escapeHtml(err.message || 'Unknown error')}
+            Error querying retrieval engine: ${window.Darkness.utils.escapeHtml(err.message || 'Unknown error')}
           </div>
         `;
       } finally {
@@ -470,12 +470,12 @@ async function renderKnowledgeTab(container, explicitProjectId) {
       btn.textContent = "Indexing...";
       btn.disabled = true;
       try {
-        const res = await window.Clarity.api.post(`/api/projects/${currentPid}/rag/index-project-files`);
-        window.Clarity.toast.show(`Successfully indexed ${res.filesIndexed} files and generated ${res.chunksIndexed} chunks.`, "success");
+        const res = await window.Darkness.api.post(`/api/projects/${currentPid}/rag/index-project-files`);
+        window.Darkness.toast.show(`Successfully indexed ${res.filesIndexed} files and generated ${res.chunksIndexed} chunks.`, "success");
         renderKnowledgeTab(container, currentPid);
       } catch (err) {
         console.error(err);
-        window.Clarity.toast.show(err.message || "Failed to reindex", "danger");
+        window.Darkness.toast.show(err.message || "Failed to reindex", "danger");
         btn.textContent = "Reindex All";
         btn.disabled = false;
       }
@@ -485,17 +485,17 @@ async function renderKnowledgeTab(container, explicitProjectId) {
       const modalBody = `
         <div style="display:flex; flex-direction:column; gap:16px;">
           <div style="color:var(--ink-muted); font-size:13px;">
-            Viewing indexed chunks for <strong style="color:var(--ink);">${window.Clarity.utils.escapeHtml(docName || filePath)}</strong>
+            Viewing indexed chunks for <strong style="color:var(--ink);">${window.Darkness.utils.escapeHtml(docName || filePath)}</strong>
           </div>
           <div id="docChunksList" style="display:flex; flex-direction:column; gap:12px; max-height:450px; overflow-y:auto; padding-right:4px;">
             <div style="padding:24px; text-align:center; color:var(--ink-muted);">Loading chunks...</div>
           </div>
         </div>
       `;
-      window.Clarity.modal.open(`Document Chunks: ${docName || filePath}`, modalBody, '<button class="btn btn--outline" type="button" data-modal-close="true">Close</button>');
+      window.Darkness.modal.open(`Document Chunks: ${docName || filePath}`, modalBody, '<button class="btn btn--outline" type="button" data-modal-close="true">Close</button>');
       
       try {
-        const res = await window.Clarity.api.get(`/api/projects/${currentPid}/rag/documents/chunks?path=${encodeURIComponent(filePath)}`);
+        const res = await window.Darkness.api.get(`/api/projects/${currentPid}/rag/documents/chunks?path=${encodeURIComponent(filePath)}`);
         const chunks = res.chunks || [];
         const listEl = document.getElementById('docChunksList');
         if (!listEl) return;
@@ -511,7 +511,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
               <span style="font-weight:600; color:var(--ink);">Chunk #${i + 1} (${c.chunk_type || 'text'})</span>
               <span style="font-family:var(--font-mono); color:var(--ink-muted);">${c.content.length} chars • L${c.start_line || 1}-${c.end_line || 1}</span>
             </div>
-            <pre style="margin:0; padding:12px; font-family:var(--font-mono); font-size:12px; color:var(--ink); background:transparent; overflow-x:auto; white-space:pre-wrap; max-height:180px; line-height:1.4;">${window.Clarity.utils.escapeHtml(c.content)}</pre>
+            <pre style="margin:0; padding:12px; font-family:var(--font-mono); font-size:12px; color:var(--ink); background:transparent; overflow-x:auto; white-space:pre-wrap; max-height:180px; line-height:1.4;">${window.Darkness.utils.escapeHtml(c.content)}</pre>
           </div>
         `).join('');
       } catch (err) {
@@ -544,7 +544,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
         <button class="btn btn--outline" type="button" data-modal-close="true">Cancel</button>
       `;
       
-      window.Clarity.modal.open('Add Documents to Knowledge Base', body, actions, { maxWidth: '580px' });
+      window.Darkness.modal.open('Add Documents to Knowledge Base', body, actions, { maxWidth: '580px' });
       
       const dropZone = document.getElementById('ragDropZone');
       const fileInput = document.getElementById('ragFileInput');
@@ -588,7 +588,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
         const names = oversized.map(f => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ');
         progressEl.style.display = 'block';
         progressEl.innerHTML = `<span style="color:var(--danger)">Upload rejected: ${names} exceeds 100 MB limit (max 104,857,600 bytes).</span>`;
-        window.Clarity.toast.show(`File exceeds 100 MB limit: ${names}`, "danger");
+        window.Darkness.toast.show(`File exceeds 100 MB limit: ${names}`, "danger");
         return;
       }
 
@@ -605,8 +605,8 @@ async function renderKnowledgeTab(container, explicitProjectId) {
       
       try {
         let resData;
-        if (window.Clarity?.api?.upload) {
-          resData = await window.Clarity.api.upload(`/api/projects/${currentPid}/rag/upload`, fd);
+        if (window.Darkness?.api?.upload) {
+          resData = await window.Darkness.api.upload(`/api/projects/${currentPid}/rag/upload`, fd);
         } else {
           const resp = await fetch(`/api/projects/${currentPid}/rag/upload`, {
             method: "POST", body: fd, credentials: "include",
@@ -616,18 +616,18 @@ async function renderKnowledgeTab(container, explicitProjectId) {
           if (!resp.ok) throw new Error((resData && resData.error) || "Upload failed.");
         }
         
-        window.Clarity.modal.close();
-        window.Clarity.toast.show(resData.message || `Successfully processed ${files.length} documents`, "success");
+        window.Darkness.modal.close();
+        window.Darkness.toast.show(resData.message || `Successfully processed ${files.length} documents`, "success");
         renderKnowledgeTab(container, currentPid);
       } catch (err) {
-        progressEl.innerHTML = `<span style="color:var(--danger)">Upload failed: ${window.Clarity.utils.escapeHtml(err.message)}</span>`;
+        progressEl.innerHTML = `<span style="color:var(--danger)">Upload failed: ${window.Darkness.utils.escapeHtml(err.message)}</span>`;
       }
     }
     
     async function openRagSettingsModal() {
       let settings = { ...DEFAULT_RAG_SETTINGS, ...data.config };
       try {
-        const res = await window.Clarity.api.get(`/api/projects/${currentPid}/rag/settings`);
+        const res = await window.Darkness.api.get(`/api/projects/${currentPid}/rag/settings`);
         if (res && res.settings) {
           settings = { ...settings, ...res.settings };
         }
@@ -808,7 +808,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
         </div>
       `;
 
-      window.Clarity.modal.open('RAG Pipeline Configuration', body, actions, { maxWidth: '680px', className: 'modal--rag-config' });
+      window.Darkness.modal.open('RAG Pipeline Configuration', body, actions, { maxWidth: '680px', className: 'modal--rag-config' });
 
       // Elements
       const strategyInput = document.getElementById('ragSetStrategy');
@@ -920,12 +920,12 @@ async function renderKnowledgeTab(container, explicitProjectId) {
         };
 
         try {
-          const res = await window.Clarity.api.post(`/api/projects/${currentPid}/rag/settings`, { settings: newSettings });
-          window.Clarity.toast.show(res.message || "RAG settings successfully saved", "success");
-          window.Clarity.modal.close();
+          const res = await window.Darkness.api.post(`/api/projects/${currentPid}/rag/settings`, { settings: newSettings });
+          window.Darkness.toast.show(res.message || "RAG settings successfully saved", "success");
+          window.Darkness.modal.close();
           renderKnowledgeTab(container, currentPid);
         } catch (err) {
-          window.Clarity.toast.show(err.message || "Failed to save settings", "danger");
+          window.Darkness.toast.show(err.message || "Failed to save settings", "danger");
           btn.disabled = false;
           btn.textContent = 'Save Settings';
         }
@@ -945,10 +945,10 @@ const DEFAULT_RAG_SETTINGS = {
   similarityThreshold: 0.70
 };
 
-window.Clarity = window.Clarity || {};
-window.Clarity.pages = window.Clarity.pages || {};
+window.Darkness = window.Darkness || {};
+window.Darkness.pages = window.Darkness.pages || {};
 
-window.Clarity.pages.project = async function renderProjectPage(route) {
+window.Darkness.pages.project = async function renderProjectPage(route) {
   const main = document.getElementById("main");
   if (!main) return;
   const projectId = route ? route.replace("#/project/", "").trim() : null;
@@ -964,11 +964,11 @@ window.Clarity.pages.project = async function renderProjectPage(route) {
 async function renderProjectList(main) {
   let projects = [];
   try {
-    const data = await window.Clarity.api.get("/api/projects");
+    const data = await window.Darkness.api.get("/api/projects");
     projects = Array.isArray(data) ? data : (data?.projects || []);
   } catch (err) {
     console.error("Failed to load projects:", err);
-    window.Clarity.toast.show("Failed to load projects: " + (err.message || "Unknown error"), "danger");
+    window.Darkness.toast.show("Failed to load projects: " + (err.message || "Unknown error"), "danger");
   }
 
   main.innerHTML = [
@@ -1084,7 +1084,7 @@ async function renderProjectList(main) {
   async function handleBatchUpload(rawFiles) {
     const files = filterProjectFiles(Array.from(rawFiles || []));
     if (files.length === 0) {
-      window.Clarity.toast.show("No valid project files found (system and build directories were filtered).", "info");
+      window.Darkness.toast.show("No valid project files found (system and build directories were filtered).", "info");
       return;
     }
 
@@ -1092,7 +1092,7 @@ async function renderProjectList(main) {
     const oversized = files.filter(f => f.size > MAX_UPLOAD_SIZE);
     if (oversized.length > 0) {
       const names = oversized.map(f => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ');
-      window.Clarity.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB (104,857,600 bytes).`, "danger");
+      window.Darkness.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB (104,857,600 bytes).`, "danger");
       return;
     }
 
@@ -1156,8 +1156,8 @@ async function renderProjectList(main) {
         if (percentBadge) percentBadge.innerText = pct + "%";
         if (statusText) statusText.innerText = `Uploading batch ${Math.floor(i / BATCH_SIZE) + 1} of ${Math.ceil(files.length / BATCH_SIZE)} (${uploadedCount + batch.length}/${files.length} files)...`;
 
-        const uploadUrl = window.Clarity.api ? window.Clarity.api._url("/api/projects/upload-files") : "/api/projects/upload-files";
-        const authHeaders = (window.Clarity.api && typeof window.Clarity.api._getAuthHeaders === "function") ? window.Clarity.api._getAuthHeaders() : {};
+        const uploadUrl = window.Darkness.api ? window.Darkness.api._url("/api/projects/upload-files") : "/api/projects/upload-files";
+        const authHeaders = (window.Darkness.api && typeof window.Darkness.api._getAuthHeaders === "function") ? window.Darkness.api._getAuthHeaders() : {};
 
         let resp = null;
         let lastErr = null;
@@ -1196,13 +1196,13 @@ async function renderProjectList(main) {
       if (percentBadge) percentBadge.innerText = "100%";
       if (statusText) statusText.innerText = "Project analyzed and indexed!";
 
-      window.Clarity.toast.show("Project created and analyzed successfully! " + (resData.filesCount || files.length) + " files indexed.", "success");
+      window.Darkness.toast.show("Project created and analyzed successfully! " + (resData.filesCount || files.length) + " files indexed.", "success");
       if (resData && resData.project && resData.project.id) {
         window.location.hash = "#/project/" + resData.project.id;
       }
     } catch (err) {
       console.error("Batch upload error:", err);
-      window.Clarity.toast.show("Upload failed: " + (err.message || "Unknown error"), "danger");
+      window.Darkness.toast.show("Upload failed: " + (err.message || "Unknown error"), "danger");
       if (progCont) progCont.style.display = "none";
     }
   }
@@ -1228,17 +1228,17 @@ async function renderProjectList(main) {
           '<button class="btn btn--outline" type="button" data-modal-close="true">Cancel</button>',
           '<button class="btn btn--danger" id="confirmDeleteProjCardBtn" type="button">Delete Project</button>'
         ].join('');
-        window.Clarity.modal.open('Delete project?', body, actions);
+        window.Darkness.modal.open('Delete project?', body, actions);
 
         document.getElementById('confirmDeleteProjCardBtn')?.addEventListener('click', async () => {
-          window.Clarity.modal.close();
+          window.Darkness.modal.close();
           btn.disabled = true;
           const origHtml = btn.innerHTML;
           btn.innerHTML = '<span class="spinner" style="width:12px; height:12px; margin-right:4px;"></span> Deleting...';
           
           try {
-            await window.Clarity.api.del("/api/projects/" + id);
-            window.Clarity.toast.show("Project deleted successfully", "success");
+            await window.Darkness.api.del("/api/projects/" + id);
+            window.Darkness.toast.show("Project deleted successfully", "success");
             
             // Animate card removal
             const cardEl = document.getElementById("project-card-" + id);
@@ -1262,12 +1262,12 @@ async function renderProjectList(main) {
           } catch (err) {
             btn.disabled = false;
             btn.innerHTML = origHtml;
-            window.Clarity.toast.show("Delete failed: " + (err.message || "Unknown error"), "danger");
+            window.Darkness.toast.show("Delete failed: " + (err.message || "Unknown error"), "danger");
           }
         }, { once: true });
       } else if (action === "ask") {
-        window.Clarity.uiChat.attachProject(id);
-        window.Clarity.toast.show("Project context attached to chat", "success");
+        window.Darkness.uiChat.attachProject(id);
+        window.Darkness.toast.show("Project context attached to chat", "success");
         window.location.hash = "#/chat";
       }
     });
@@ -1281,22 +1281,22 @@ function projectCardHtml(p) {
   const timeFormatted = p.updated_at ? new Date(p.updated_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
 
   const githubBadge = p.github
-    ? '<span class="tag tag--xs" style="background:#24292e; color:#fff; font-weight:600; display:inline-flex; align-items:center; gap:4px; max-width:100%;"><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + window.Clarity.utils.escapeHtml(p.github.owner + '/' + p.github.repo) + '</span></span>'
+    ? '<span class="tag tag--xs" style="background:#24292e; color:#fff; font-weight:600; display:inline-flex; align-items:center; gap:4px; max-width:100%;"><svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24" style="flex-shrink:0;"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg><span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + window.Darkness.utils.escapeHtml(p.github.owner + '/' + p.github.repo) + '</span></span>'
     : '';
   return '<article class="card project-card" id="project-card-' + p.id + '" style="display:flex; flex-direction:column; justify-content:space-between; position:relative; overflow:hidden; box-sizing:border-box;">' +
     '<div class="card__body" style="display:flex; flex-direction:column; height:100%; box-sizing:border-box;">' +
       '<div class="project-card__head" style="display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:8px; gap:8px; flex-wrap:wrap;">' +
-        '<h3 style="font-size:16px; font-weight:600; color:var(--ink); cursor:pointer; word-break:break-word; flex:1; min-width:200px;" data-project-action="open" data-project-id="' + p.id + '">' + window.Clarity.utils.escapeHtml(p.name) + '</h3>' +
+        '<h3 style="font-size:16px; font-weight:600; color:var(--ink); cursor:pointer; word-break:break-word; flex:1; min-width:200px;" data-project-action="open" data-project-id="' + p.id + '">' + window.Darkness.utils.escapeHtml(p.name) + '</h3>' +
         '<div style="display:flex; gap:6px; flex-shrink:0; max-width:100%; flex-wrap:wrap; justify-content:flex-end;">' +
           githubBadge +
-          '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent); font-weight:600; flex-shrink:0;">' + window.Clarity.utils.escapeHtml(lang) + '</span>' +
+          '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent); font-weight:600; flex-shrink:0;">' + window.Darkness.utils.escapeHtml(lang) + '</span>' +
         '</div>' +
       '</div>' +
-      '<div class="muted" style="font-size:13px; margin-bottom:12px; line-height:1.4; word-break:break-word;">' + window.Clarity.utils.escapeHtml(p.description || type) + '</div>' +
+      '<div class="muted" style="font-size:13px; margin-bottom:12px; line-height:1.4; word-break:break-word;">' + window.Darkness.utils.escapeHtml(p.description || type) + '</div>' +
       '<div class="hstack" style="gap:12px; font-size:12px; color:var(--ink-muted); margin-bottom:16px; flex-wrap:wrap;">' +
         '<span>📁 ' + filesCount + ' files</span>' +
-        '<span>⚙️ ' + window.Clarity.utils.escapeHtml(type) + '</span>' +
-        (p.github ? '<span>🌿 ' + window.Clarity.utils.escapeHtml(p.github.branch) + '</span>' : '') +
+        '<span>⚙️ ' + window.Darkness.utils.escapeHtml(type) + '</span>' +
+        (p.github ? '<span>🌿 ' + window.Darkness.utils.escapeHtml(p.github.branch) + '</span>' : '') +
         (timeFormatted ? '<span class="muted" style="margin-left:auto;">' + timeFormatted + '</span>' : '') +
       '</div>' +
       '<div style="display:flex; align-items:center; justify-content:space-between; gap:6px; flex-wrap:wrap; margin-top:auto; padding-top:12px; border-top:1px solid var(--line);">' +
@@ -1414,13 +1414,13 @@ function openGithubImportModal(mainContainer) {
   async function fetchBranches() {
     const repoUrl = repoInput.value.trim();
     if (!repoUrl) {
-      window.Clarity.toast.show("Please enter a GitHub repository name or URL", "warning");
+      window.Darkness.toast.show("Please enter a GitHub repository name or URL", "warning");
       return;
     }
     fetchBtn.disabled = true;
     fetchBtn.textContent = "Fetching...";
     try {
-      const res = await window.Clarity.api.post("/api/github/branches", {
+      const res = await window.Darkness.api.post("/api/github/branches", {
         repoUrl,
         token: tokenInput.value.trim() || undefined,
       });
@@ -1444,9 +1444,9 @@ function openGithubImportModal(mainContainer) {
         branchSelect.appendChild(opt);
       });
 
-      window.Clarity.toast.show("Found " + (res.branches?.length || 0) + " branches", "success");
+      window.Darkness.toast.show("Found " + (res.branches?.length || 0) + " branches", "success");
     } catch (err) {
-      window.Clarity.toast.show("Could not fetch branches: " + (err.message || "Check repo name and token"), "danger");
+      window.Darkness.toast.show("Could not fetch branches: " + (err.message || "Check repo name and token"), "danger");
     } finally {
       fetchBtn.disabled = false;
       fetchBtn.textContent = "Fetch Branches";
@@ -1464,7 +1464,7 @@ function openGithubImportModal(mainContainer) {
   submitBtn.addEventListener("click", async () => {
     const repoUrl = repoInput.value.trim();
     if (!repoUrl) {
-      window.Clarity.toast.show("Please enter a repository URL", "warning");
+      window.Darkness.toast.show("Please enter a repository URL", "warning");
       return;
     }
 
@@ -1475,21 +1475,21 @@ function openGithubImportModal(mainContainer) {
 
     try {
       if (progressText) progressText.textContent = "Extracting files, scanning frameworks, and indexing knowledge...";
-      const res = await window.Clarity.api.post("/api/github/import", {
+      const res = await window.Darkness.api.post("/api/github/import", {
         repoUrl,
         branch: branchSelect.value || "main",
         token: tokenInput.value.trim() || undefined,
         name: nameInput.value.trim() || undefined,
       });
 
-      window.Clarity.toast.show("Project imported and analyzed! " + (res.filesCount || 0) + " files indexed.", "success");
+      window.Darkness.toast.show("Project imported and analyzed! " + (res.filesCount || 0) + " files indexed.", "success");
       close();
       window.location.hash = "#/project/" + res.project.id;
     } catch (err) {
       if (submitBtn) submitBtn.disabled = false;
       if (fetchBtn) fetchBtn.disabled = false;
       if (progressBox) progressBox.style.display = "none";
-      window.Clarity.toast.show("Import failed: " + (err.message || "Unknown error"), "danger");
+      window.Darkness.toast.show("Import failed: " + (err.message || "Unknown error"), "danger");
     }
   });
 }
@@ -1583,8 +1583,8 @@ async function uploadZipInChunks(file, projectIdToMerge, onProgress) {
       xhr.addEventListener("error", () => reject(new Error("Network transfer error")));
       xhr.addEventListener("abort", () => reject(new Error("Upload aborted")));
 
-      const uploadUrl = window.Clarity.api ? window.Clarity.api._url("/api/projects/upload-zip") : "/api/projects/upload-zip";
-      const authHeaders = (window.Clarity.api && typeof window.Clarity.api._getAuthHeaders === "function") ? window.Clarity.api._getAuthHeaders() : {};
+      const uploadUrl = window.Darkness.api ? window.Darkness.api._url("/api/projects/upload-zip") : "/api/projects/upload-zip";
+      const authHeaders = (window.Darkness.api && typeof window.Darkness.api._getAuthHeaders === "function") ? window.Darkness.api._getAuthHeaders() : {};
       xhr.open("POST", uploadUrl);
       Object.entries(authHeaders).forEach(([k, v]) => xhr.setRequestHeader(k, v));
       xhr.withCredentials = true;
@@ -1628,8 +1628,8 @@ async function uploadZipInChunks(file, projectIdToMerge, onProgress) {
       onProgress(percent, text, secondaryText);
     }
 
-    const chunkUrl = window.Clarity.api ? window.Clarity.api._url("/api/projects/upload-zip/chunk") : "/api/projects/upload-zip/chunk";
-    const chunkAuthHeaders = (window.Clarity.api && typeof window.Clarity.api._getAuthHeaders === "function") ? window.Clarity.api._getAuthHeaders() : {};
+    const chunkUrl = window.Darkness.api ? window.Darkness.api._url("/api/projects/upload-zip/chunk") : "/api/projects/upload-zip/chunk";
+    const chunkAuthHeaders = (window.Darkness.api && typeof window.Darkness.api._getAuthHeaders === "function") ? window.Darkness.api._getAuthHeaders() : {};
 
     let resp = null;
     let chunkErr = null;
@@ -1679,7 +1679,7 @@ async function uploadZipInChunks(file, projectIdToMerge, onProgress) {
 
 async function handleZipUpload(file) {
   if (!file.name.toLowerCase().endsWith(".zip")) {
-    window.Clarity.toast.show("Only .zip files are supported", "danger");
+    window.Darkness.toast.show("Only .zip files are supported", "danger");
     return;
   }
 
@@ -1695,7 +1695,7 @@ async function handleZipUpload(file) {
       '  <div class="hstack" style="justify-content:space-between; align-items:center;">',
       '    <div style="display:flex; align-items:center; gap:10px;">',
       '      <span class="spinner" style="width:16px; height:16px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite;"></span>',
-      '      <span style="font-size:14px; font-weight:600; color:var(--ink);">' + window.Clarity.utils.escapeHtml(text) + '</span>',
+      '      <span style="font-size:14px; font-weight:600; color:var(--ink);">' + window.Darkness.utils.escapeHtml(text) + '</span>',
       '    </div>',
       '    <span class="font-mono" style="font-size:13px; font-weight:700; color:var(--accent);">' + percent + '%</span>',
       '  </div>',
@@ -1705,7 +1705,7 @@ async function handleZipUpload(file) {
       '  <div style="display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--surface-muted); border-radius:6px; border:1px solid var(--line);">',
       '    <div class="muted" style="font-size:12px; line-height:1.4; display:flex; align-items:center; gap:6px;">',
       '      <svg class="icon" style="color:var(--accent); flex-shrink:0;" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
-      '      <span>' + window.Clarity.utils.escapeHtml(secondaryText) + '</span>',
+      '      <span>' + window.Darkness.utils.escapeHtml(secondaryText) + '</span>',
       '    </div>',
       '  </div>',
       '  <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding-top:12px; margin-top:4px;">',
@@ -1733,11 +1733,11 @@ async function handleZipUpload(file) {
 
     updateProgressUI(100, "Analyzing & Cataloging Project", "Extracting files securely, scanning dependencies, tracing architecture, and cataloging APIs...");
 
-    window.Clarity.toast.show("Project analyzed successfully! " + (resData.filesCount || 0) + " files indexed.", "success");
+    window.Darkness.toast.show("Project analyzed successfully! " + (resData.filesCount || 0) + " files indexed.", "success");
     window.location.hash = "#/project/" + resData.project.id;
   } catch (err) {
     console.error("ZIP upload error:", err);
-    window.Clarity.toast.show("Upload failed: " + (err.message || "Unknown error"), "danger");
+    window.Darkness.toast.show("Upload failed: " + (err.message || "Unknown error"), "danger");
     if (progCont) progCont.style.display = "none";
   }
 }
@@ -1780,7 +1780,7 @@ let activeProjectTab = "overview";
 let activeFileNode = null;
 
 async function renderProjectDetail(main, projectId) {
-  if (window.Clarity.currentProjectId !== projectId) {
+  if (window.Darkness.currentProjectId !== projectId) {
     activeProjectTab = "overview";
     activeFileNode = null;
   }
@@ -1790,21 +1790,21 @@ async function renderProjectDetail(main, projectId) {
 
   try {
     const [pRes, aRes, tRes] = await Promise.all([
-      window.Clarity.api.get("/api/projects/" + projectId),
-      window.Clarity.api.get("/api/projects/" + projectId + "/analysis"),
-      window.Clarity.api.get("/api/projects/" + projectId + "/tree"),
+      window.Darkness.api.get("/api/projects/" + projectId),
+      window.Darkness.api.get("/api/projects/" + projectId + "/analysis"),
+      window.Darkness.api.get("/api/projects/" + projectId + "/tree"),
     ]);
     project = (pRes && pRes.project) || pRes || { id: projectId, name: "Project" };
     const rawAnalysis = (aRes && aRes.analysis) || (aRes && !aRes.error ? aRes : null);
     analysis = ensureSafeAnalysis(rawAnalysis, project);
     treeData = tRes;
-    window.Clarity.currentProject = project;
-    window.Clarity.currentProjectId = projectId;
+    window.Darkness.currentProject = project;
+    window.Darkness.currentProjectId = projectId;
   } catch (err) {
     main.innerHTML = [
       '<div class="page"><div class="page__inner">',
       '<header class="page__header"><h1 class="page__title">Project Not Found</h1></header>',
-      '<p class="muted">Could not find or load project with ID: ' + window.Clarity.utils.escapeHtml(projectId) + '</p>',
+      '<p class="muted">Could not find or load project with ID: ' + window.Darkness.utils.escapeHtml(projectId) + '</p>',
       '<div style="margin-top:16px;"><button class="btn btn--outline" id="backToProjectsBtn">← Back to Projects</button></div>',
       '</div></div>'
     ].join("");
@@ -1829,7 +1829,7 @@ async function renderProjectDetail(main, projectId) {
   ].join("");
 
   // Update initial artifacts badge count
-  window.Clarity.api.get("/api/projects/" + projectId + "/artifacts").then(res => {
+  window.Darkness.api.get("/api/projects/" + projectId + "/artifacts").then(res => {
     const badge = document.getElementById("artifactsTabBadge");
     if (badge && res && res.artifacts) {
       badge.textContent = String(res.artifacts.length);
@@ -1893,7 +1893,7 @@ async function renderProjectDetail(main, projectId) {
 
   document.getElementById("exportReportBtn")?.addEventListener("click", () => {
     if (headerProjectActionsMenu) headerProjectActionsMenu.style.display = "none";
-    window.open(window.Clarity.api.base + "/api/projects/" + projectId + "/report", "_blank");
+    window.open(window.Darkness.api.base + "/api/projects/" + projectId + "/report", "_blank");
   });
 
   document.getElementById("exportDiagramPngLink")?.addEventListener("click", () => {
@@ -1911,11 +1911,11 @@ async function renderProjectDetail(main, projectId) {
       btn.textContent = "Scanning...";
     }
     try {
-      await window.Clarity.api.post("/api/projects/" + projectId + "/analyze");
-      window.Clarity.toast.show("Analysis updated", "success");
+      await window.Darkness.api.post("/api/projects/" + projectId + "/analyze");
+      window.Darkness.toast.show("Analysis updated", "success");
       renderProjectDetail(main, projectId);
     } catch (err) {
-      window.Clarity.toast.show("Re-analysis failed: " + (err.message || ""), "danger");
+      window.Darkness.toast.show("Re-analysis failed: " + (err.message || ""), "danger");
       if (btn) {
         btn.disabled = false;
         btn.textContent = "Re-Analyze Project";
@@ -1932,19 +1932,19 @@ async function renderProjectDetail(main, projectId) {
       '<button class="btn btn--outline" type="button" data-modal-close="true">Cancel</button>',
       '<button class="btn btn--danger" id="confirmDeleteProjDetailBtn" type="button">Delete Project</button>'
     ].join('');
-    window.Clarity.modal.open('Delete project?', body, actions);
+    window.Darkness.modal.open('Delete project?', body, actions);
 
     document.getElementById('confirmDeleteProjDetailBtn')?.addEventListener('click', async () => {
-      window.Clarity.modal.close();
+      window.Darkness.modal.close();
       try {
-        await window.Clarity.api.del("/api/projects/" + projectId);
+        await window.Darkness.api.del("/api/projects/" + projectId);
         try {
-          localStorage.removeItem("clarity_proj_chat_" + projectId);
+          localStorage.removeItem("darkness_proj_chat_" + projectId);
         } catch (e) {}
-        window.Clarity.toast.show("Project deleted successfully", "success");
+        window.Darkness.toast.show("Project deleted successfully", "success");
         window.location.hash = "#/project";
       } catch (err) {
-        window.Clarity.toast.show("Delete failed: " + (err.message || "Unknown error"), "danger");
+        window.Darkness.toast.show("Delete failed: " + (err.message || "Unknown error"), "danger");
       }
     }, { once: true });
   });
@@ -2017,8 +2017,8 @@ async function renderProjectDetail(main, projectId) {
     });
     renderFilesTab(tabContentEl, treeData, projectId, filePath, lineNumber);
   }
-  window.Clarity.jumpToFile = switchTabToFile;
-  window.Clarity.currentProjectId = projectId;
+  window.Darkness.jumpToFile = switchTabToFile;
+  window.Darkness.currentProjectId = projectId;
 
   renderActiveTab();
 }
@@ -2048,9 +2048,9 @@ function renderOverviewTab(container, analysis, project, switchTab) {
             '</div>' +
             '<div>' +
               '<div style="font-weight:600; font-size:14px; color:var(--ink); display:flex; align-items:center; gap:8px;">' +
-                '<span>' + window.Clarity.utils.escapeHtml(project.github.owner + '/' + project.github.repo) + '</span>' +
-                '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent); font-weight:600;">' + window.Clarity.utils.escapeHtml(project.github.branch) + '</span>' +
-                '<span class="tag tag--xs" style="' + (project.github.status === 'synced' ? 'background:rgba(16,185,129,0.15); color:#059669;' : 'background:rgba(239,68,68,0.15); color:#dc2626;') + ' font-weight:600;">' + window.Clarity.utils.escapeHtml((project.github.status || 'unknown').toUpperCase()) + '</span>' +
+                '<span>' + window.Darkness.utils.escapeHtml(project.github.owner + '/' + project.github.repo) + '</span>' +
+                '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent); font-weight:600;">' + window.Darkness.utils.escapeHtml(project.github.branch) + '</span>' +
+                '<span class="tag tag--xs" style="' + (project.github.status === 'synced' ? 'background:rgba(16,185,129,0.15); color:#059669;' : 'background:rgba(239,68,68,0.15); color:#dc2626;') + ' font-weight:600;">' + window.Darkness.utils.escapeHtml((project.github.status || 'unknown').toUpperCase()) + '</span>' +
               '</div>' +
               '<div style="font-size:12px; color:var(--ink-muted); margin-top:2px;">' +
                 'Source: GitHub Repository • Last synchronized: ' + (project.github.lastSyncedAt ? new Date(project.github.lastSyncedAt).toLocaleString() : 'Just now') +
@@ -2075,23 +2075,23 @@ function renderOverviewTab(container, analysis, project, switchTab) {
       '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:12px;">' +
         '<div>' +
           '<div style="font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Project Intelligence & System Understanding</div>' +
-          '<h2 style="font-size:18px; font-weight:700; color:var(--ink); margin:0;">' + window.Clarity.utils.escapeHtml(projectIdentity.title || analysis.projectName || "Project") + '</h2>' +
-          '<p style="font-size:13.5px; color:var(--ink-muted); margin:4px 0 0 0;">' + window.Clarity.utils.escapeHtml(projectIdentity.tagline || analysis.summary || "") + '</p>' +
+          '<h2 style="font-size:18px; font-weight:700; color:var(--ink); margin:0;">' + window.Darkness.utils.escapeHtml(projectIdentity.title || analysis.projectName || "Project") + '</h2>' +
+          '<p style="font-size:13.5px; color:var(--ink-muted); margin:4px 0 0 0;">' + window.Darkness.utils.escapeHtml(projectIdentity.tagline || analysis.summary || "") + '</p>' +
         '</div>' +
         '<span class="tag tag--sm" style="background:var(--accent-soft); color:var(--accent); font-weight:600; padding:6px 12px;">System-Level Analysis</span>' +
       '</div>' +
       '<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-top:16px;">' +
         '<div style="background:var(--surface-muted); padding:14px; border-radius:8px; border-left:3px solid var(--accent);">' +
           '<strong style="font-size:13px; color:var(--ink); display:block; margin-bottom:4px;">🎯 Problem Solved</strong>' +
-          '<span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(pi.problemStatement || "Grounded codebase synthesis") + '</span>' +
+          '<span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(pi.problemStatement || "Grounded codebase synthesis") + '</span>' +
         '</div>' +
         '<div style="background:var(--surface-muted); padding:14px; border-radius:8px; border-left:3px solid #10b981;">' +
           '<strong style="font-size:13px; color:var(--ink); display:block; margin-bottom:4px;">💡 Proposed Solution</strong>' +
-          '<span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(pi.proposedSolution || "Comprehensive architecture understanding") + '</span>' +
+          '<span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(pi.proposedSolution || "Comprehensive architecture understanding") + '</span>' +
         '</div>' +
         '<div style="background:var(--surface-muted); padding:14px; border-radius:8px; border-left:3px solid #f59e0b;">' +
           '<strong style="font-size:13px; color:var(--ink); display:block; margin-bottom:4px;">🚀 Innovation / USP</strong>' +
-          '<span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(pi.innovation || "Automated deep extraction") + '</span>' +
+          '<span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(pi.innovation || "Automated deep extraction") + '</span>' +
         '</div>' +
       '</div>' +
     '</div>'
@@ -2107,13 +2107,13 @@ function renderOverviewTab(container, analysis, project, switchTab) {
           '<div class="hstack" style="justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">' +
             '<div class="hstack" style="gap:8px; align-items:center;">' +
               '<span class="severity-pill ' + sevClass + '">' + f.severity + '</span>' +
-              '<strong style="font-size:14px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(f.title) + '</strong>' +
+              '<strong style="font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(f.title) + '</strong>' +
             '</div>' +
-            '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Clarity.utils.escapeHtml(f.file) + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent); padding:2px 6px;">' + window.Clarity.utils.escapeHtml(f.file) + ':' + f.line + '</button>' +
+            '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(f.file) + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent); padding:2px 6px;">' + window.Darkness.utils.escapeHtml(f.file) + ':' + f.line + '</button>' +
           '</div>' +
-          '<p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin-bottom:8px;">' + window.Clarity.utils.escapeHtml(f.description) + '</p>' +
-          (f.redactedSnippet ? '<div class="code-evidence-box" style="margin-bottom:8px; background:var(--surface-muted); padding:8px; border-radius:4px; font-family:var(--font-mono); font-size:12px; overflow-x:auto;"><code>' + window.Clarity.utils.escapeHtml(f.redactedSnippet) + '</code></div>' : '') +
-          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink);"><strong style="color:var(--success);">Remediation:</strong> <span>' + window.Clarity.utils.escapeHtml(f.suggestedFix) + '</span></div>' +
+          '<p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin-bottom:8px;">' + window.Darkness.utils.escapeHtml(f.description) + '</p>' +
+          (f.redactedSnippet ? '<div class="code-evidence-box" style="margin-bottom:8px; background:var(--surface-muted); padding:8px; border-radius:4px; font-family:var(--font-mono); font-size:12px; overflow-x:auto;"><code>' + window.Darkness.utils.escapeHtml(f.redactedSnippet) + '</code></div>' : '') +
+          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink);"><strong style="color:var(--success);">Remediation:</strong> <span>' + window.Darkness.utils.escapeHtml(f.suggestedFix) + '</span></div>' +
         '</div>';
       }).join("");
 
@@ -2192,12 +2192,12 @@ function renderOverviewTab(container, analysis, project, switchTab) {
         '<h3 style="font-size:15px; font-weight:600; color:var(--ink);">Architecture Synthesis</h3>' +
         '<button class="btn btn--ghost btn--sm" id="viewFullArchBtn">View full architecture →</button>' +
       '</div>' +
-      '<p style="font-size:14px; line-height:1.6; color:var(--ink-muted); margin-bottom:16px;">' + window.Clarity.utils.escapeHtml(archSummary) + '</p>' +
+      '<p style="font-size:14px; line-height:1.6; color:var(--ink-muted); margin-bottom:16px;">' + window.Darkness.utils.escapeHtml(archSummary) + '</p>' +
       '<div class="arch-grid">' +
         archNodes.slice(0, 4).map(node => {
           return '<div class="arch-card" style="background:var(--surface-muted);">' +
-            '<div class="arch-card__head"><strong>' + window.Clarity.utils.escapeHtml(node.label || "Module") + '</strong><span class="arch-badge arch-badge--' + (node.type || 'module') + '">' + (node.type || 'module') + '</span></div>' +
-            '<p style="font-size:12.5px; color:var(--ink-muted); line-height:1.4;">' + window.Clarity.utils.escapeHtml(node.description || "") + '</p>' +
+            '<div class="arch-card__head"><strong>' + window.Darkness.utils.escapeHtml(node.label || "Module") + '</strong><span class="arch-badge arch-badge--' + (node.type || 'module') + '">' + (node.type || 'module') + '</span></div>' +
+            '<p style="font-size:12.5px; color:var(--ink-muted); line-height:1.4;">' + window.Darkness.utils.escapeHtml(node.description || "") + '</p>' +
           '</div>';
         }).join("") +
       '</div>' +
@@ -2208,7 +2208,7 @@ function renderOverviewTab(container, analysis, project, switchTab) {
 
   container.querySelectorAll("[data-nav-file]").forEach(btn => {
     btn.addEventListener("click", () => {
-      window.Clarity.jumpToFile(btn.getAttribute("data-nav-file"));
+      window.Darkness.jumpToFile(btn.getAttribute("data-nav-file"));
     });
   });
 
@@ -2217,15 +2217,15 @@ function renderOverviewTab(container, analysis, project, switchTab) {
     syncBtn.addEventListener("click", async () => {
       syncBtn.disabled = true;
       syncBtn.innerHTML = '<span class="spinner" style="width:14px; height:14px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; display:inline-block; animation:spin 1s linear infinite;"></span> Syncing...';
-      window.Clarity.toast.show("Fetching latest changes from GitHub...", "info");
+      window.Darkness.toast.show("Fetching latest changes from GitHub...", "info");
       try {
-        const syncRes = await window.Clarity.api.post("/api/projects/" + project.id + "/github/sync", {});
-        window.Clarity.toast.show(syncRes.message || "Project synchronized successfully!", "success");
+        const syncRes = await window.Darkness.api.post("/api/projects/" + project.id + "/github/sync", {});
+        window.Darkness.toast.show(syncRes.message || "Project synchronized successfully!", "success");
         renderProjectDetail(document.getElementById("app") || document.getElementById("main"), project.id);
       } catch (err) {
         syncBtn.disabled = false;
         syncBtn.innerHTML = 'Sync Latest Code';
-        window.Clarity.toast.show("Sync failed: " + (err.message || "Unknown error"), "danger");
+        window.Darkness.toast.show("Sync failed: " + (err.message || "Unknown error"), "danger");
       }
     });
   }
@@ -2405,7 +2405,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
   // Reload tree from server
   async function refreshTree() {
     try {
-      const data = await window.Clarity.api.get("/api/projects/" + projectId + "/tree");
+      const data = await window.Darkness.api.get("/api/projects/" + projectId + "/tree");
       currentTree = data.tree || [];
       currentFiles = data.files || [];
       currentStats = {
@@ -2422,7 +2422,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       const tabBadge = document.querySelector('[data-tab="files"] .project-badge');
       if (tabBadge) tabBadge.textContent = currentStats.totalFiles;
     } catch (err) {
-      window.Clarity.toast.show("Failed to refresh file tree: " + (err.message || ""), "danger");
+      window.Darkness.toast.show("Failed to refresh file tree: " + (err.message || ""), "danger");
     }
   }
 
@@ -2439,10 +2439,10 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
     if (!treeCont) return;
     treeCont.innerHTML = '<div class="muted" style="padding:16px; font-size:12.5px;"><span class="spinner" style="width:14px; height:14px; vertical-align:middle; margin-right:6px;"></span> Searching project files...</div>';
     try {
-      const data = await window.Clarity.api.get("/api/projects/" + projectId + "/search?q=" + encodeURIComponent(query) + (activeCategory !== "all" ? "&category=" + encodeURIComponent(activeCategory) : ""));
+      const data = await window.Darkness.api.get("/api/projects/" + projectId + "/search?q=" + encodeURIComponent(query) + (activeCategory !== "all" ? "&category=" + encodeURIComponent(activeCategory) : ""));
       const results = data.results || [];
       if (results.length === 0) {
-        treeCont.innerHTML = '<div class="muted" style="padding:16px; font-size:12.5px;">No matches found for "' + window.Clarity.utils.escapeHtml(query) + '".</div>';
+        treeCont.innerHTML = '<div class="muted" style="padding:16px; font-size:12.5px;">No matches found for "' + window.Darkness.utils.escapeHtml(query) + '".</div>';
         return;
       }
 
@@ -2454,12 +2454,12 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         results.map(r => {
           const isSelected = activeFileNode === r.file;
           const matchLinesHtml = r.matches && r.matches.length > 0
-            ? r.matches.map(m => '<div class="search-match-line">Line ' + m.line + ': ' + window.Clarity.utils.escapeHtml(m.text) + '</div>').join("")
+            ? r.matches.map(m => '<div class="search-match-line">Line ' + m.line + ': ' + window.Darkness.utils.escapeHtml(m.text) + '</div>').join("")
             : '';
-          return '<div class="search-match-item ' + (isSelected ? 'is-selected' : '') + '" data-file-path="' + window.Clarity.utils.escapeHtml(r.file) + '">' +
+          return '<div class="search-match-item ' + (isSelected ? 'is-selected' : '') + '" data-file-path="' + window.Darkness.utils.escapeHtml(r.file) + '">' +
             '<div style="display:flex; align-items:center; gap:6px; font-size:12.5px; font-weight:500;">' +
               '<span>' + fileTypeIcon(r.extension) + '</span>' +
-              '<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + window.Clarity.utils.escapeHtml(r.file) + '</span>' +
+              '<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + window.Darkness.utils.escapeHtml(r.file) + '</span>' +
               '<span class="muted" style="font-size:11px;">' + (r.lineCount ? r.lineCount + 'L' : '') + '</span>' +
             '</div>' +
             matchLinesHtml +
@@ -2478,7 +2478,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         });
       });
     } catch (err) {
-      treeCont.innerHTML = '<div class="project-notice" style="margin:10px;">Search failed: ' + window.Clarity.utils.escapeHtml(err.message || "") + '</div>';
+      treeCont.innerHTML = '<div class="project-notice" style="margin:10px;">Search failed: ' + window.Darkness.utils.escapeHtml(err.message || "") + '</div>';
     }
   }
 
@@ -2544,15 +2544,15 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
 
       treeCont.innerHTML = filtered.map(f => {
         const isSelected = activeFileNode === f.path;
-        return '<div class="tree-file-node ' + (isSelected ? 'is-selected' : '') + '" data-file-path="' + window.Clarity.utils.escapeHtml(f.path) + '">' +
+        return '<div class="tree-file-node ' + (isSelected ? 'is-selected' : '') + '" data-file-path="' + window.Darkness.utils.escapeHtml(f.path) + '">' +
           '<div class="tree-node-content">' +
             '<span style="font-size:13px;">' + fileTypeIcon(f.extension) + '</span>' +
-            '<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + window.Clarity.utils.escapeHtml(f.path) + '</span>' +
+            '<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + window.Darkness.utils.escapeHtml(f.path) + '</span>' +
             (f.lineCount ? '<span class="muted" style="font-size:11px;">' + f.lineCount + 'L</span>' : '') +
           '</div>' +
           '<div class="tree-node-actions">' +
-            '<button class="tree-node-btn" data-action="rename-file" data-path="' + window.Clarity.utils.escapeHtml(f.path) + '" title="Rename file">✏️</button>' +
-            '<button class="tree-node-btn tree-node-btn--danger" data-action="delete-file" data-path="' + window.Clarity.utils.escapeHtml(f.path) + '" title="Delete file">🗑️</button>' +
+            '<button class="tree-node-btn" data-action="rename-file" data-path="' + window.Darkness.utils.escapeHtml(f.path) + '" title="Rename file">✏️</button>' +
+            '<button class="tree-node-btn tree-node-btn--danger" data-action="delete-file" data-path="' + window.Darkness.utils.escapeHtml(f.path) + '" title="Delete file">🗑️</button>' +
           '</div>' +
         '</div>';
       }).join("");
@@ -2571,16 +2571,16 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       const paddingLeft = (depth * 14 + 8) + "px";
       if (node.type === "dir" || node.type === "folder" || Boolean(node.children)) {
         const isOpen = openFolders.has(node.path) || depth === 0;
-        html += '<div class="tree-folder ' + (isOpen ? 'is-open' : '') + '" data-folder-path="' + window.Clarity.utils.escapeHtml(node.path) + '" style="padding-left:' + paddingLeft + '">' +
+        html += '<div class="tree-folder ' + (isOpen ? 'is-open' : '') + '" data-folder-path="' + window.Darkness.utils.escapeHtml(node.path) + '" style="padding-left:' + paddingLeft + '">' +
           '<div class="tree-node-content">' +
             '<svg class="icon tree-folder__arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>' +
             '<svg class="icon" viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#eab308" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>' +
-            '<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;">' + window.Clarity.utils.escapeHtml(node.name) + '</span>' +
+            '<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:500;">' + window.Darkness.utils.escapeHtml(node.name) + '</span>' +
           '</div>' +
           '<div class="tree-node-actions">' +
-            '<button class="tree-node-btn" data-action="new-file-in-folder" data-folder="' + window.Clarity.utils.escapeHtml(node.path) + '" title="New file inside this folder">+</button>' +
-            '<button class="tree-node-btn" data-action="rename-folder" data-folder="' + window.Clarity.utils.escapeHtml(node.path) + '" title="Rename folder">✏️</button>' +
-            '<button class="tree-node-btn tree-node-btn--danger" data-action="delete-folder" data-folder="' + window.Clarity.utils.escapeHtml(node.path) + '" title="Delete folder">🗑️</button>' +
+            '<button class="tree-node-btn" data-action="new-file-in-folder" data-folder="' + window.Darkness.utils.escapeHtml(node.path) + '" title="New file inside this folder">+</button>' +
+            '<button class="tree-node-btn" data-action="rename-folder" data-folder="' + window.Darkness.utils.escapeHtml(node.path) + '" title="Rename folder">✏️</button>' +
+            '<button class="tree-node-btn tree-node-btn--danger" data-action="delete-folder" data-folder="' + window.Darkness.utils.escapeHtml(node.path) + '" title="Delete folder">🗑️</button>' +
           '</div>' +
         '</div>' +
         '<div class="tree-children" style="display:' + (isOpen ? 'block' : 'none') + ';">' +
@@ -2588,15 +2588,15 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         '</div>';
       } else {
         const isSelected = activeFileNode === node.path;
-        html += '<div class="tree-file-node ' + (isSelected ? 'is-selected' : '') + '" data-file-path="' + window.Clarity.utils.escapeHtml(node.path) + '" style="padding-left:' + paddingLeft + '">' +
+        html += '<div class="tree-file-node ' + (isSelected ? 'is-selected' : '') + '" data-file-path="' + window.Darkness.utils.escapeHtml(node.path) + '" style="padding-left:' + paddingLeft + '">' +
           '<div class="tree-node-content">' +
             '<span style="font-size:13px;">' + fileTypeIcon(node.extension) + '</span>' +
-            '<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + window.Clarity.utils.escapeHtml(node.name) + '</span>' +
+            '<span style="flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">' + window.Darkness.utils.escapeHtml(node.name) + '</span>' +
             (node.lineCount ? '<span class="muted" style="font-size:11px;">' + node.lineCount + 'L</span>' : '') +
           '</div>' +
           '<div class="tree-node-actions">' +
-            '<button class="tree-node-btn" data-action="rename-file" data-path="' + window.Clarity.utils.escapeHtml(node.path) + '" title="Rename file">✏️</button>' +
-            '<button class="tree-node-btn tree-node-btn--danger" data-action="delete-file" data-path="' + window.Clarity.utils.escapeHtml(node.path) + '" title="Delete file">🗑️</button>' +
+            '<button class="tree-node-btn" data-action="rename-file" data-path="' + window.Darkness.utils.escapeHtml(node.path) + '" title="Rename file">✏️</button>' +
+            '<button class="tree-node-btn tree-node-btn--danger" data-action="delete-file" data-path="' + window.Darkness.utils.escapeHtml(node.path) + '" title="Delete file">🗑️</button>' +
           '</div>' +
         '</div>';
       }
@@ -2674,7 +2674,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
     const content = document.getElementById("viewerContent");
     if (!meta || !content) return;
 
-    meta.innerHTML = '<span class="spinner" style="width:14px; height:14px;"></span> Loading ' + window.Clarity.utils.escapeHtml(path) + '...';
+    meta.innerHTML = '<span class="spinner" style="width:14px; height:14px;"></span> Loading ' + window.Darkness.utils.escapeHtml(path) + '...';
 
     try {
       let data = null;
@@ -2686,7 +2686,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       while (attempts < maxAttempts) {
         attempts++;
         try {
-          data = await window.Clarity.api.get("/api/projects/" + projectId + "/file?path=" + encodeURIComponent(path));
+          data = await window.Darkness.api.get("/api/projects/" + projectId + "/file?path=" + encodeURIComponent(path));
           
           if (isIpynbPath && data && data.content) {
             try {
@@ -2734,7 +2734,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       // Fetch rendered DOCX HTML for document files
       if (isDocx) {
         try {
-          const docxRes = await window.Clarity.api.get("/api/projects/" + projectId + "/file/docx-html?path=" + encodeURIComponent(path));
+          const docxRes = await window.Darkness.api.get("/api/projects/" + projectId + "/file/docx-html?path=" + encodeURIComponent(path));
           if (docxRes && docxRes.html) {
             data.docxHtml = docxRes.html;
           }
@@ -2752,15 +2752,15 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         const isLast = idx === pathParts.length - 1;
         const currentPath = pathParts.slice(0, idx + 1).join("/");
         return isLast
-          ? '<strong>' + window.Clarity.utils.escapeHtml(p) + '</strong>'
-          : '<a href="#" class="breadcrumb-link muted" style="text-decoration:none;" data-path="' + window.Clarity.utils.escapeHtml(currentPath) + '">' + window.Clarity.utils.escapeHtml(p) + '</a>';
+          ? '<strong>' + window.Darkness.utils.escapeHtml(p) + '</strong>'
+          : '<a href="#" class="breadcrumb-link muted" style="text-decoration:none;" data-path="' + window.Darkness.utils.escapeHtml(currentPath) + '">' + window.Darkness.utils.escapeHtml(p) + '</a>';
       }).join(' <span class="muted">/</span> ');
 
       meta.innerHTML = [
         '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">',
         breadcrumbs,
-        '<span class="tag" style="background:var(--accent-soft); color:var(--accent); font-size:11px;">' + window.Clarity.utils.escapeHtml(data.language || ext) + '</span>',
-        '<span class="tag" style="background:var(--surface-muted); font-size:11px;">' + window.Clarity.utils.escapeHtml(data.category) + '</span>',
+        '<span class="tag" style="background:var(--accent-soft); color:var(--accent); font-size:11px;">' + window.Darkness.utils.escapeHtml(data.language || ext) + '</span>',
+        '<span class="tag" style="background:var(--surface-muted); font-size:11px;">' + window.Darkness.utils.escapeHtml(data.category) + '</span>',
         lines ? '<span class="muted" style="font-size:12px;">' + lines.toLocaleString() + ' lines</span>' : '',
         '<span class="muted" style="font-size:12px;">' + formatSize(data.size) + '</span>',
         '</div>'
@@ -2810,13 +2810,13 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
              if (copyText) copyText.textContent = "Copy Path";
              copyBtn.onclick = () => {
                  closeMoreActionsMenu();
-                 navigator.clipboard.writeText(activeFileRecord.path).then(() => window.Clarity.toast.show("Path copied", "success"));
+                 navigator.clipboard.writeText(activeFileRecord.path).then(() => window.Darkness.toast.show("Path copied", "success"));
              };
          } else {
              if (copyText) copyText.textContent = "Copy Code";
              copyBtn.onclick = () => {
                  closeMoreActionsMenu();
-                 navigator.clipboard.writeText(currentFileContent).then(() => window.Clarity.toast.show("Code copied", "success"));
+                 navigator.clipboard.writeText(currentFileContent).then(() => window.Darkness.toast.show("Code copied", "success"));
              };
          }
       }
@@ -2861,7 +2861,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       meta.innerHTML = '<span style="color:var(--danger)">Failed to load file</span>';
       content.innerHTML = [
         '<div class="project-notice" style="margin:20px; display:flex; flex-direction:column; gap:10px;">',
-        '  <div>' + window.Clarity.utils.escapeHtml(err.message || "Failed to load file from project repository.") + '</div>',
+        '  <div>' + window.Darkness.utils.escapeHtml(err.message || "Failed to load file from project repository.") + '</div>',
         '  <div><button class="btn btn--sm btn--primary" id="retryLoadFileBtn">Retry Loading File</button></div>',
         '</div>'
       ].join("");
@@ -2897,12 +2897,12 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       content.innerHTML = [
         '<div class="vscode-editor-container" style="display:flex; flex-direction:column; height:100%;">',
         '<div class="vscode-editor-bar" style="flex-shrink:0;">',
-        '<span>Editing: <strong>' + window.Clarity.utils.escapeHtml(activeFileRecord.path) + '</strong></span>',
+        '<span>Editing: <strong>' + window.Darkness.utils.escapeHtml(activeFileRecord.path) + '</strong></span>',
         '<span class="muted">Ctrl+S to save changes • Syncs project intelligence</span>',
         '</div>',
         '<div style="display:flex; flex:1; min-height:0; position:relative; overflow:hidden;">',
         '<div id="vscodeEditLineNumbers" style="padding:16px 8px; font-family:var(--font-mono); font-size:13px; line-height:20px; color:#858585; text-align:right; user-select:none; overflow:hidden; background:var(--surface); flex-shrink:0;"></div>',
-        '<textarea class="vscode-editor-textarea" id="vscodeEditTextarea" spellcheck="false" style="flex:1; margin:0; border:none; outline:none; padding:16px; font-family:var(--font-mono); font-size:13px; line-height:20px; resize:none; white-space:pre; overflow:auto; background:transparent; color:inherit;">' + window.Clarity.utils.escapeHtml(currentFileContent) + '</textarea>',
+        '<textarea class="vscode-editor-textarea" id="vscodeEditTextarea" spellcheck="false" style="flex:1; margin:0; border:none; outline:none; padding:16px; font-family:var(--font-mono); font-size:13px; line-height:20px; resize:none; white-space:pre; overflow:auto; background:transparent; color:inherit;">' + window.Darkness.utils.escapeHtml(currentFileContent) + '</textarea>',
         '</div>',
         '</div>'
       ].join("");
@@ -2972,9 +2972,9 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         '<a href="' + rawSrc + '" target="_blank" rel="noopener noreferrer" class="btn btn--ghost btn--sm" title="Open original raw image in new browser tab" style="padding:2px 8px; font-size:11.5px; text-decoration:none; display:inline-flex; align-items:center; gap:4px;">Open ↗</a>',
         '</div>',
         '<div class="vscode-image-canvas" id="imgCanvas">',
-        '<img id="previewImageEl" src="' + src + '" alt="' + window.Clarity.utils.escapeHtml(activeFileRecord.name) + '" style="max-width:100%; max-height:480px; object-fit:contain; border-radius:4px; transition:transform 0.15s ease;">',
+        '<img id="previewImageEl" src="' + src + '" alt="' + window.Darkness.utils.escapeHtml(activeFileRecord.name) + '" style="max-width:100%; max-height:480px; object-fit:contain; border-radius:4px; transition:transform 0.15s ease;">',
         '</div>',
-        '<div class="muted" style="margin-top:12px; font-size:12px;">' + window.Clarity.utils.escapeHtml(activeFileRecord.path) + ' • ' + formatSize(activeFileRecord.size) + '</div>',
+        '<div class="muted" style="margin-top:12px; font-size:12px;">' + window.Darkness.utils.escapeHtml(activeFileRecord.path) + ' • ' + formatSize(activeFileRecord.size) + '</div>',
         '</div>'
       ].join("");
 
@@ -3000,7 +3000,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
             content.innerHTML = '<div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; padding:40px; text-align:center;">' +
               '<div style="font-size:32px; margin-bottom:8px;">🖼️</div>' +
               '<div style="font-size:14px; font-weight:500;">Unable to render image directly</div>' +
-              '<div class="muted" style="font-size:12px; margin:6px 0 14px 0;">' + window.Clarity.utils.escapeHtml(activeFileRecord.path) + '</div>' +
+              '<div class="muted" style="font-size:12px; margin:6px 0 14px 0;">' + window.Darkness.utils.escapeHtml(activeFileRecord.path) + '</div>' +
               '<a href="' + rawSrc + '" target="_blank" class="btn btn--primary btn--sm" style="text-decoration:none;">Open in New Tab</a>' +
               '</div>';
           }
@@ -3032,7 +3032,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         '    <div style="display:flex; align-items:center; gap:10px;">',
         '      <span style="font-size:24px;">🎬</span>',
         '      <div>',
-        '        <div style="font-weight:700; font-size:15px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path) + '</div>',
+        '        <div style="font-weight:700; font-size:15px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path) + '</div>',
         '        <div class="muted" style="font-size:12px;">Native Video Playback • ' + formatSize(activeFileRecord.size) + '</div>',
         '      </div>',
         '    </div>',
@@ -3064,7 +3064,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         '    <div style="display:flex; align-items:center; gap:10px;">',
         '      <span style="font-size:24px;">🎵</span>',
         '      <div>',
-        '        <div style="font-weight:700; font-size:15px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path) + '</div>',
+        '        <div style="font-weight:700; font-size:15px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path) + '</div>',
         '        <div class="muted" style="font-size:12px;">Native Audio Playback • ' + formatSize(activeFileRecord.size) + '</div>',
         '      </div>',
         '    </div>',
@@ -3088,12 +3088,12 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         '  <div style="display:flex; align-items:center; gap:10px;">',
         '    <span style="font-size:22px;">📄</span>',
         '    <div>',
-        '      <div style="font-weight:600; font-size:14px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path) + '</div>',
+        '      <div style="font-weight:600; font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path) + '</div>',
         '      <div class="muted" style="font-size:11.5px;">DOCX Document Preview</div>',
         '    </div>',
         '  </div>',
         '  <div style="display:flex; gap:6px;">',
-        '    <a href="' + rawDownload + '" download="' + window.Clarity.utils.escapeHtml(activeFileRecord.name || "document.docx") + '" class="btn btn--outline btn--sm" style="text-decoration:none;">Download DOCX</a>',
+        '    <a href="' + rawDownload + '" download="' + window.Darkness.utils.escapeHtml(activeFileRecord.name || "document.docx") + '" class="btn btn--outline btn--sm" style="text-decoration:none;">Download DOCX</a>',
         '  </div>',
         '</div>',
         '<div class="document-paper-container markdown-body">',
@@ -3108,12 +3108,12 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
     if (isMd && activeMarkdownViewMode === "preview") {
       let renderedHtml = "";
       try {
-        renderedHtml = window.Clarity.markdown && window.Clarity.markdown.render
-          ? window.Clarity.markdown.render(currentFileContent, { projectId: projectId, currentPath: activeFileRecord.path })
-          : window.Clarity.utils.escapeHtml(currentFileContent);
+        renderedHtml = window.Darkness.markdown && window.Darkness.markdown.render
+          ? window.Darkness.markdown.render(currentFileContent, { projectId: projectId, currentPath: activeFileRecord.path })
+          : window.Darkness.utils.escapeHtml(currentFileContent);
       } catch (mdErr) {
         console.warn("Markdown render fallback:", mdErr);
-        renderedHtml = '<pre style="white-space:pre-wrap; font-family:var(--font-mono);">' + window.Clarity.utils.escapeHtml(currentFileContent) + '</pre>';
+        renderedHtml = '<pre style="white-space:pre-wrap; font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(currentFileContent) + '</pre>';
       }
 
       content.innerHTML = [
@@ -3122,7 +3122,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         '  <div style="display:flex; align-items:center; gap:10px;">',
         '    <span style="font-size:20px;">📘</span>',
         '    <div>',
-        '      <div style="font-weight:600; font-size:14px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path) + '</div>',
+        '      <div style="font-weight:600; font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path) + '</div>',
         '      <div class="muted" style="font-size:11.5px;">Markdown Document • Formatted Preview</div>',
         '    </div>',
         '  </div>',
@@ -3133,8 +3133,8 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         '</div>'
       ].join("");
 
-      if (window.Clarity && window.Clarity.renderMermaid) {
-        window.Clarity.renderMermaid(content);
+      if (window.Darkness && window.Darkness.renderMermaid) {
+        window.Darkness.renderMermaid(content);
       }
       return;
     }
@@ -3157,9 +3157,9 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
           '  <h3 style="color: var(--danger); margin-bottom: 8px; font-weight: 600;">Failed to load Notebook File</h3>',
           '  <p class="muted" style="margin-bottom: 16px; font-size: 14px; line-height: 1.5;">The Jupyter Notebook (.ipynb) file could not be parsed. This usually happens due to a transient network issue or an incomplete upload. We attempted to auto-retry, but it still failed.</p>',
           '  <div style="background: var(--surface-muted); padding: 12px; border-radius: 6px; text-align: left; margin-bottom: 24px; overflow-x: auto; border: 1px solid var(--line);">',
-          '    <code style="color: var(--danger); font-size: 12px; font-family: var(--font-mono);">' + window.Clarity.utils.escapeHtml(e.message || "Invalid JSON") + '</code>',
+          '    <code style="color: var(--danger); font-size: 12px; font-family: var(--font-mono);">' + window.Darkness.utils.escapeHtml(e.message || "Invalid JSON") + '</code>',
           '  </div>',
-          '  <button class="btn btn--primary" onclick="window.Clarity.jumpToFile(\'' + window.Clarity.utils.escapeHtml(activeFileRecord.path) + '\')">Retry Loading Now</button>',
+          '  <button class="btn btn--primary" onclick="window.Darkness.jumpToFile(\'' + window.Darkness.utils.escapeHtml(activeFileRecord.path) + '\')">Retry Loading Now</button>',
           '</div>'
         ].join("");
         return;
@@ -3171,14 +3171,14 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       cells.forEach((cell) => {
         const source = Array.isArray(cell.source) ? cell.source.join('') : (cell.source || '');
         html += '<div style="margin-bottom: 16px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface);">';
-        html += '<div style="background: var(--surface-muted); padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; border-bottom: 1px solid var(--line);">' + window.Clarity.utils.escapeHtml(cell.cell_type) + '</div>';
+        html += '<div style="background: var(--surface-muted); padding: 4px 10px; font-size: 11px; font-weight: 600; color: var(--ink-muted); text-transform: uppercase; border-bottom: 1px solid var(--line);">' + window.Darkness.utils.escapeHtml(cell.cell_type) + '</div>';
         
         if (cell.cell_type === 'markdown') {
-          const rendered = window.Clarity.markdown && window.Clarity.markdown.render ? window.Clarity.markdown.render(source) : window.Clarity.utils.escapeHtml(source);
+          const rendered = window.Darkness.markdown && window.Darkness.markdown.render ? window.Darkness.markdown.render(source) : window.Darkness.utils.escapeHtml(source);
           html += '<div class="markdown-body" style="padding: 16px; font-size: 14px; line-height: 1.6;">' + rendered + '</div>';
         } else if (cell.cell_type === 'code') {
-          const highlighted = window.Clarity.highlighter && window.Clarity.highlighter.highlightLines ? 
-              window.Clarity.highlighter.highlightLines(source, "file.py").join('\n') : window.Clarity.utils.escapeHtml(source);
+          const highlighted = window.Darkness.highlighter && window.Darkness.highlighter.highlightLines ? 
+              window.Darkness.highlighter.highlightLines(source, "file.py").join('\n') : window.Darkness.utils.escapeHtml(source);
           html += '<div style="padding: 16px; background: #0d1117; color: #c9d1d9; font-family: var(--font-mono); font-size: 13.5px; overflow-x: auto; white-space: pre;">' + highlighted + '</div>';
           
           if (cell.outputs && cell.outputs.length > 0) {
@@ -3186,10 +3186,10 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
             cell.outputs.forEach(out => {
               if (out.text) {
                 const text = Array.isArray(out.text) ? out.text.join('') : out.text;
-                html += window.Clarity.utils.escapeHtml(text);
+                html += window.Darkness.utils.escapeHtml(text);
               } else if (out.data && out.data['text/plain']) {
                 const text = Array.isArray(out.data['text/plain']) ? out.data['text/plain'].join('') : out.data['text/plain'];
-                html += window.Clarity.utils.escapeHtml(text);
+                html += window.Darkness.utils.escapeHtml(text);
               } else if (out.data && out.data['text/html']) {
                  const text = Array.isArray(out.data['text/html']) ? out.data['text/html'].join('') : out.data['text/html'];
                  html += text; 
@@ -3198,7 +3198,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
             html += '</div>';
           }
         } else {
-          html += '<div style="padding: 16px; font-size: 13.5px; white-space: pre-wrap; font-family: var(--font-mono);">' + window.Clarity.utils.escapeHtml(source) + '</div>';
+          html += '<div style="padding: 16px; font-size: 13.5px; white-space: pre-wrap; font-family: var(--font-mono);">' + window.Darkness.utils.escapeHtml(source) + '</div>';
         }
         
         html += '</div>';
@@ -3207,8 +3207,8 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       html += '</div>';
       content.innerHTML = html;
       
-      if (window.Clarity && window.Clarity.renderMermaid) {
-        window.Clarity.renderMermaid(content);
+      if (window.Darkness && window.Darkness.renderMermaid) {
+        window.Darkness.renderMermaid(content);
       }
       return;
     }
@@ -3250,24 +3250,24 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         <div style="display: flex; flex-direction: column; height: 100%;">
           <div style="padding: 8px 14px; background: var(--surface-muted); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; font-size: 12px;">
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="tag tag--xs" style="background:#dcfce7; color:#16a34a; font-weight:600;">📊 ${window.Clarity.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path)}</span>
+              <span class="tag tag--xs" style="background:#dcfce7; color:#16a34a; font-weight:600;">📊 ${window.Darkness.utils.escapeHtml(activeFileRecord.name || activeFileRecord.path)}</span>
               <span style="color: var(--ink-muted);">${displayRows.length} rows • ${displayCols.length} columns ${showingLabel}</span>
             </div>
-            <a href="${rawDownload}" download="${window.Clarity.utils.escapeHtml(activeFileRecord.name || 'data.csv')}" class="btn btn--xs btn--outline" style="text-decoration:none;">Download CSV</a>
+            <a href="${rawDownload}" download="${window.Darkness.utils.escapeHtml(activeFileRecord.name || 'data.csv')}" class="btn btn--xs btn--outline" style="text-decoration:none;">Download CSV</a>
           </div>
           <div style="flex: 1; overflow: auto; background: var(--surface);">
             <table class="spreadsheet-table" style="width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; color: var(--ink);">
               <thead>
                 <tr style="background: var(--surface-muted); position: sticky; top: 0; z-index: 2; border-bottom: 2px solid var(--line);">
                   <th style="padding: 8px 12px; border-right: 1px solid var(--line); width: 36px; text-align: center; color: var(--ink-muted); font-size: 11px;">#</th>
-                  ${displayCols.map(c => '<th style="padding: 8px 12px; border-right: 1px solid var(--line); font-weight: 600;">' + window.Clarity.utils.escapeHtml(c) + '</th>').join("")}
+                  ${displayCols.map(c => '<th style="padding: 8px 12px; border-right: 1px solid var(--line); font-weight: 600;">' + window.Darkness.utils.escapeHtml(c) + '</th>').join("")}
                 </tr>
               </thead>
               <tbody>
                 ${rowsToRender.map((row, idx) => {
                   return '<tr style="border-bottom: 1px solid var(--line-soft);">' +
                          '<td style="padding: 6px 12px; border-right: 1px solid var(--line); text-align: center; color: var(--ink-muted); font-size: 11px; font-family: monospace;">' + (idx + 1) + '</td>' +
-                         row.map(val => '<td style="padding: 6px 12px; border-right: 1px solid var(--line-soft);">' + window.Clarity.utils.escapeHtml(String(val)) + '</td>').join("") +
+                         row.map(val => '<td style="padding: 6px 12px; border-right: 1px solid var(--line-soft);">' + window.Darkness.utils.escapeHtml(String(val)) + '</td>').join("") +
                          '</tr>';
                 }).join("")}
               </tbody>
@@ -3282,9 +3282,9 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
     const rawLines = currentFileContent ? currentFileContent.split(/\r?\n/) : [""];
 
     // Highlight lines using PrismJS
-    const highlightedLines = window.Clarity.highlighter && window.Clarity.highlighter.highlightLines
-      ? window.Clarity.highlighter.highlightLines(currentFileContent, activeFileRecord.path || activeFileRecord.extension)
-      : rawLines.map(l => window.Clarity.utils.escapeHtml(l));
+    const highlightedLines = window.Darkness.highlighter && window.Darkness.highlighter.highlightLines
+      ? window.Darkness.highlighter.highlightLines(currentFileContent, activeFileRecord.path || activeFileRecord.extension)
+      : rawLines.map(l => window.Darkness.utils.escapeHtml(l));
 
     // Map problems by line number
     const problemsByLine = new Map();
@@ -3307,10 +3307,10 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       let markerHtml = "";
       if (hasError) {
         const err = issuesOnLine.find(i => i.severity === "error");
-        markerHtml = '<span class="gutter-marker gutter-marker--error" title="' + window.Clarity.utils.escapeHtml(err.message) + '">●</span>';
+        markerHtml = '<span class="gutter-marker gutter-marker--error" title="' + window.Darkness.utils.escapeHtml(err.message) + '">●</span>';
       } else if (hasWarning) {
         const warn = issuesOnLine.find(i => i.severity === "warning");
-        markerHtml = '<span class="gutter-marker gutter-marker--warning" title="' + window.Clarity.utils.escapeHtml(warn.message) + '">▲</span>';
+        markerHtml = '<span class="gutter-marker gutter-marker--warning" title="' + window.Darkness.utils.escapeHtml(warn.message) + '">▲</span>';
       } else if (hasInfo) {
         markerHtml = '<span class="gutter-marker gutter-marker--info" title="Suggestion">ℹ</span>';
       }
@@ -3439,7 +3439,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
                 askPopover.innerHTML = `
                   <div style="display:flex; align-items:center; justify-space-between; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid var(--line);">
                     <span style="font-weight:600; font-size:12px; color:var(--ink-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:260px;">
-                      📄 ${window.Clarity.utils.escapeHtml(fPath)} (${lineRangeStr})
+                      📄 ${window.Darkness.utils.escapeHtml(fPath)} (${lineRangeStr})
                     </span>
                     <button type="button" id="askPopoverClose" style="border:none; background:transparent; cursor:pointer; color:var(--ink-muted); font-size:14px; padding:2px;">✕</button>
                   </div>
@@ -3469,8 +3469,8 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
 
                 const submitQuestion = (questionText) => {
                   if (!activeSelectionState || !activeSelectionState.text) {
-                    if (window.Clarity && window.Clarity.toast) {
-                      window.Clarity.toast.show("Valid code selection is required for Ask AI.", "warning");
+                    if (window.Darkness && window.Darkness.toast) {
+                      window.Darkness.toast.show("Valid code selection is required for Ask AI.", "warning");
                     }
                     return;
                   }
@@ -3485,10 +3485,10 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
                   
                   hideAskAi();
 
-                  if (window.Clarity && window.Clarity.visualLearningPanel) {
-                    window.Clarity.visualLearningPanel.openForCodeContext(selectedCodeContext, userQuestion, projectId);
-                  } else if (window.Clarity && window.Clarity.sendProjectPrompt) {
-                    window.Clarity.sendProjectPrompt(userQuestion, selectedCodeContext);
+                  if (window.Darkness && window.Darkness.visualLearningPanel) {
+                    window.Darkness.visualLearningPanel.openForCodeContext(selectedCodeContext, userQuestion, projectId);
+                  } else if (window.Darkness && window.Darkness.sendProjectPrompt) {
+                    window.Darkness.sendProjectPrompt(userQuestion, selectedCodeContext);
                   }
                 };
 
@@ -3612,14 +3612,14 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
          btn.disabled = true;
        }
        try {
-         const res = await window.Clarity.api.post("/api/projects/" + projectId + "/diagnostics/project");
+         const res = await window.Darkness.api.post("/api/projects/" + projectId + "/diagnostics/project");
          projectDiagnostics = res;
          isProjectAnalysisView = true;
          activeFileDiagnostics = res; 
          renderProblemsList();
-         window.Clarity.toast.show("Project analysis complete. Found " + (res.issues ? res.issues.length : 0) + " issues across codebase.", "info");
+         window.Darkness.toast.show("Project analysis complete. Found " + (res.issues ? res.issues.length : 0) + " issues across codebase.", "info");
        } catch (e) {
-         window.Clarity.toast.show("Project analysis failed.", "danger");
+         window.Darkness.toast.show("Project analysis failed.", "danger");
        } finally {
          if (btn) {
            btn.innerHTML = "Analyze Project";
@@ -3636,7 +3636,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
          btn.disabled = true;
        }
        try {
-         const res = await window.Clarity.api.post("/api/projects/" + projectId + "/diagnostics/ai-fix", {
+         const res = await window.Darkness.api.post("/api/projects/" + projectId + "/diagnostics/ai-fix", {
            path: activeFileRecord.path,
            fixAll: true
          });
@@ -3644,7 +3644,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
            currentFileContent = res.fixedContent;
            activeFileRecord.content = res.fixedContent;
            activeFileRecord.lineCount = res.fixedContent.split(/\r?\n/).length;
-           window.Clarity.toast.show("Auto-Fix applied successfully!", "success");
+           window.Darkness.toast.show("Auto-Fix applied successfully!", "success");
            if (editingFile) {
               const ta = document.getElementById("vscodeEditTextarea");
               if (ta) {
@@ -3656,10 +3656,10 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
            }
            await fetchAndRenderDiagnostics(activeFileRecord.path, res.fixedContent);
          } else {
-           window.Clarity.toast.show("No automated changes needed or model found clean syntax.", "info");
+           window.Darkness.toast.show("No automated changes needed or model found clean syntax.", "info");
          }
        } catch (e) {
-         window.Clarity.toast.show("Auto-fix error: " + (e.message || "Failed to auto fix"), "danger");
+         window.Darkness.toast.show("Auto-fix error: " + (e.message || "Failed to auto fix"), "danger");
        } finally {
          if (btn) {
            btn.innerHTML = '<svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Auto-Fix All';
@@ -3678,7 +3678,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
     }
 
     try {
-      const data = await window.Clarity.api.post("/api/projects/" + projectId + "/diagnostics", {
+      const data = await window.Darkness.api.post("/api/projects/" + projectId + "/diagnostics", {
         path: filePath,
         content: codeContent,
       });
@@ -3762,10 +3762,10 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         let marker = "";
         if (hasError) {
           const err = lineIssues.find(i => i.severity === "error");
-          marker = '<span class="gutter-marker gutter-marker--error" title="' + window.Clarity.utils.escapeHtml(err.message) + '">●</span>';
+          marker = '<span class="gutter-marker gutter-marker--error" title="' + window.Darkness.utils.escapeHtml(err.message) + '">●</span>';
         } else if (hasWarning) {
           const warn = lineIssues.find(i => i.severity === "warning");
-          marker = '<span class="gutter-marker gutter-marker--warning" title="' + window.Clarity.utils.escapeHtml(warn.message) + '">▲</span>';
+          marker = '<span class="gutter-marker gutter-marker--warning" title="' + window.Darkness.utils.escapeHtml(warn.message) + '">▲</span>';
         } else {
           marker = '<span class="gutter-marker gutter-marker--info" title="Suggestion">ℹ</span>';
         }
@@ -3813,24 +3813,24 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         : (isWarn
           ? '<svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#f59e0b" stroke-width="2.5"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
           : '<svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="#3b82f6" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>');
-      const typeBadge = '<span class="tag tag--xs" style="font-size:10px; padding:1px 6px; background:' + (isErr ? 'rgba(239,68,68,0.15); color:#f87171;' : (isWarn ? 'rgba(245,158,11,0.15); color:#fbbf24;' : 'rgba(59,130,246,0.15); color:#60a5fa;')) + '">' + window.Clarity.utils.escapeHtml(issue.type) + '</span>';
+      const typeBadge = '<span class="tag tag--xs" style="font-size:10px; padding:1px 6px; background:' + (isErr ? 'rgba(239,68,68,0.15); color:#f87171;' : (isWarn ? 'rgba(245,158,11,0.15); color:#fbbf24;' : 'rgba(59,130,246,0.15); color:#60a5fa;')) + '">' + window.Darkness.utils.escapeHtml(issue.type) + '</span>';
 
       const diffFixBtn = (issue.patchedContent || issue.suggestedCode)
         ? '<button class="btn btn--xs btn--outline apply-fix-btn" data-issue-id="' + issue.id + '">Review Diff</button>'
         : '';
-      const aiFixBtn = '<button class="btn btn--xs btn--primary apply-ai-single-fix-btn" data-issue-id="' + issue.id + '" data-file="' + window.Clarity.utils.escapeHtml(issue.file || '') + '" data-line="' + issue.line + '">Fix</button>';
+      const aiFixBtn = '<button class="btn btn--xs btn--primary apply-ai-single-fix-btn" data-issue-id="' + issue.id + '" data-file="' + window.Darkness.utils.escapeHtml(issue.file || '') + '" data-line="' + issue.line + '">Fix</button>';
 
       return [
-        '<div class="problem-item" data-line="' + issue.line + '" data-file="' + window.Clarity.utils.escapeHtml(issue.file || '') + '">',
+        '<div class="problem-item" data-line="' + issue.line + '" data-file="' + window.Darkness.utils.escapeHtml(issue.file || '') + '">',
         '<span class="problem-item__icon">' + icon + '</span>',
         '<div class="problem-item__body">',
         '<div class="problem-item__title">',
-        '<span>' + window.Clarity.utils.escapeHtml(issue.message) + '</span>',
+        '<span>' + window.Darkness.utils.escapeHtml(issue.message) + '</span>',
         typeBadge,
-        '<span class="problem-item__loc">' + window.Clarity.utils.escapeHtml(pathBasename(issue.file)) + ':' + issue.line + ':' + issue.column + '</span>',
+        '<span class="problem-item__loc">' + window.Darkness.utils.escapeHtml(pathBasename(issue.file)) + ':' + issue.line + ':' + issue.column + '</span>',
         '</div>',
-        '<div class="problem-item__explanation">' + window.Clarity.utils.escapeHtml(issue.explanation) + '</div>',
-        issue.correction ? '<div class="problem-item__correction">Correction: ' + window.Clarity.utils.escapeHtml(issue.correction) + '</div>' : '',
+        '<div class="problem-item__explanation">' + window.Darkness.utils.escapeHtml(issue.explanation) + '</div>',
+        issue.correction ? '<div class="problem-item__correction">Correction: ' + window.Darkness.utils.escapeHtml(issue.correction) + '</div>' : '',
         '</div>',
         '<div class="problem-item__actions" style="display:flex; gap:6px; align-items:center;">' + aiFixBtn + diffFixBtn + '</div>',
         '</div>'
@@ -3887,7 +3887,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
           if (file && (!activeFileRecord || activeFileRecord.path !== file)) {
             await loadFileIntoViewer(file, line);
           }
-          const res = await window.Clarity.api.post("/api/projects/" + projectId + "/diagnostics/ai-fix", {
+          const res = await window.Darkness.api.post("/api/projects/" + projectId + "/diagnostics/ai-fix", {
             path: file,
             line: line,
             issueId: issueId,
@@ -3901,7 +3901,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
               activeFileRecord.content = res.fixedContent;
               activeFileRecord.lineCount = res.fixedContent.split(/\r?\n/).length;
             }
-            window.Clarity.toast.show("Quick Fix applied for line " + line + "!", "success");
+            window.Darkness.toast.show("Quick Fix applied for line " + line + "!", "success");
             if (editingFile) {
               const ta = document.getElementById("vscodeEditTextarea");
               if (ta) {
@@ -3914,10 +3914,10 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
             jumpToLine(line, true);
             await fetchAndRenderDiagnostics(file, res.fixedContent);
           } else {
-            window.Clarity.toast.show("No modifications made.", "info");
+            window.Darkness.toast.show("No modifications made.", "info");
           }
         } catch (err) {
-          window.Clarity.toast.show("Fix failed: " + (err.message || "error"), "danger");
+          window.Darkness.toast.show("Fix failed: " + (err.message || "error"), "danger");
         } finally {
           btn.innerHTML = "Quick Fix";
           btn.disabled = false;
@@ -3972,17 +3972,17 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       <button class="btn btn--primary" id="confirmJumpBtn">Go</button>
     `;
     
-    window.Clarity.modal.open("Go to Line", body, actions);
+    window.Darkness.modal.open("Go to Line", body, actions);
     setTimeout(() => document.getElementById("jumpToLineInput")?.focus(), 100);
     
     const doJump = () => {
        const val = document.getElementById("jumpToLineInput").value;
        const lineNum = parseInt(val.trim(), 10);
        if (isNaN(lineNum) || lineNum < 1 || lineNum > totalLines) {
-         window.Clarity.toast.show("Please enter a valid line number between 1 and " + totalLines, "warning");
+         window.Darkness.toast.show("Please enter a valid line number between 1 and " + totalLines, "warning");
          return;
        }
-       window.Clarity.modal.close();
+       window.Darkness.modal.close();
        
        if (editingFile) {
          const ta = document.getElementById("vscodeEditTextarea");
@@ -4144,20 +4144,20 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       '</div>',
       '<div class="fm-modal-body">',
       '<div style="font-size:13px; margin-bottom:12px;">',
-      '<strong>' + window.Clarity.utils.escapeHtml(activeFileRecord.path) + '</strong> • Line ' + issue.line + (issue.column ? ':' + issue.column : ''),
-      '<div style="color:var(--ink-muted); margin-top:4px; font-weight:500;">' + window.Clarity.utils.escapeHtml(issue.message) + '</div>',
+      '<strong>' + window.Darkness.utils.escapeHtml(activeFileRecord.path) + '</strong> • Line ' + issue.line + (issue.column ? ':' + issue.column : ''),
+      '<div style="color:var(--ink-muted); margin-top:4px; font-weight:500;">' + window.Darkness.utils.escapeHtml(issue.message) + '</div>',
       '</div>',
       '<div class="diff-container">',
       '<div class="diff-box diff-box--before">',
       '<div class="diff-box__title">Before (Line ' + issue.line + ')</div>',
-      '<div class="diff-box__content">' + window.Clarity.utils.escapeHtml(currentLineText) + '</div>',
+      '<div class="diff-box__content">' + window.Darkness.utils.escapeHtml(currentLineText) + '</div>',
       '</div>',
       '<div class="diff-box diff-box--after">',
       '<div class="diff-box__title">After Fix</div>',
-      '<div class="diff-box__content">' + window.Clarity.utils.escapeHtml(suggestedLineText) + '</div>',
+      '<div class="diff-box__content">' + window.Darkness.utils.escapeHtml(suggestedLineText) + '</div>',
       '</div>',
       '</div>',
-      '<p style="font-size:12px; color:var(--ink-muted); margin-top:12px; line-height:1.5;">' + window.Clarity.utils.escapeHtml(issue.explanation) + '</p>',
+      '<p style="font-size:12px; color:var(--ink-muted); margin-top:12px; line-height:1.5;">' + window.Darkness.utils.escapeHtml(issue.explanation) + '</p>',
       '</div>',
       '<div class="fm-modal-footer">',
       '<button class="btn btn--outline btn--sm" id="cancelDiffModalBtn">Cancel</button>',
@@ -4183,7 +4183,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       }
 
       try {
-        const res = await window.Clarity.api.put("/api/projects/" + projectId + "/files", {
+        const res = await window.Darkness.api.put("/api/projects/" + projectId + "/files", {
           path: activeFileRecord.path,
           content: newContent,
         });
@@ -4194,12 +4194,12 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         activeFileRecord.size = res?.file?.size || activeFileRecord.size || 0;
 
         closeModal();
-        window.Clarity.toast.show("Applied fix to line " + issue.line, "success");
+        window.Darkness.toast.show("Applied fix to line " + issue.line, "success");
         renderViewerContent(false);
         jumpToLine(issue.line, true);
         await fetchAndRenderDiagnostics(activeFileRecord.path, newContent);
       } catch (err) {
-        window.Clarity.toast.show("Failed to apply fix: " + (err.message || ""), "danger");
+        window.Darkness.toast.show("Failed to apply fix: " + (err.message || ""), "danger");
         if (confirmBtn) confirmBtn.disabled = false;
       }
     });
@@ -4212,7 +4212,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
     const updatedContent = ta ? ta.value : currentFileContent;
 
     try {
-      const res = await window.Clarity.api.put("/api/projects/" + projectId + "/files", {
+      const res = await window.Darkness.api.put("/api/projects/" + projectId + "/files", {
         path: activeFileRecord.path,
         content: updatedContent,
       });
@@ -4222,12 +4222,12 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       activeFileRecord.lineCount = updatedContent.split(/\r?\n/).length;
       activeFileRecord.size = res?.file?.size || activeFileRecord.size || 0;
 
-      window.Clarity.toast.show("Saved " + activeFileRecord.path, "success");
+      window.Darkness.toast.show("Saved " + activeFileRecord.path, "success");
       renderViewerContent(false);
       await refreshTree();
       await fetchAndRenderDiagnostics(activeFileRecord.path, updatedContent);
     } catch (err) {
-      window.Clarity.toast.show("Save failed: " + (err.message || ""), "danger");
+      window.Darkness.toast.show("Save failed: " + (err.message || ""), "danger");
     }
   }
 
@@ -4327,7 +4327,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       fileViewerFloatingCloseBtn.style.display = isFS ? "inline-flex" : "none";
     }
 
-    window.Clarity?.toast?.show(isFS ? "Entered full-screen file preview" : "Exited full-screen preview", "info");
+    window.Darkness?.toast?.show(isFS ? "Entered full-screen file preview" : "Exited full-screen preview", "info");
   };
 
   fileViewerFullscreenBtn?.addEventListener("click", toggleFileViewerFullscreen);
@@ -4378,7 +4378,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
 
   document.getElementById("downloadFileBtn")?.addEventListener("click", () => {
     if (!activeFileRecord) return;
-    const downloadUrl = window.Clarity.api.base + "/api/projects/" + projectId + "/files/download?path=" + encodeURIComponent(activeFileRecord.path);
+    const downloadUrl = window.Darkness.api.base + "/api/projects/" + projectId + "/files/download?path=" + encodeURIComponent(activeFileRecord.path);
     const a = document.createElement("a");
     a.href = downloadUrl;
     a.download = activeFileRecord.name;
@@ -4436,7 +4436,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
   document.getElementById("fmNewFileBtn")?.addEventListener("click", () => openCreateFileModal(""));
   document.getElementById("fmNewFolderBtn")?.addEventListener("click", () => openCreateFolderModal(""));
   document.getElementById("fmRefreshBtn")?.addEventListener("click", () => {
-    window.Clarity.toast.show("Refreshing project files...", "info");
+    window.Darkness.toast.show("Refreshing project files...", "info");
     refreshTree();
   });
 
@@ -4475,7 +4475,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
 
   // Export Project ZIP
   document.getElementById("fmExportZipBtn")?.addEventListener("click", () => {
-    window.location.href = window.Clarity.api.base + "/api/projects/" + projectId + "/export-zip";
+    window.location.href = window.Darkness.api.base + "/api/projects/" + projectId + "/export-zip";
   });
 
   // Drag and drop onto sidebar
@@ -4506,7 +4506,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
   async function handleUploadFiles(fileList) {
     const validFiles = filterProjectFiles(Array.from(fileList || []));
     if (validFiles.length === 0) {
-      window.Clarity.toast.show("No valid files to upload (system/build files were skipped).", "info");
+      window.Darkness.toast.show("No valid files to upload (system/build files were skipped).", "info");
       return;
     }
 
@@ -4514,12 +4514,12 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
     const oversized = validFiles.filter(f => f.size > MAX_UPLOAD_SIZE);
     if (oversized.length > 0) {
       const names = oversized.map(f => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ');
-      window.Clarity.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB (104,857,600 bytes).`, "danger");
+      window.Darkness.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB (104,857,600 bytes).`, "danger");
       return;
     }
 
     const filteredNote = fileList.length > validFiles.length ? ` (filtered ${fileList.length - validFiles.length} build files)` : '';
-    window.Clarity.toast.show("Uploading " + validFiles.length + " files" + filteredNote + "...", "info");
+    window.Darkness.toast.show("Uploading " + validFiles.length + " files" + filteredNote + "...", "info");
 
     try {
       const BATCH_SIZE = 50;
@@ -4535,8 +4535,8 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         }
         fd.append("paths", JSON.stringify(paths));
 
-        const uploadUrl = window.Clarity.api ? window.Clarity.api._url("/api/projects/upload-files") : "/api/projects/upload-files";
-        const authHeaders = (window.Clarity.api && typeof window.Clarity.api._getAuthHeaders === "function") ? window.Clarity.api._getAuthHeaders() : {};
+        const uploadUrl = window.Darkness.api ? window.Darkness.api._url("/api/projects/upload-files") : "/api/projects/upload-files";
+        const authHeaders = (window.Darkness.api && typeof window.Darkness.api._getAuthHeaders === "function") ? window.Darkness.api._getAuthHeaders() : {};
         let res = null;
         let batchErr = null;
         for (let attempt = 0; attempt < 3; attempt++) {
@@ -4559,12 +4559,12 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         try { parsed = JSON.parse(text); } catch { parsed = { error: text }; }
         if (!res.ok) throw new Error((parsed && parsed.error) || "Upload failed with status " + res.status);
       }
-      window.Clarity.toast.show("Successfully uploaded " + validFiles.length + " files!", "success");
+      window.Darkness.toast.show("Successfully uploaded " + validFiles.length + " files!", "success");
       await refreshTree();
     } catch (err) {
       const dz = document.getElementById("projectDropzone");
     if (dz) dz.classList.remove("uploading-pulse");
-    window.Clarity.toast.show("File upload failed: " + (err.message || ""), "danger");
+    window.Darkness.toast.show("File upload failed: " + (err.message || ""), "danger");
     }
   }
 
@@ -4597,14 +4597,14 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         '<div style="display:flex; justify-content:space-between; align-items:center;">',
         '  <span style="font-weight:600; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:8px;">',
         '    <span class="spinner" style="width:13px; height:13px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite;"></span>',
-        '    ' + window.Clarity.utils.escapeHtml(title) + '</span>',
+        '    ' + window.Darkness.utils.escapeHtml(title) + '</span>',
         '  <span style="font-weight:700; font-size:12px; color:var(--accent); font-family:var(--font-mono);">' + percent + '%</span>',
         '</div>',
         '<div style="width:100%; height:6px; background:var(--line); border-radius:999px; overflow:hidden;">',
         '  <div style="width:' + percent + '%; height:100%; background:var(--accent); border-radius:999px; transition:width 0.2s ease;"></div>',
         '</div>',
         '<div class="muted" style="font-size:11px; line-height:1.4; background:var(--surface-muted); padding:8px; border-radius:4px; border:1px solid var(--line); margin-top:2px;">',
-        '  ' + window.Clarity.utils.escapeHtml(subtitle),
+        '  ' + window.Darkness.utils.escapeHtml(subtitle),
         '</div>',
         '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:4px; border-top:1px solid var(--line); padding-top:8px; font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:0.05em; color:var(--ink-muted);">',
         '  <span style="color:' + (percent < 100 ? 'var(--accent)' : 'inherit') + ';">1. Transfer</span>',
@@ -4630,11 +4630,11 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
 
       showFloatingProgress(100, "Merging & Analyzing...", "Re-building project structure and re-analyzing architecture...");
       
-      window.Clarity.toast.show("ZIP merged! " + (data.filesCount || 0) + " files updated.", "success");
+      window.Darkness.toast.show("ZIP merged! " + (data.filesCount || 0) + " files updated.", "success");
       await refreshTree();
     } catch (err) {
       console.error("ZIP merge upload error:", err);
-      window.Clarity.toast.show("Failed to upload ZIP: " + (err.message || ""), "danger");
+      window.Darkness.toast.show("Failed to upload ZIP: " + (err.message || ""), "danger");
     } finally {
       hideFloatingProgress();
     }
@@ -4652,7 +4652,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       '</div>',
       '<div class="fm-modal-body">',
       '<label class="label" style="font-size:13px; font-weight:600; margin-bottom:6px; display:block;">File Path & Name:</label>',
-      '<input type="text" id="fmNewFilePath" class="input" style="width:100%; font-family:var(--font-mono); font-size:13px;" placeholder="e.g. src/utils/helpers.js" value="' + window.Clarity.utils.escapeHtml(defaultPath) + '">',
+      '<input type="text" id="fmNewFilePath" class="input" style="width:100%; font-family:var(--font-mono); font-size:13px;" placeholder="e.g. src/utils/helpers.js" value="' + window.Darkness.utils.escapeHtml(defaultPath) + '">',
       '<p class="muted" style="font-size:12px; margin-top:6px;">You can specify nested paths like <code>src/components/Button.tsx</code> to automatically place in folders.</p>',
       '<label class="label" style="font-size:13px; font-weight:600; margin-top:14px; margin-bottom:6px; display:block;">Initial Content (Optional):</label>',
       '<textarea id="fmNewFileContent" class="textarea" style="width:100%; height:120px; font-family:var(--font-mono); font-size:12.5px;" placeholder="// Initial code or comments..."></textarea>',
@@ -4683,20 +4683,20 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       const filePath = input?.value.trim();
       const content = document.getElementById("fmNewFileContent")?.value || "";
       if (!filePath) {
-        window.Clarity.toast.show("Please enter a valid file path", "danger");
+        window.Darkness.toast.show("Please enter a valid file path", "danger");
         return;
       }
       try {
-        await window.Clarity.api.post("/api/projects/" + projectId + "/files", {
+        await window.Darkness.api.post("/api/projects/" + projectId + "/files", {
           path: filePath,
           content,
         });
-        window.Clarity.toast.show("Created file: " + filePath, "success");
+        window.Darkness.toast.show("Created file: " + filePath, "success");
         closeModal();
         await refreshTree();
         loadFileIntoViewer(filePath);
       } catch (err) {
-        window.Clarity.toast.show("Create file failed: " + (err.message || ""), "danger");
+        window.Darkness.toast.show("Create file failed: " + (err.message || ""), "danger");
       }
     });
   }
@@ -4712,7 +4712,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       '</div>',
       '<div class="fm-modal-body">',
       '<label class="label" style="font-size:13px; font-weight:600; margin-bottom:6px; display:block;">Folder Path:</label>',
-      '<input type="text" id="fmNewFolderPath" class="input" style="width:100%; font-family:var(--font-mono); font-size:13px;" placeholder="e.g. src/services" value="' + window.Clarity.utils.escapeHtml(defaultPath) + '">',
+      '<input type="text" id="fmNewFolderPath" class="input" style="width:100%; font-family:var(--font-mono); font-size:13px;" placeholder="e.g. src/services" value="' + window.Darkness.utils.escapeHtml(defaultPath) + '">',
       '</div>',
       '<div class="fm-modal-footer">',
       '<button class="btn btn--outline btn--sm" id="cancelFmModalBtn">Cancel</button>',
@@ -4736,19 +4736,19 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
     document.getElementById("submitCreateFolderBtn")?.addEventListener("click", async () => {
       const folderPath = input?.value.trim();
       if (!folderPath) {
-        window.Clarity.toast.show("Please enter a folder path", "danger");
+        window.Darkness.toast.show("Please enter a folder path", "danger");
         return;
       }
       try {
-        await window.Clarity.api.post("/api/projects/" + projectId + "/folders", {
+        await window.Darkness.api.post("/api/projects/" + projectId + "/folders", {
           path: folderPath,
         });
-        window.Clarity.toast.show("Created folder: " + folderPath, "success");
+        window.Darkness.toast.show("Created folder: " + folderPath, "success");
         closeModal();
         openFolders.add(folderPath);
         await refreshTree();
       } catch (err) {
-        window.Clarity.toast.show("Create folder failed: " + (err.message || ""), "danger");
+        window.Darkness.toast.show("Create folder failed: " + (err.message || ""), "danger");
       }
     });
   }
@@ -4764,7 +4764,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       '</div>',
       '<div class="fm-modal-body">',
       '<label class="label" style="font-size:13px; font-weight:600; margin-bottom:6px; display:block;">New Path:</label>',
-      '<input type="text" id="fmRenameInput" class="input" style="width:100%; font-family:var(--font-mono); font-size:13px;" value="' + window.Clarity.utils.escapeHtml(oldPath) + '">',
+      '<input type="text" id="fmRenameInput" class="input" style="width:100%; font-family:var(--font-mono); font-size:13px;" value="' + window.Darkness.utils.escapeHtml(oldPath) + '">',
       '</div>',
       '<div class="fm-modal-footer">',
       '<button class="btn btn--outline btn--sm" id="cancelFmModalBtn">Cancel</button>',
@@ -4793,18 +4793,18 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       }
       try {
         if (isFile) {
-          await window.Clarity.api.patch("/api/projects/" + projectId + "/files/rename", {
+          await window.Darkness.api.patch("/api/projects/" + projectId + "/files/rename", {
             oldPath,
             newPath,
           });
-          window.Clarity.toast.show("Renamed to " + newPath, "success");
+          window.Darkness.toast.show("Renamed to " + newPath, "success");
           if (activeFileNode === oldPath) activeFileNode = newPath;
         } else {
-          await window.Clarity.api.patch("/api/projects/" + projectId + "/folders/rename", {
+          await window.Darkness.api.patch("/api/projects/" + projectId + "/folders/rename", {
             oldFolderPath: oldPath,
             newFolderPath: newPath,
           });
-          window.Clarity.toast.show("Renamed folder to " + newPath, "success");
+          window.Darkness.toast.show("Renamed folder to " + newPath, "success");
           if (openFolders.has(oldPath)) {
             openFolders.delete(oldPath);
             openFolders.add(newPath);
@@ -4816,7 +4816,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
           loadFileIntoViewer(newPath);
         }
       } catch (err) {
-        window.Clarity.toast.show("Rename failed: " + (err.message || ""), "danger");
+        window.Darkness.toast.show("Rename failed: " + (err.message || ""), "danger");
       }
     });
   }
@@ -4831,7 +4831,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       '<button class="btn btn--ghost btn--icon-sm" id="closeFmModalBtn">&times;</button>',
       '</div>',
       '<div class="fm-modal-body">',
-      '<p style="font-size:14px; line-height:1.5;">Are you sure you want to delete <strong>' + window.Clarity.utils.escapeHtml(itemPath) + '</strong>?</p>',
+      '<p style="font-size:14px; line-height:1.5;">Are you sure you want to delete <strong>' + window.Darkness.utils.escapeHtml(itemPath) + '</strong>?</p>',
       !isFile ? '<p class="muted" style="font-size:12.5px; margin-top:8px; color:#dc2626;">Warning: All files inside this folder will also be permanently deleted.</p>' : '',
       '</div>',
       '<div class="fm-modal-footer">',
@@ -4853,8 +4853,8 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
     document.getElementById("submitDeleteBtn")?.addEventListener("click", async () => {
       try {
         if (isFile) {
-          await window.Clarity.api.del("/api/projects/" + projectId + "/files?path=" + encodeURIComponent(itemPath));
-          window.Clarity.toast.show("Deleted " + itemPath, "success");
+          await window.Darkness.api.del("/api/projects/" + projectId + "/files?path=" + encodeURIComponent(itemPath));
+          window.Darkness.toast.show("Deleted " + itemPath, "success");
           if (activeFileNode === itemPath) {
             activeFileNode = null;
             const meta = document.getElementById("viewerMeta");
@@ -4865,14 +4865,14 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
             if (content) content.innerHTML = '<div style="padding:40px; text-align:center; color:var(--ink-muted);">File was deleted.</div>';
           }
         } else {
-          await window.Clarity.api.del("/api/projects/" + projectId + "/folders?folderPath=" + encodeURIComponent(itemPath));
-          window.Clarity.toast.show("Deleted folder " + itemPath, "success");
+          await window.Darkness.api.del("/api/projects/" + projectId + "/folders?folderPath=" + encodeURIComponent(itemPath));
+          window.Darkness.toast.show("Deleted folder " + itemPath, "success");
           openFolders.delete(itemPath);
         }
         closeModal();
         await refreshTree();
       } catch (err) {
-        window.Clarity.toast.show("Delete failed: " + (err.message || ""), "danger");
+        window.Darkness.toast.show("Delete failed: " + (err.message || ""), "danger");
       }
     });
   }
@@ -4905,8 +4905,8 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
   const dataFlow = analysis.dataFlow || { steps: [] };
 
   // State for Architecture Viewer
-  const viewModeKey = `clarity_arch_view_mode_${projectId}`;
-  const lodKey = `clarity_arch_lod_${projectId}`;
+  const viewModeKey = `darkness_arch_view_mode_${projectId}`;
+  const lodKey = `darkness_arch_lod_${projectId}`;
 
   let currentViewMode = localStorage.getItem(viewModeKey) || initialViewMode || "graph"; // "graph" | "mindmap" | "dataflow" | "advisor"
   let currentLOD = localStorage.getItem(lodKey) || ((currentViewMode === "graph" || currentViewMode === "architecture") ? "high" : "file"); // "high" | "detailed" | "symbol" | "file"
@@ -5046,7 +5046,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       ? 'arch-health-chip--verified'
       : (status === 'warning' ? 'arch-health-chip--warning' : (status === 'danger' ? 'arch-health-chip--danger' : 'arch-health-chip--info'));
     const icon = status === 'verified' ? '✓' : (status === 'warning' ? '⚠' : (status === 'danger' ? '✕' : 'ℹ'));
-    return '<span class="arch-health-chip ' + chipClass + '" title="' + window.Clarity.utils.escapeHtml(healthItem.details || text) + '">' + icon + ' ' + window.Clarity.utils.escapeHtml(label) + ': ' + window.Clarity.utils.escapeHtml(text) + '</span>';
+    return '<span class="arch-health-chip ' + chipClass + '" title="' + window.Darkness.utils.escapeHtml(healthItem.details || text) + '">' + icon + ' ' + window.Darkness.utils.escapeHtml(label) + ': ' + window.Darkness.utils.escapeHtml(text) + '</span>';
   }
 
   // Bind System Verification Collapsible Toggle
@@ -5173,7 +5173,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       }
     }
     filterGraphElements();
-    window.Clarity?.toast?.show(
+    window.Darkness?.toast?.show(
       hideSecondaryWires ? "Secondary connection wires hidden (focusing on primary flows)" : "All connection wires visible",
       "info"
     );
@@ -5281,7 +5281,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
     // Close options dropdown on fullscreen change
     archOptionsDropdownMenu?.classList.remove("is-active");
 
-    window.Clarity?.toast?.show(isFullscreen ? "Entered full-screen architecture preview" : "Exited full-screen architecture view", "info");
+    window.Darkness?.toast?.show(isFullscreen ? "Entered full-screen architecture preview" : "Exited full-screen architecture view", "info");
 
     setTimeout(() => {
       if (cyInstance) {
@@ -5322,7 +5322,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
   }
 
   // Listen for theme changes and update graph styling dynamically
-  window.addEventListener('clarity-theme-change', () => {
+  window.addEventListener('darkness-theme-change', () => {
     const canvasEl = document.getElementById("cytoscapeCanvas");
     if (canvasEl && cyInstance) {
       buildAndMountGraph();
@@ -5813,15 +5813,15 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
 
         tooltipEl.innerHTML = `
           <div style="display:flex; align-items:center; justify-space-between; margin-bottom:6px; gap:8px;">
-            <span style="font-weight:700; font-size:13px; color:var(--ink);">${window.Clarity.utils.escapeHtml(d.label || '')}</span>
-            <span style="font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; background:rgba(99,102,241,0.15); color:var(--accent);">${window.Clarity.utils.escapeHtml(typeLabel)}</span>
+            <span style="font-weight:700; font-size:13px; color:var(--ink);">${window.Darkness.utils.escapeHtml(d.label || '')}</span>
+            <span style="font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; background:rgba(99,102,241,0.15); color:var(--accent);">${window.Darkness.utils.escapeHtml(typeLabel)}</span>
           </div>
           <div style="font-size:11px; font-family:var(--font-mono); color:var(--ink-muted); margin-bottom:8px; word-break:break-all; background:var(--surface-muted); padding:4px 8px; border-radius:6px; border:1px solid var(--line);">
-            📄 ${window.Clarity.utils.escapeHtml(relPath)}
+            📄 ${window.Darkness.utils.escapeHtml(relPath)}
           </div>
-          ${purposeText ? `<div style="font-size:11.5px; color:var(--ink); margin-bottom:8px; line-height:1.45;">${window.Clarity.utils.escapeHtml(purposeText)}</div>` : ''}
+          ${purposeText ? `<div style="font-size:11.5px; color:var(--ink); margin-bottom:8px; line-height:1.45;">${window.Darkness.utils.escapeHtml(purposeText)}</div>` : ''}
           <div style="display:flex; align-items:center; justify-content:space-between; gap:6px; font-size:10.5px; border-top:1px solid var(--line); padding-top:6px; margin-top:4px;">
-            ${techLabel ? `<span style="font-weight:700; color:var(--success);">⚡ ${window.Clarity.utils.escapeHtml(techLabel)}</span>` : '<span style="color:var(--ink-muted);">System Node</span>'}
+            ${techLabel ? `<span style="font-weight:700; color:var(--success);">⚡ ${window.Darkness.utils.escapeHtml(techLabel)}</span>` : '<span style="color:var(--ink-muted);">System Node</span>'}
             <span style="color:var(--ink-muted); font-weight:600;">🔗 ${connCount} Rel (${inConn} in / ${outConn} out)</span>
           </div>
         `;
@@ -5880,7 +5880,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
 
     } catch (err) {
       console.error("Cytoscape init error:", err.stack);
-      canvasEl.innerHTML = '<div style="padding:30px; color:var(--danger); text-align:center; white-space:pre-wrap; font-family:monospace; font-size:11px; text-align:left;">' + window.Clarity.utils.escapeHtml(err.stack || err.message || "") + '</div>';
+      canvasEl.innerHTML = '<div style="padding:30px; color:var(--danger); text-align:center; white-space:pre-wrap; font-family:monospace; font-size:11px; text-align:left;">' + window.Darkness.utils.escapeHtml(err.stack || err.message || "") + '</div>';
     }
   }
 
@@ -6175,9 +6175,9 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           fit: { eles: matchedNodesCollection, padding: 50 },
           duration: 350
         });
-        window.Clarity.toast.show(`Filtered: ${matchedNodesCollection.length} node(s) in selected layer`, "info");
+        window.Darkness.toast.show(`Filtered: ${matchedNodesCollection.length} node(s) in selected layer`, "info");
       } else {
-        window.Clarity.toast.show(`No explicit components matching "${selectedCategory}" in this project`, "info");
+        window.Darkness.toast.show(`No explicit components matching "${selectedCategory}" in this project`, "info");
         allNodes.removeClass('is-dimmed');
         allEdges.removeClass('is-dimmed');
         cyInstance.fit(undefined, 50);
@@ -6328,7 +6328,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
 
     headTitle.innerHTML = [
       '<span class="arch-legend-dot" style="background:' + nodeData.color + '; width:12px; height:12px;"></span>',
-      '<strong style="font-size:14.5px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(nodeData.label) + '</strong>',
+      '<strong style="font-size:14.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(nodeData.label) + '</strong>',
       '<span class="arch-badge arch-badge--' + nodeData.type + '" style="font-size:10px; padding:2px 6px;">' + nodeData.type + '</span>'
     ].join("");
 
@@ -6339,8 +6339,8 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
     // Files list HTML with line jumps
     const filesHtml = (nodeData.files && nodeData.files.length > 0)
       ? nodeData.files.map(f => {
-          return '<button class="arch-evidence-btn" data-jump-file="' + window.Clarity.utils.escapeHtml(f) + '">' +
-            '<span>' + window.Clarity.utils.escapeHtml(f) + '</span>' +
+          return '<button class="arch-evidence-btn" data-jump-file="' + window.Darkness.utils.escapeHtml(f) + '">' +
+            '<span>' + window.Darkness.utils.escapeHtml(f) + '</span>' +
             '<span class="muted" style="font-size:11px;">Inspect →</span>' +
             '</button>';
         }).join("")
@@ -6350,8 +6350,8 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
     const endpointsHtml = (nodeData.endpoints && nodeData.endpoints.length > 0)
       ? nodeData.endpoints.map(ep => {
           return '<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:var(--surface-muted); border-radius:6px; font-size:12px; font-family:var(--font-mono);">' +
-            '<div><span style="font-weight:700; color:var(--accent);">' + window.Clarity.utils.escapeHtml(ep.method) + '</span> ' + window.Clarity.utils.escapeHtml(ep.path) + '</div>' +
-            (ep.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Clarity.utils.escapeHtml(ep.file) + '" data-jump-line="' + (ep.line || 1) + '" style="padding:1px 6px; font-size:11px; color:var(--accent);">Line ' + (ep.line || 1) + '</button>' : '') +
+            '<div><span style="font-weight:700; color:var(--accent);">' + window.Darkness.utils.escapeHtml(ep.method) + '</span> ' + window.Darkness.utils.escapeHtml(ep.path) + '</div>' +
+            (ep.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(ep.file) + '" data-jump-line="' + (ep.line || 1) + '" style="padding:1px 6px; font-size:11px; color:var(--accent);">Line ' + (ep.line || 1) + '</button>' : '') +
             '</div>';
         }).join("")
       : '';
@@ -6360,8 +6360,8 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
     const modelsHtml = (nodeData.models && nodeData.models.length > 0)
       ? nodeData.models.map(m => {
           return '<div style="padding:6px 8px; background:var(--surface-muted); border-radius:6px; font-size:12px;">' +
-            '<div style="font-weight:600; color:var(--ink); font-family:var(--font-mono);">Table/Model: ' + window.Clarity.utils.escapeHtml(m.name) + '</div>' +
-            (m.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Clarity.utils.escapeHtml(m.file) + '" style="padding:0; font-size:11px; color:var(--accent); font-family:var(--font-mono);">' + window.Clarity.utils.escapeHtml(m.file) + '</button>' : '') +
+            '<div style="font-weight:600; color:var(--ink); font-family:var(--font-mono);">Table/Model: ' + window.Darkness.utils.escapeHtml(m.name) + '</div>' +
+            (m.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(m.file) + '" style="padding:0; font-size:11px; color:var(--accent); font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(m.file) + '</button>' : '') +
             '</div>';
         }).join("")
       : '';
@@ -6370,20 +6370,20 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
     const inHtml = incomingEdges.map(e => {
       const srcNode = (arch.nodes || []).find(n => n.id === e.source);
       const srcLabel = srcNode ? srcNode.label : e.source;
-      return '<div style="font-size:12px; padding:4px 0;">← <strong>' + window.Clarity.utils.escapeHtml(srcLabel) + '</strong>: <span class="muted">' + window.Clarity.utils.escapeHtml(e.label) + '</span></div>';
+      return '<div style="font-size:12px; padding:4px 0;">← <strong>' + window.Darkness.utils.escapeHtml(srcLabel) + '</strong>: <span class="muted">' + window.Darkness.utils.escapeHtml(e.label) + '</span></div>';
     }).join("");
 
     const outHtml = outgoingEdges.map(e => {
       const tgtNode = (arch.nodes || []).find(n => n.id === e.target);
       const tgtLabel = tgtNode ? tgtNode.label : e.target;
-      return '<div style="font-size:12px; padding:4px 0;">→ <strong>' + window.Clarity.utils.escapeHtml(tgtLabel) + '</strong>: <span class="muted">' + window.Clarity.utils.escapeHtml(e.label) + '</span></div>';
+      return '<div style="font-size:12px; padding:4px 0;">→ <strong>' + window.Darkness.utils.escapeHtml(tgtLabel) + '</strong>: <span class="muted">' + window.Darkness.utils.escapeHtml(e.label) + '</span></div>';
     }).join("");
 
     bodyContent.innerHTML = [
       // Description Section
       '<div class="arch-inspector-section">',
       '  <span class="arch-inspector-section-title">Subsystem Role & Description</span>',
-      '  <p style="color:var(--ink); line-height:1.5; font-size:13.5px; margin:0;">' + window.Clarity.utils.escapeHtml(nodeData.description) + '</p>',
+      '  <p style="color:var(--ink); line-height:1.5; font-size:13.5px; margin:0;">' + window.Darkness.utils.escapeHtml(nodeData.description) + '</p>',
       '</div>',
 
       // Endpoints (if any)
@@ -6453,7 +6453,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
 
     headTitle.innerHTML = [
       '<span class="arch-legend-dot" style="background:' + edgeData.statusColor + '; width:10px; height:10px;"></span>',
-      '<strong style="font-size:13.5px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(edgeData.label || edgeData.type) + '</strong>'
+      '<strong style="font-size:13.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(edgeData.label || edgeData.type) + '</strong>'
     ].join("");
 
     const statusBadge = '<span class="arch-health-chip ' +
@@ -6481,18 +6481,18 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
         '    </div>',
         '    <span class="tag tag--xs" style="background:#fef3c7; color:#92400e; font-weight:600;">Advisor Alert</span>',
         '  </div>',
-        '  <p style="font-size:12px; color:var(--ink); line-height:1.45; margin:0 0 10px;">' + window.Clarity.utils.escapeHtml(explanation) + '</p>',
+        '  <p style="font-size:12px; color:var(--ink); line-height:1.45; margin:0 0 10px;">' + window.Darkness.utils.escapeHtml(explanation) + '</p>',
 
         '  <div style="margin-bottom:8px;">',
         '    <strong style="font-size:11px; text-transform:uppercase; color:#92400e; letter-spacing:0.03em;">Potential Causes:</strong>',
         '    <ul style="margin:4px 0 0 16px; padding:0; font-size:11.5px; color:var(--ink-muted); line-height:1.4;">',
-        potentialCauses.map(c => '<li>' + window.Clarity.utils.escapeHtml(c) + '</li>').join(""),
+        potentialCauses.map(c => '<li>' + window.Darkness.utils.escapeHtml(c) + '</li>').join(""),
         '    </ul>',
         '  </div>',
 
         '  <div style="margin-bottom:8px;">',
         '    <strong style="font-size:11px; text-transform:uppercase; color:#92400e; letter-spacing:0.03em;">Recommended Architecture:</strong>',
-        '    <pre style="background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:6px 10px; font-size:11px; font-family:var(--font-mono); color:var(--ink); margin:4px 0 0; overflow-x:auto;">' + window.Clarity.utils.escapeHtml(recommendedArch) + '</pre>',
+        '    <pre style="background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:6px 10px; font-size:11px; font-family:var(--font-mono); color:var(--ink); margin:4px 0 0; overflow-x:auto;">' + window.Darkness.utils.escapeHtml(recommendedArch) + '</pre>',
         '  </div>',
 
         suggestedCode ? [
@@ -6500,12 +6500,12 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           '    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:4px;">',
           '      <strong style="font-size:11px; text-transform:uppercase; color:#15803d; letter-spacing:0.03em;">Suggested Fix:</strong>',
           relatedIssue && relatedIssue.fixDiff ? [
-            '      <button class="btn btn--primary btn--sm" data-open-fix-issue="' + window.Clarity.utils.escapeHtml(relatedIssue.id) + '" style="padding:2px 8px; font-size:11px; gap:4px;">',
+            '      <button class="btn btn--primary btn--sm" data-open-fix-issue="' + window.Darkness.utils.escapeHtml(relatedIssue.id) + '" style="padding:2px 8px; font-size:11px; gap:4px;">',
             '        <span>Review Diff & Apply Fix</span>',
             '      </button>'
           ].join("") : '',
           '    </div>',
-          '    <pre class="arch-code-snippet" style="background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:8px; font-size:11px; font-family:var(--font-mono); color:var(--ink); max-height:140px; overflow:auto; margin:0;">' + window.Clarity.utils.escapeHtml(suggestedCode) + '</pre>',
+          '    <pre class="arch-code-snippet" style="background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:8px; font-size:11px; font-family:var(--font-mono); color:var(--ink); max-height:140px; overflow:auto; margin:0;">' + window.Darkness.utils.escapeHtml(suggestedCode) + '</pre>',
           '  </div>'
         ].join("") : '',
 
@@ -6519,17 +6519,17 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       evidenceHtml = edgeData.evidence.map(ev => {
         return '<div style="display:flex; flex-direction:column; gap:6px; padding:10px; background:var(--surface-muted); border-radius:6px; border:1px solid var(--line);">' +
           '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-          '  <button class="btn btn--ghost btn--sm" data-jump-file="' + window.Clarity.utils.escapeHtml(ev.file) + '" data-jump-line="' + (ev.line || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent); font-weight:600;">' +
-          '    ' + window.Clarity.utils.escapeHtml(ev.file) + ':' + (ev.line || 1) +
+          '  <button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(ev.file) + '" data-jump-line="' + (ev.line || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent); font-weight:600;">' +
+          '    ' + window.Darkness.utils.escapeHtml(ev.file) + ':' + (ev.line || 1) +
           '  </button>' +
           '  <span class="muted" style="font-size:11px;">Jump to Line →</span>' +
           '</div>' +
-          (ev.context ? '<div style="font-size:12px; color:var(--ink-muted);">' + window.Clarity.utils.escapeHtml(ev.context) + '</div>' : '') +
-          (ev.snippet ? '<pre class="arch-code-snippet">' + window.Clarity.utils.escapeHtml(ev.snippet) + '</pre>' : '') +
+          (ev.context ? '<div style="font-size:12px; color:var(--ink-muted);">' + window.Darkness.utils.escapeHtml(ev.context) + '</div>' : '') +
+          (ev.snippet ? '<pre class="arch-code-snippet">' + window.Darkness.utils.escapeHtml(ev.snippet) + '</pre>' : '') +
           '</div>';
       }).join("");
     } else if (typeof edgeData.evidence === 'string') {
-      evidenceHtml = '<p style="color:var(--ink-muted); font-size:12.5px; margin:0;">' + window.Clarity.utils.escapeHtml(edgeData.evidence) + '</p>';
+      evidenceHtml = '<p style="color:var(--ink-muted); font-size:12.5px; margin:0;">' + window.Darkness.utils.escapeHtml(edgeData.evidence) + '</p>';
     } else {
       evidenceHtml = '<span class="muted" style="font-size:12px;">Inferred from module architecture.</span>';
     }
@@ -6543,14 +6543,14 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       statusBadge,
       '  </div>',
       '  <div style="padding:10px; background:var(--surface-muted); border-radius:6px; font-size:13px; font-family:var(--font-mono);">' +
-      '    <div><strong>Source:</strong> ' + window.Clarity.utils.escapeHtml(srcName) + '</div>' +
-      '    <div style="margin-top:4px;"><strong>Target:</strong> ' + window.Clarity.utils.escapeHtml(tgtName) + '</div>' +
+      '    <div><strong>Source:</strong> ' + window.Darkness.utils.escapeHtml(srcName) + '</div>' +
+      '    <div style="margin-top:4px;"><strong>Target:</strong> ' + window.Darkness.utils.escapeHtml(tgtName) + '</div>' +
       '  </div>',
       '</div>',
 
       '<div class="arch-inspector-section">',
       '  <span class="arch-inspector-section-title">Relationship Details</span>',
-      '  <p style="color:var(--ink); line-height:1.5; font-size:13px; margin:0;">' + window.Clarity.utils.escapeHtml(edgeData.detail || edgeData.label || "Verified architectural relationship between subsystems.") + '</p>',
+      '  <p style="color:var(--ink); line-height:1.5; font-size:13px; margin:0;">' + window.Darkness.utils.escapeHtml(edgeData.detail || edgeData.label || "Verified architectural relationship between subsystems.") + '</p>',
       '</div>',
 
       '<div class="arch-inspector-section">',
@@ -6615,17 +6615,17 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       items.map(item => {
         const color = getNodeColor(item.category || item.id);
         const filesList = (item.files || []).map(f => {
-          return '<button class="arch-evidence-btn" data-jump-file="' + window.Clarity.utils.escapeHtml(f) + '" style="font-size:11.5px; padding:4px 8px;">' +
-            '<span>' + window.Clarity.utils.escapeHtml(f) + '</span>' +
+          return '<button class="arch-evidence-btn" data-jump-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11.5px; padding:4px 8px;">' +
+            '<span>' + window.Darkness.utils.escapeHtml(f) + '</span>' +
             '<span class="muted" style="font-size:10.5px;">Inspect</span>' +
             '</button>';
         }).join("");
 
         const subList = (item.subsections || []).map(sub => {
           return '<div class="arch-mindmap-child-node">' +
-            '<div style="font-weight:600; font-size:12px; color:var(--ink); font-family:var(--font-mono);">' + window.Clarity.utils.escapeHtml(sub.title) + '</div>' +
-            (sub.detail ? '<div class="muted" style="font-size:11.5px;">' + window.Clarity.utils.escapeHtml(sub.detail) + '</div>' : '') +
-            (sub.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Clarity.utils.escapeHtml(sub.file) + '" data-jump-line="' + (sub.line || 1) + '" style="padding:0; font-size:11px; color:var(--accent); text-align:left;">Jump to code →</button>' : '') +
+            '<div style="font-weight:600; font-size:12px; color:var(--ink); font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(sub.title) + '</div>' +
+            (sub.detail ? '<div class="muted" style="font-size:11.5px;">' + window.Darkness.utils.escapeHtml(sub.detail) + '</div>' : '') +
+            (sub.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(sub.file) + '" data-jump-line="' + (sub.line || 1) + '" style="padding:0; font-size:11px; color:var(--accent); text-align:left;">Jump to code →</button>' : '') +
             '</div>';
         }).join("");
 
@@ -6633,13 +6633,13 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           '<div class="arch-mindmap-header">' +
           '  <div style="display:flex; align-items:center; gap:10px;">' +
           '    <span class="arch-legend-dot" style="background:' + color + '; width:11px; height:11px;"></span>' +
-          '    <strong style="font-size:14.5px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(item.title) + '</strong>' +
+          '    <strong style="font-size:14.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(item.title) + '</strong>' +
           '    <span class="arch-badge arch-badge--' + (item.category || 'service') + '" style="font-size:10.5px; padding:2px 7px;">' + (item.category || 'service') + '</span>' +
           '  </div>' +
           '  <span class="muted" style="font-size:12px;">' + (item.files ? item.files.length : 0) + ' files</span>' +
           '</div>' +
           '<div class="arch-mindmap-content">' +
-          '  <p style="font-size:13px; color:var(--ink-muted); margin:0; line-height:1.5;">' + window.Clarity.utils.escapeHtml(item.description || '') + '</p>' +
+          '  <p style="font-size:13px; color:var(--ink-muted); margin:0; line-height:1.5;">' + window.Darkness.utils.escapeHtml(item.description || '') + '</p>' +
           (subList ? '<div class="arch-mindmap-children">' + subList + '</div>' : '') +
           (filesList ? '<div style="margin-top:8px; display:flex; flex-direction:column; gap:5px;">' + filesList + '</div>' : '') +
           '</div>' +
@@ -6668,7 +6668,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
         flowsList.map(f => {
           const isActive = selectedDataflowFlowId === f.id;
           const catIcon = f.category === 'auth' ? '🔒' : f.category === 'ai' ? '🧠' : f.category === 'file' ? '📁' : f.category === 'data' ? '🗄️' : '⚡';
-          return '<button class="btn btn--sm ' + (isActive ? 'btn--primary' : 'btn--outline') + '" data-dflow-id="' + window.Clarity.utils.escapeHtml(f.id) + '">' + catIcon + ' ' + window.Clarity.utils.escapeHtml(f.name) + '</button>';
+          return '<button class="btn btn--sm ' + (isActive ? 'btn--primary' : 'btn--outline') + '" data-dflow-id="' + window.Darkness.utils.escapeHtml(f.id) + '">' + catIcon + ' ' + window.Darkness.utils.escapeHtml(f.name) + '</button>';
         }).join(""),
         '</div>'
       ].join("");
@@ -6678,7 +6678,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       const steps = activeSelectedFlow.steps || [];
       const workflowDiagramHtml = steps.map((step, idx) => {
         const fileEvidence = step.evidence?.file
-          ? '<button class="arch-file-tag" data-jump-file="' + window.Clarity.utils.escapeHtml(step.evidence.file) + '" ' + (step.evidence.line ? 'data-jump-line="' + step.evidence.line + '"' : '') + '>📄 ' + window.Clarity.utils.escapeHtml(step.evidence.file) + (step.evidence.line ? ':' + step.evidence.line : '') + '</button>'
+          ? '<button class="arch-file-tag" data-jump-file="' + window.Darkness.utils.escapeHtml(step.evidence.file) + '" ' + (step.evidence.line ? 'data-jump-line="' + step.evidence.line + '"' : '') + '>📄 ' + window.Darkness.utils.escapeHtml(step.evidence.file) + (step.evidence.line ? ':' + step.evidence.line : '') + '</button>'
           : '';
 
         const isLast = idx === steps.length - 1;
@@ -6695,14 +6695,14 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           '        </div>',
           '        <div>',
           '          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--accent); letter-spacing:0.04em;">Step ' + step.step + '</span>',
-          '          <h4 style="font-size:14px; font-weight:700; color:var(--ink); margin:0;">' + window.Clarity.utils.escapeHtml(step.action) + '</h4>',
+          '          <h4 style="font-size:14px; font-weight:700; color:var(--ink); margin:0;">' + window.Darkness.utils.escapeHtml(step.action) + '</h4>',
           '        </div>',
           '      </div>',
           '      <span class="tag tag--xs" style="' + (step.isReturnPath ? 'background:#f3e8ff; color:#7e22ce;' : 'background:var(--accent-soft); color:var(--accent);') + ' font-size:10px;">',
-          step.isReturnPath ? '↩ Response Path' : window.Clarity.utils.escapeHtml(step.nodeLabel || 'Stage Node'),
+          step.isReturnPath ? '↩ Response Path' : window.Darkness.utils.escapeHtml(step.nodeLabel || 'Stage Node'),
           '      </span>',
           '    </div>',
-          '    <p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin:0 0 10px 0;">' + window.Clarity.utils.escapeHtml(step.description) + '</p>',
+          '    <p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin:0 0 10px 0;">' + window.Darkness.utils.escapeHtml(step.description) + '</p>',
           fileEvidence ? '<div class="arch-files-list">' + fileEvidence + '</div>' : '',
           '  </div>',
           !isLast ? [
@@ -6721,12 +6721,12 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
         '    <div>',
         '      <div style="display:flex; align-items:center; gap:8px;">',
         '        <span style="font-size:18px;">⚡</span>',
-        '        <h3 style="font-size:15.5px; font-weight:700; color:var(--ink); margin:0;">' + window.Clarity.utils.escapeHtml(activeSelectedFlow.name) + '</h3>',
+        '        <h3 style="font-size:15.5px; font-weight:700; color:var(--ink); margin:0;">' + window.Darkness.utils.escapeHtml(activeSelectedFlow.name) + '</h3>',
         '        <span class="tag tag--xs tag--info">' + (activeSelectedFlow.category || 'api').toUpperCase() + '</span>',
         '      </div>',
-        '      <p class="muted" style="font-size:13px; margin:6px 0 0;">' + window.Clarity.utils.escapeHtml(activeSelectedFlow.description) + '</p>',
+        '      <p class="muted" style="font-size:13px; margin:6px 0 0;">' + window.Darkness.utils.escapeHtml(activeSelectedFlow.description) + '</p>',
         '    </div>',
-        '    <button class="btn btn--primary btn--sm" id="traceFlowInGraphBtn" data-flow-trace-id="' + window.Clarity.utils.escapeHtml(activeSelectedFlow.id) + '" style="font-size:12.5px; padding:6px 14px; gap:6px;">',
+        '    <button class="btn btn--primary btn--sm" id="traceFlowInGraphBtn" data-flow-trace-id="' + window.Darkness.utils.escapeHtml(activeSelectedFlow.id) + '" style="font-size:12.5px; padding:6px 14px; gap:6px;">',
         '      <span>Interactive Trace in Graph</span>',
         '    </button>',
         '  </div>',
@@ -6753,7 +6753,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       const steps = dataFlow.steps || [];
       const stepsWorkflowHtml = steps.map((step, idx) => {
         const filesList = (step.files || []).map(f => {
-          return '<button class="arch-file-tag" data-jump-file="' + window.Clarity.utils.escapeHtml(f) + '">📄 ' + window.Clarity.utils.escapeHtml(f) + '</button>';
+          return '<button class="arch-file-tag" data-jump-file="' + window.Darkness.utils.escapeHtml(f) + '">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>';
         }).join("");
 
         const isLast = idx === steps.length - 1;
@@ -6769,14 +6769,14 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           '        </div>',
           '        <div>',
           '          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--accent); letter-spacing:0.04em;">Step ' + step.step + '</span>',
-          '          <h4 style="font-size:14px; font-weight:700; color:var(--ink); margin:0;">' + window.Clarity.utils.escapeHtml(step.title) + '</h4>',
+          '          <h4 style="font-size:14px; font-weight:700; color:var(--ink); margin:0;">' + window.Darkness.utils.escapeHtml(step.title) + '</h4>',
           '        </div>',
           '      </div>',
           '      <span class="tag tag--xs tag--outline" style="font-family:var(--font-mono); font-size:11px;">',
-          window.Clarity.utils.escapeHtml(step.source) + ' → ' + window.Clarity.utils.escapeHtml(step.target),
+          window.Darkness.utils.escapeHtml(step.source) + ' → ' + window.Darkness.utils.escapeHtml(step.target),
           '      </span>',
           '    </div>',
-          '    <p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin:0 0 10px 0;">' + window.Clarity.utils.escapeHtml(step.description) + '</p>',
+          '    <p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin:0 0 10px 0;">' + window.Darkness.utils.escapeHtml(step.description) + '</p>',
           '    <div class="arch-files-list">' + filesList + '</div>',
           '  </div>',
           !isLast ? [
@@ -6791,7 +6791,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       cont.innerHTML = [
         '<div class="card" style="padding:18px 22px; border:1px solid var(--line); background:var(--surface); margin-bottom:16px;">',
         '  <h3 style="font-size:15px; font-weight:600; color:var(--ink); margin-bottom:6px;">End-to-End Pipeline Execution Trace</h3>',
-        '  <p class="muted" style="font-size:13px; margin:0;">' + window.Clarity.utils.escapeHtml(dataFlow.summary || "Step-by-step execution path traced across application layers.") + '</p>',
+        '  <p class="muted" style="font-size:13px; margin:0;">' + window.Darkness.utils.escapeHtml(dataFlow.summary || "Step-by-step execution path traced across application layers.") + '</p>',
         '</div>',
 
         flowSelectorPills,
@@ -6851,17 +6851,17 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
 
     let explanationText = "";
     try {
-      const res = await window.Clarity.api.post("/api/projects/" + projectId + "/explain-architecture");
+      const res = await window.Darkness.api.post("/api/projects/" + projectId + "/explain-architecture");
       explanationText = res.explanation || "";
 
       const contentEl = document.getElementById("archExplanationContent");
       const copyBtn = document.getElementById("copyArchExplanationBtn");
       if (contentEl) {
-        if (window.Clarity.markdown && window.Clarity.markdown.render) {
-          contentEl.innerHTML = '<div class="markdown-body">' + window.Clarity.markdown.render(explanationText) + '</div>';
-          if (window.Clarity.renderMermaid) window.Clarity.renderMermaid(contentEl);
+        if (window.Darkness.markdown && window.Darkness.markdown.render) {
+          contentEl.innerHTML = '<div class="markdown-body">' + window.Darkness.markdown.render(explanationText) + '</div>';
+          if (window.Darkness.renderMermaid) window.Darkness.renderMermaid(contentEl);
         } else {
-          contentEl.innerHTML = '<pre style="white-space:pre-wrap; font-family:inherit; font-size:13.5px; line-height:1.6;">' + window.Clarity.utils.escapeHtml(explanationText) + '</pre>';
+          contentEl.innerHTML = '<pre style="white-space:pre-wrap; font-family:inherit; font-size:13.5px; line-height:1.6;">' + window.Darkness.utils.escapeHtml(explanationText) + '</pre>';
         }
       }
 
@@ -6869,14 +6869,14 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
         if (copyBtn) copyBtn.style.display = "inline-flex";
         copyBtn.addEventListener("click", () => {
           navigator.clipboard.writeText(explanationText);
-          window.Clarity.toast.show("Architecture explanation copied", "success");
+          window.Darkness.toast.show("Architecture explanation copied", "success");
         });
       }
 
     } catch (err) {
       const contentEl = document.getElementById("archExplanationContent");
       if (contentEl) {
-        contentEl.innerHTML = '<div class="project-notice" style="margin:20px;">' + window.Clarity.utils.escapeHtml(err.message || "Failed to generate explanation") + '</div>';
+        contentEl.innerHTML = '<div class="project-notice" style="margin:20px;">' + window.Darkness.utils.escapeHtml(err.message || "Failed to generate explanation") + '</div>';
       }
     }
   }
@@ -7213,7 +7213,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
   async function loadAdvisorReport() {
     if (!targetProjectId) return;
     try {
-      const res = await window.Clarity.api.get("/api/projects/" + targetProjectId + "/advisor");
+      const res = await window.Darkness.api.get("/api/projects/" + targetProjectId + "/advisor");
       if (res && res.advisor) {
         advisorData = res.advisor;
         updateAdvisorBadgesAndHealth();
@@ -7309,13 +7309,13 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
     plan.files.forEach((f, idx) => {
       const active = idx === 0 ? 'is-active' : '';
       const displayStyle = idx === 0 ? 'block' : 'none';
-      tabsHtml += `<button class="project-tab-btn ${active}" data-file-idx="${idx}">${window.Clarity.utils.escapeHtml(f.path)}</button>`;
+      tabsHtml += `<button class="project-tab-btn ${active}" data-file-idx="${idx}">${window.Darkness.utils.escapeHtml(f.path)}</button>`;
       
       contentHtml += `<div class="diff-file-content" data-content-idx="${idx}" style="display:${displayStyle}; height: 100%; overflow: auto;">
         <div style="padding: 12px; background: var(--surface); border-bottom: 1px solid var(--line); font-family: monospace; font-size: 13px; font-weight: bold;">
-          📝 Proposed New Content: ${window.Clarity.utils.escapeHtml(f.path)}
+          📝 Proposed New Content: ${window.Darkness.utils.escapeHtml(f.path)}
         </div>
-        <pre style="margin: 0; padding: 16px; font-size: 13px; line-height: 1.5; background: var(--surface-hover); color: var(--ink); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px;"><code>${window.Clarity.utils.escapeHtml(f.content)}</code></pre>
+        <pre style="margin: 0; padding: 16px; font-size: 13px; line-height: 1.5; background: var(--surface-hover); color: var(--ink); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px;"><code>${window.Darkness.utils.escapeHtml(f.content)}</code></pre>
       </div>`;
     });
 
@@ -7326,7 +7326,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); background:var(--surface-muted);">
             <div>
               <h3 style="margin:0; font-size:16px; font-weight:600; color:var(--ink);">Review Code Changes</h3>
-              <p class="muted" style="margin:4px 0 0 0; font-size:13px;">${window.Clarity.utils.escapeHtml(plan.description || "Review the proposed modifications before applying.")}</p>
+              <p class="muted" style="margin:4px 0 0 0; font-size:13px;">${window.Darkness.utils.escapeHtml(plan.description || "Review the proposed modifications before applying.")}</p>
             </div>
             <button class="btn btn--ghost btn--sm" id="closeCcModalBtn" style="padding:4px 8px; font-size:13px;">✕</button>
           </div>
@@ -7374,9 +7374,9 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       try {
         btn.disabled = true;
         btn.textContent = "Applying...";
-        const res = await window.Clarity.api.post("/api/projects/" + window.Clarity.currentProjectId + "/apply-changes", { plan });
+        const res = await window.Darkness.api.post("/api/projects/" + window.Darkness.currentProjectId + "/apply-changes", { plan });
         if (res.ok) {
-          window.Clarity.toast.show("Code changes applied successfully.", "success");
+          window.Darkness.toast.show("Code changes applied successfully.", "success");
           cleanup();
           // Force file explorer reload if we are on files tab
           const chatBtn = document.querySelector('.project-tab-btn[data-tab="files"]');
@@ -7387,7 +7387,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       } catch (err) {
         btn.disabled = false;
         btn.textContent = "Approve & Apply";
-        window.Clarity.toast.show(err.message, "danger");
+        window.Darkness.toast.show(err.message, "danger");
       }
     });
   }
@@ -7409,7 +7409,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       '      <div style="display:flex; align-items:center; gap:8px;">',
       '        <span style="font-size:18px;">🔧</span>',
       '        <div>',
-      '          <strong style="font-size:15px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(issue.title) + '</strong>',
+      '          <strong style="font-size:15px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(issue.title) + '</strong>',
       '          <div class="muted" style="font-size:11.5px; margin-top:2px;">Architecture Advisor Connection Repair</div>',
       '        </div>',
       '      </div>',
@@ -7421,13 +7421,13 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       '      <!-- Target File Bar -->',
       '      <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--surface-muted); border-radius:8px; border:1px solid var(--line);">',
       '        <div style="display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:13px; color:var(--ink); font-weight:600;">',
-      '          <span>📄</span> ' + window.Clarity.utils.escapeHtml(diff.file),
+      '          <span>📄</span> ' + window.Darkness.utils.escapeHtml(diff.file),
       '        </div>',
       '        <span class="tag tag--xs" style="background:#e0e7ff; color:#4338ca; font-weight:600;">' + (hasBefore ? "Modify File" : "Create File") + '</span>',
       '      </div>',
 
       '      <!-- Explanation -->',
-      '      <div style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(diff.explanation || issue.explanation || "Applies recommended architecture modifications to verify the connection.") + '</div>',
+      '      <div style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(diff.explanation || issue.explanation || "Applies recommended architecture modifications to verify the connection.") + '</div>',
 
       '      <!-- Diff View -->',
       '      <div style="display:flex; flex-direction:column; gap:10px;">',
@@ -7436,7 +7436,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
         '          <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#dc2626; margin-bottom:6px; display:flex; align-items:center; gap:5px;">',
         '            <span>− Original Snippet:</span>',
         '          </div>',
-        '          <pre class="arch-code-snippet" style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:10px 12px; border-radius:8px; font-size:12px; max-height:140px; overflow:auto; margin:0;">' + window.Clarity.utils.escapeHtml(diff.before) + '</pre>',
+        '          <pre class="arch-code-snippet" style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:10px 12px; border-radius:8px; font-size:12px; max-height:140px; overflow:auto; margin:0;">' + window.Darkness.utils.escapeHtml(diff.before) + '</pre>',
         '        </div>'
       ].join("") : '',
 
@@ -7444,7 +7444,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       '          <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#16a34a; margin-bottom:6px; display:flex; align-items:center; gap:5px;">',
       '            <span>+ Proposed Implementation:</span>',
       '          </div>',
-      '          <pre class="arch-code-snippet" style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:10px 12px; border-radius:8px; font-size:12px; max-height:220px; overflow:auto; margin:0;">' + window.Clarity.utils.escapeHtml(diff.after) + '</pre>',
+      '          <pre class="arch-code-snippet" style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:10px 12px; border-radius:8px; font-size:12px; max-height:220px; overflow:auto; margin:0;">' + window.Darkness.utils.escapeHtml(diff.after) + '</pre>',
       '        </div>',
       '      </div>',
 
@@ -7479,7 +7479,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       }
 
       try {
-        await window.Clarity.api.post("/api/projects/" + projectId + "/advisor/apply-fix", {
+        await window.Darkness.api.post("/api/projects/" + projectId + "/advisor/apply-fix", {
           file: diff.file,
           before: diff.before,
           after: diff.after,
@@ -7487,7 +7487,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
         });
 
         cleanup();
-        window.Clarity.toast.show("Fix applied successfully to " + diff.file + "! System re-analyzed.", "success");
+        window.Darkness.toast.show("Fix applied successfully to " + diff.file + "! System re-analyzed.", "success");
 
         // Reload intelligence and advisor report
         await loadAdvisorReport();
@@ -7499,7 +7499,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
         }
       } catch (err) {
         console.error("Failed to apply fix:", err);
-        window.Clarity.toast.show("Failed to apply fix: " + err.message, "danger");
+        window.Darkness.toast.show("Failed to apply fix: " + err.message, "danger");
         if (applyBtn) {
           applyBtn.disabled = false;
           applyBtn.innerHTML = "Retry Applying Fix";
@@ -7561,24 +7561,24 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
             '<tr style="border-bottom:1px solid var(--line); font-size:13px;">',
             '  <td style="padding:10px 12px;">',
             '    <div style="display:flex; align-items:center; gap:6px;">',
-            '      <span class="tag tag--xs" style="font-weight:700; font-family:var(--font-mono); background:' + (r.method === 'GET' ? '#dbeafe; color:#1d4ed8;' : (r.method === 'POST' ? '#dcfce7; color:#15803d;' : '#fef3c7; color:#b45309;')) + '">' + window.Clarity.utils.escapeHtml(r.method) + '</span>',
-            '      <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">' + window.Clarity.utils.escapeHtml(r.path) + '</span>',
+            '      <span class="tag tag--xs" style="font-weight:700; font-family:var(--font-mono); background:' + (r.method === 'GET' ? '#dbeafe; color:#1d4ed8;' : (r.method === 'POST' ? '#dcfce7; color:#15803d;' : '#fef3c7; color:#b45309;')) + '">' + window.Darkness.utils.escapeHtml(r.method) + '</span>',
+            '      <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">' + window.Darkness.utils.escapeHtml(r.path) + '</span>',
             '    </div>',
-            r.clientFile ? '    <div style="margin-top:4px;"><button class="btn btn--ghost btn--sm" data-jump-file="' + window.Clarity.utils.escapeHtml(r.clientFile) + '" data-jump-line="' + (r.clientLine || 1) + '" style="padding:0; font-size:11px; font-family:var(--font-mono); color:var(--accent);">' + window.Clarity.utils.escapeHtml(r.clientFile) + ':' + (r.clientLine || 1) + '</button></div>' : '',
+            r.clientFile ? '    <div style="margin-top:4px;"><button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(r.clientFile) + '" data-jump-line="' + (r.clientLine || 1) + '" style="padding:0; font-size:11px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(r.clientFile) + ':' + (r.clientLine || 1) + '</button></div>' : '',
             '  </td>',
             '  <td style="padding:10px 12px;">',
             '    <span class="arch-health-chip ' + badgeClass + '" style="font-size:11px; padding:2px 8px;">' + badgeIcon + ' ' + r.status + '</span>',
             '  </td>',
             '  <td style="padding:10px 12px; font-family:var(--font-mono); font-size:12px;">',
             r.serverFile
-              ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Clarity.utils.escapeHtml(r.serverFile) + '" data-jump-line="' + (r.serverLine || 1) + '" style="padding:0; font-size:11.5px; font-family:var(--font-mono); color:var(--accent); font-weight:600;">' + window.Clarity.utils.escapeHtml(r.serverFile) + ':' + (r.serverLine || 1) + '</button>'
+              ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(r.serverFile) + '" data-jump-line="' + (r.serverLine || 1) + '" style="padding:0; font-size:11.5px; font-family:var(--font-mono); color:var(--accent); font-weight:600;">' + window.Darkness.utils.escapeHtml(r.serverFile) + ':' + (r.serverLine || 1) + '</button>'
               : '<span style="color:#ef4444; font-weight:600;">⚠ No Route Handler Declared</span>',
             '  </td>',
-            '  <td style="padding:10px 12px; color:var(--ink-muted); font-size:12.5px; line-height:1.4;">' + window.Clarity.utils.escapeHtml(r.detail || "Direct HTTP API dispatch.") + '</td>',
+            '  <td style="padding:10px 12px; color:var(--ink-muted); font-size:12.5px; line-height:1.4;">' + window.Darkness.utils.escapeHtml(r.detail || "Direct HTTP API dispatch.") + '</td>',
             '  <td style="padding:10px 12px; text-align:right; white-space:nowrap;">',
             relatedIssue
-              ? '<button class="btn btn--primary btn--sm" data-open-fix-issue="' + window.Clarity.utils.escapeHtml(relatedIssue.id) + '" style="font-size:11.5px; padding:3px 10px; gap:4px;"><span>Repair</span></button>'
-              : (r.clientFile ? '<button class="btn btn--outline btn--sm" data-jump-file="' + window.Clarity.utils.escapeHtml(r.clientFile) + '" data-jump-line="' + (r.clientLine || 1) + '" style="font-size:11.5px; padding:3px 10px;">Inspect Code</button>' : '<span class="muted" style="font-size:11px;">Verified</span>'),
+              ? '<button class="btn btn--primary btn--sm" data-open-fix-issue="' + window.Darkness.utils.escapeHtml(relatedIssue.id) + '" style="font-size:11.5px; padding:3px 10px; gap:4px;"><span>Repair</span></button>'
+              : (r.clientFile ? '<button class="btn btn--outline btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(r.clientFile) + '" data-jump-line="' + (r.clientLine || 1) + '" style="font-size:11.5px; padding:3px 10px;">Inspect Code</button>' : '<span class="muted" style="font-size:11px;">Verified</span>'),
             '  </td>',
             '</tr>'
           ].join("");
@@ -7606,21 +7606,21 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           '    <div>',
           '      <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">',
           '        <span class="arch-health-chip ' + sevClass + '" style="font-size:10px; font-weight:700; padding:2px 6px;">' + sevLabel + '</span>',
-          '        <span class="tag tag--xs" style="text-transform:uppercase; font-size:10px; letter-spacing:0.04em;">' + window.Clarity.utils.escapeHtml(iss.category) + '</span>',
-          '        <h4 style="font-size:15px; font-weight:600; color:var(--ink); margin:0;">' + window.Clarity.utils.escapeHtml(iss.title) + '</h4>',
+          '        <span class="tag tag--xs" style="text-transform:uppercase; font-size:10px; letter-spacing:0.04em;">' + window.Darkness.utils.escapeHtml(iss.category) + '</span>',
+          '        <h4 style="font-size:15px; font-weight:600; color:var(--ink); margin:0;">' + window.Darkness.utils.escapeHtml(iss.title) + '</h4>',
           '      </div>',
-          iss.file ? '      <button class="btn btn--ghost btn--sm" data-jump-file="' + window.Clarity.utils.escapeHtml(iss.file) + '" data-jump-line="' + (iss.line || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent); font-weight:600;">' + window.Clarity.utils.escapeHtml(iss.file) + ':' + (iss.line || 1) + ' <span class="muted" style="font-weight:normal;">(Jump to code →)</span></button>' : '',
+          iss.file ? '      <button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(iss.file) + '" data-jump-line="' + (iss.line || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent); font-weight:600;">' + window.Darkness.utils.escapeHtml(iss.file) + ':' + (iss.line || 1) + ' <span class="muted" style="font-weight:normal;">(Jump to code →)</span></button>' : '',
           '    </div>',
           '    <div style="display:flex; align-items:center; gap:8px;">',
-          '      <button class="btn btn--outline btn--sm issue-verify-ai-btn" data-issue-id="' + window.Clarity.utils.escapeHtml(iss.id || iss.title) + '" data-issue-file="' + window.Clarity.utils.escapeHtml(iss.file || '') + '" data-issue-desc="' + window.Clarity.utils.escapeHtml(iss.title) + '" style="gap:5px; font-weight:600; padding:5px 12px; border-color:var(--accent); color:var(--accent);"><span>Verify with AI</span></button>',
-          iss.fixDiff ? '      <button class="btn btn--primary btn--sm" data-open-fix-issue="' + window.Clarity.utils.escapeHtml(iss.id) + '" style="gap:5px; font-weight:600; padding:5px 12px;"><span>Review Diff & Apply Fix</span></button>' : '',
+          '      <button class="btn btn--outline btn--sm issue-verify-ai-btn" data-issue-id="' + window.Darkness.utils.escapeHtml(iss.id || iss.title) + '" data-issue-file="' + window.Darkness.utils.escapeHtml(iss.file || '') + '" data-issue-desc="' + window.Darkness.utils.escapeHtml(iss.title) + '" style="gap:5px; font-weight:600; padding:5px 12px; border-color:var(--accent); color:var(--accent);"><span>Verify with AI</span></button>',
+          iss.fixDiff ? '      <button class="btn btn--primary btn--sm" data-open-fix-issue="' + window.Darkness.utils.escapeHtml(iss.id) + '" style="gap:5px; font-weight:600; padding:5px 12px;"><span>Review Diff & Apply Fix</span></button>' : '',
           '    </div>',
           '  </div>',
 
           '  <!-- Explanation & Why Darkness Cannot Prove It -->',
           '  <div style="background:var(--surface-muted); border:1px solid var(--line); border-radius:8px; padding:12px 14px; font-size:13px; line-height:1.5;">',
           '    <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#b45309; letter-spacing:0.03em; margin-bottom:4px;">⚠ Connection Not Verified / Static Proof Missing:</div>',
-          '    <div style="color:var(--ink);">' + window.Clarity.utils.escapeHtml(iss.explanation) + '</div>',
+          '    <div style="color:var(--ink);">' + window.Darkness.utils.escapeHtml(iss.explanation) + '</div>',
           '  </div>',
 
           '  <!-- Potential Causes Grid -->',
@@ -7628,7 +7628,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
             '  <div>',
             '    <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted); letter-spacing:0.04em; margin-bottom:6px;">Potential Causes:</div>',
             '    <ul style="margin:0; padding-left:18px; font-size:12.5px; color:var(--ink-muted); line-height:1.5;">',
-            iss.potentialCauses.map(c => '<li>' + window.Clarity.utils.escapeHtml(c) + '</li>').join(""),
+            iss.potentialCauses.map(c => '<li>' + window.Darkness.utils.escapeHtml(c) + '</li>').join(""),
             '    </ul>',
             '  </div>'
           ].join("") : '',
@@ -7637,7 +7637,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           iss.recommendedArchitecture ? [
             '  <div>',
             '    <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted); letter-spacing:0.04em; margin-bottom:4px;">Recommended Architecture Flow:</div>',
-            '    <pre style="background:var(--surface-muted); border:1px solid var(--line); border-radius:6px; padding:8px 12px; font-size:11.5px; font-family:var(--font-mono); color:var(--ink); margin:0; overflow-x:auto;">' + window.Clarity.utils.escapeHtml(iss.recommendedArchitecture) + '</pre>',
+            '    <pre style="background:var(--surface-muted); border:1px solid var(--line); border-radius:6px; padding:8px 12px; font-size:11.5px; font-family:var(--font-mono); color:var(--ink); margin:0; overflow-x:auto;">' + window.Darkness.utils.escapeHtml(iss.recommendedArchitecture) + '</pre>',
             '  </div>'
           ].join("") : '',
 
@@ -7648,7 +7648,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
             '      <div style="font-size:11px; font-weight:700; text-transform:uppercase; color:#15803d; letter-spacing:0.04em;">Suggested Implementation:</div>',
             '      <button class="btn btn--ghost btn--sm copy-snippet-btn" data-snippet="' + encodeURIComponent(iss.suggestedImplementation) + '" style="font-size:11px; padding:2px 8px;">Copy Code</button>',
             '    </div>',
-            '    <pre class="arch-code-snippet" style="background:var(--surface-muted); border:1px solid var(--line); border-radius:6px; padding:10px 12px; font-size:11.5px; font-family:var(--font-mono); color:var(--ink); max-height:180px; overflow:auto; margin:0;">' + window.Clarity.utils.escapeHtml(iss.suggestedImplementation) + '</pre>',
+            '    <pre class="arch-code-snippet" style="background:var(--surface-muted); border:1px solid var(--line); border-radius:6px; padding:10px 12px; font-size:11.5px; font-family:var(--font-mono); color:var(--ink); max-height:180px; overflow:auto; margin:0;">' + window.Darkness.utils.escapeHtml(iss.suggestedImplementation) + '</pre>',
             '  </div>'
           ].join("") : '',
 
@@ -7764,7 +7764,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
         const snippet = decodeURIComponent(btn.getAttribute("data-snippet") || "");
         if (snippet) {
           navigator.clipboard.writeText(snippet);
-          window.Clarity.toast.show("Code snippet copied to clipboard", "success");
+          window.Darkness.toast.show("Code snippet copied to clipboard", "success");
         }
       });
     });
@@ -7823,7 +7823,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
   let simTimer = null;
   let simSpeed = 1500; // ms
 
-  const targetProjectId = projectId || (analysis && (analysis.id || analysis.projectId)) || (window.Clarity.currentProject && window.Clarity.currentProject.id) || window.Clarity.currentProjectId || (window.location.hash.split('/')[2] || '').split('?')[0] || '';
+  const targetProjectId = projectId || (analysis && (analysis.id || analysis.projectId)) || (window.Darkness.currentProject && window.Darkness.currentProject.id) || window.Darkness.currentProjectId || (window.location.hash.split('/')[2] || '').split('?')[0] || '';
 
   const mindmapCount = (arch.mindMap && arch.mindMap.length) || (arch.nodes && arch.nodes.length) || 0;
   const flowsList = arch.flows || [];
@@ -7956,7 +7956,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
       '    </div>',
       '    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">',
       '      <div style="position:relative;">',
-      '        <input type="text" id="vmaMindmapSearchInput" placeholder="Search subsystems & files..." value="' + window.Clarity.utils.escapeHtml(mindmapSearchQuery) + '" style="padding:6px 12px 6px 30px; font-size:12.5px; border-radius:6px; border:1px solid var(--line); background:var(--surface-muted); color:var(--ink); width:200px;">',
+      '        <input type="text" id="vmaMindmapSearchInput" placeholder="Search subsystems & files..." value="' + window.Darkness.utils.escapeHtml(mindmapSearchQuery) + '" style="padding:6px 12px 6px 30px; font-size:12.5px; border-radius:6px; border:1px solid var(--line); background:var(--surface-muted); color:var(--ink); width:200px;">',
       '        <span style="position:absolute; left:9px; top:50%; transform:translateY(-50%); font-size:13px; color:var(--ink-muted);">🔍</span>',
       '      </div>',
       '      <div class="arch-view-tabs" style="background:var(--surface-muted); padding:3px; border-radius:6px; border:1px solid var(--line); font-size:12px;">',
@@ -7993,7 +7993,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
         '    <div style="display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--surface); border:2px solid var(--accent); border-radius:10px; box-shadow:0 2px 8px rgba(37,99,235,0.15); max-width:380px;">',
         '      <div style="width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700;">🚀</div>',
         '      <div>',
-        '        <strong style="font-size:14px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(analysis.projectName || 'Project Root Core') + '</strong>',
+        '        <strong style="font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(analysis.projectName || 'Project Root Core') + '</strong>',
         '        <div class="muted" style="font-size:11.5px;">' + rawNodes.length + ' Subsystems & Services Discovered</div>',
         '      </div>',
         '    </div>',
@@ -8006,11 +8006,11 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
           const children = node.children || [];
           return [
             '<div class="card arch-mindmap-card" style="padding:12px 16px; border:1px solid var(--line); background:var(--surface); border-left:4px solid ' + color + '; border-radius:8px;">',
-            '  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;" class="vma-tree-node-header" data-node-id="' + window.Clarity.utils.escapeHtml(node.id || 'node_' + nIdx) + '">',
+            '  <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; cursor:pointer;" class="vma-tree-node-header" data-node-id="' + window.Darkness.utils.escapeHtml(node.id || 'node_' + nIdx) + '">',
             '    <div style="display:flex; align-items:center; gap:8px;">',
             '      <span style="width:8px; height:8px; border-radius:50%; background:' + color + ';"></span>',
-            '      <strong style="font-size:13.5px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(node.label || node.id || 'Subsystem') + '</strong>',
-            '      <span class="tag tag--xs" style="font-size:10px; text-transform:uppercase; background:var(--surface-muted); color:var(--ink); font-weight:600;">' + window.Clarity.utils.escapeHtml(node.type || 'module') + '</span>',
+            '      <strong style="font-size:13.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(node.label || node.id || 'Subsystem') + '</strong>',
+            '      <span class="tag tag--xs" style="font-size:10px; text-transform:uppercase; background:var(--surface-muted); color:var(--ink); font-weight:600;">' + window.Darkness.utils.escapeHtml(node.type || 'module') + '</span>',
             '    </div>',
             '    <div style="display:flex; align-items:center; gap:8px;">',
             files.length > 0 ? '<span class="tag tag--xs" style="font-size:10.5px; background:var(--surface-muted); font-family:var(--font-mono);">' + files.length + ' files</span>' : '',
@@ -8019,12 +8019,12 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
             '    </div>',
             '  </div>',
             '  <div class="vma-tree-node-body" style="margin-top:10px; padding-top:10px; border-top:1px solid var(--line); display:flex; flex-direction:column; gap:8px;">',
-            node.description ? '    <p style="font-size:12.5px; line-height:1.45; color:var(--ink-muted); margin:0;">' + window.Clarity.utils.escapeHtml(node.description) + '</p>' : '',
+            node.description ? '    <p style="font-size:12.5px; line-height:1.45; color:var(--ink-muted); margin:0;">' + window.Darkness.utils.escapeHtml(node.description) + '</p>' : '',
             files.length > 0 ? [
               '    <div style="display:flex; flex-direction:column; gap:4px;">',
               '      <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted);">Linked Source Files:</span>',
               '      <div style="display:flex; flex-wrap:wrap; gap:4px;">',
-              files.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Clarity.utils.escapeHtml(f) + '" style="font-size:11px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface-muted); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Clarity.utils.escapeHtml(f) + '</button>').join(""),
+              files.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface-muted); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>').join(""),
               '      </div>',
               '    </div>'
             ].join("") : '',
@@ -8032,7 +8032,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
               '    <div style="display:flex; flex-direction:column; gap:4px;">',
               '      <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted);">Declared Endpoints:</span>',
               '      <div style="display:flex; flex-wrap:wrap; gap:4px;">',
-              endpoints.map(ep => '<span class="tag tag--xs" style="font-family:var(--font-mono); font-size:10.5px; background:#eff6ff; color:#1d4ed8;">' + window.Clarity.utils.escapeHtml(typeof ep === 'string' ? ep : (ep.method + ' ' + ep.path)) + '</span>').join(""),
+              endpoints.map(ep => '<span class="tag tag--xs" style="font-family:var(--font-mono); font-size:10.5px; background:#eff6ff; color:#1d4ed8;">' + window.Darkness.utils.escapeHtml(typeof ep === 'string' ? ep : (ep.method + ' ' + ep.path)) + '</span>').join(""),
               '      </div>',
               '    </div>'
             ].join("") : '',
@@ -8040,7 +8040,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
               '    <div style="display:flex; flex-direction:column; gap:4px;">',
               '      <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted);">Nested Child Modules:</span>',
               '      <div style="display:flex; flex-wrap:wrap; gap:4px;">',
-              children.map(c => '<span class="tag tag--xs" style="font-size:10.5px; background:var(--surface-muted);">' + window.Clarity.utils.escapeHtml(typeof c === 'string' ? c : (c.label || c.name || c.id)) + '</span>').join(""),
+              children.map(c => '<span class="tag tag--xs" style="font-size:10.5px; background:var(--surface-muted);">' + window.Darkness.utils.escapeHtml(typeof c === 'string' ? c : (c.label || c.name || c.id)) + '</span>').join(""),
               '      </div>',
               '    </div>'
             ].join("") : '',
@@ -8068,16 +8068,16 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
               '  <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">',
               '    <div style="display:flex; align-items:center; gap:8px;">',
               '      <span style="width:10px; height:10px; border-radius:50%; background:' + color + ';"></span>',
-              '      <strong style="font-size:14px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(node.label || node.id || 'Node') + '</strong>',
+              '      <strong style="font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(node.label || node.id || 'Node') + '</strong>',
               '    </div>',
-              '    <span class="tag tag--xs" style="background:var(--surface-muted); color:var(--ink); font-weight:600; text-transform:uppercase; font-size:10px;">' + window.Clarity.utils.escapeHtml(node.type || 'module') + '</span>',
+              '    <span class="tag tag--xs" style="background:var(--surface-muted); color:var(--ink); font-weight:600; text-transform:uppercase; font-size:10px;">' + window.Darkness.utils.escapeHtml(node.type || 'module') + '</span>',
               '  </div>',
-              node.description ? '  <p style="font-size:12.5px; line-height:1.45; color:var(--ink-muted); margin:0;">' + window.Clarity.utils.escapeHtml(node.description) + '</p>' : '',
+              node.description ? '  <p style="font-size:12.5px; line-height:1.45; color:var(--ink-muted); margin:0;">' + window.Darkness.utils.escapeHtml(node.description) + '</p>' : '',
               files.length > 0 ? [
                 '  <div style="display:flex; flex-direction:column; gap:4px; margin-top:2px;">',
                 '    <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted);">Key Source Files:</span>',
                 '    <div style="display:flex; flex-wrap:wrap; gap:4px;">',
-                files.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Clarity.utils.escapeHtml(f) + '" style="font-size:11.5px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface-muted); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Clarity.utils.escapeHtml(f) + '</button>').join(""),
+                files.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11.5px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface-muted); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>').join(""),
                 '    </div>',
                 '  </div>'
               ].join("") : '',
@@ -8085,7 +8085,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
                 '  <div style="display:flex; flex-direction:column; gap:4px;">',
                 '    <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted);">API Endpoints:</span>',
                 '    <div style="display:flex; flex-wrap:wrap; gap:4px;">',
-                endpoints.map(ep => '<span class="tag tag--xs" style="font-family:var(--font-mono); font-size:10.5px; background:#eff6ff; color:#1d4ed8;">' + window.Clarity.utils.escapeHtml(typeof ep === 'string' ? ep : (ep.method + ' ' + ep.path)) + '</span>').join(""),
+                endpoints.map(ep => '<span class="tag tag--xs" style="font-family:var(--font-mono); font-size:10.5px; background:#eff6ff; color:#1d4ed8;">' + window.Darkness.utils.escapeHtml(typeof ep === 'string' ? ep : (ep.method + ' ' + ep.path)) + '</span>').join(""),
                 '    </div>',
                 '  </div>'
               ].join("") : '',
@@ -8093,7 +8093,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
                 '  <div style="display:flex; flex-direction:column; gap:4px;">',
                 '    <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted);">Sub-components:</span>',
                 '    <div style="display:flex; flex-wrap:wrap; gap:4px;">',
-                children.map(c => '<span class="tag tag--xs" style="font-size:10.5px; background:var(--surface-muted);">' + window.Clarity.utils.escapeHtml(typeof c === 'string' ? c : (c.label || c.name || c.id)) + '</span>').join(""),
+                children.map(c => '<span class="tag tag--xs" style="font-size:10.5px; background:var(--surface-muted);">' + window.Darkness.utils.escapeHtml(typeof c === 'string' ? c : (c.label || c.name || c.id)) + '</span>').join(""),
                 '    </div>',
                 '  </div>'
               ].join("") : '',
@@ -8187,7 +8187,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
       '    </div>',
       flows.length > 1 ? [
         '    <div class="arch-view-tabs" id="vmaFlowFilterTabs" style="background:var(--surface-muted); padding:3px; border-radius:8px; border:1px solid var(--line);">',
-        flows.map(fl => '<button class="arch-view-btn ' + ((activeFlowFilter === fl.id || (activeFlowFilter === 'all' && fl.id === flows[0].id)) ? 'is-active' : '') + '" data-flow-cat="' + window.Clarity.utils.escapeHtml(fl.id) + '">' + window.Clarity.utils.escapeHtml(fl.name || fl.id) + '</button>').join(""),
+        flows.map(fl => '<button class="arch-view-btn ' + ((activeFlowFilter === fl.id || (activeFlowFilter === 'all' && fl.id === flows[0].id)) ? 'is-active' : '') + '" data-flow-cat="' + window.Darkness.utils.escapeHtml(fl.id) + '">' + window.Darkness.utils.escapeHtml(fl.name || fl.id) + '</button>').join(""),
         '    </div>'
       ].join("") : '',
       '  </div>',
@@ -8216,16 +8216,16 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
         '  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;">',
         '    <div style="display:flex; align-items:center; gap:8px;">',
         '      <span class="arch-pulse-badge" style="width:10px; height:10px; border-radius:50%; background:#2563eb; display:inline-block;"></span>',
-        '      <strong style="font-size:14.5px; color:var(--ink);">Active Execution Stage: ' + window.Clarity.utils.escapeHtml(activeStepData.title || activeStepData.step || 'Stage ' + (currentSimStep + 1)) + '</strong>',
+        '      <strong style="font-size:14.5px; color:var(--ink);">Active Execution Stage: ' + window.Darkness.utils.escapeHtml(activeStepData.title || activeStepData.step || 'Stage ' + (currentSimStep + 1)) + '</strong>',
         '    </div>',
-        '    <span class="tag tag--xs" style="background:#dbeafe; color:#1d4ed8; font-weight:700; font-family:var(--font-mono); font-size:11px;">' + window.Clarity.utils.escapeHtml(activeStepData.method || 'DISPATCH') + '</span>',
+        '    <span class="tag tag--xs" style="background:#dbeafe; color:#1d4ed8; font-weight:700; font-family:var(--font-mono); font-size:11px;">' + window.Darkness.utils.escapeHtml(activeStepData.method || 'DISPATCH') + '</span>',
         '  </div>',
-        '  <p style="font-size:13px; color:var(--ink); margin:0 0 10px; line-height:1.5;">' + window.Clarity.utils.escapeHtml(activeStepData.detail || activeStepData.description || 'Execution event passed through runtime handler.') + '</p>',
+        '  <p style="font-size:13px; color:var(--ink); margin:0 0 10px; line-height:1.5;">' + window.Darkness.utils.escapeHtml(activeStepData.detail || activeStepData.description || 'Execution event passed through runtime handler.') + '</p>',
         '  <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; font-size:12px; padding-top:10px; border-top:1px solid var(--line);">',
         '    <div style="display:flex; align-items:center; gap:6px;">',
         '      <span class="muted">Target File:</span>',
         (activeStepData.file || (activeStepData.files && activeStepData.files[0])) ? [
-          '      <button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Clarity.utils.escapeHtml(activeStepData.file || activeStepData.files[0]) + '" style="font-size:11.5px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Clarity.utils.escapeHtml(activeStepData.file || activeStepData.files[0]) + '</button>'
+          '      <button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(activeStepData.file || activeStepData.files[0]) + '" style="font-size:11.5px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(activeStepData.file || activeStepData.files[0]) + '</button>'
         ].join("") : '<span class="muted">System Core</span>',
         '    </div>',
         '    <div style="display:flex; align-items:center; gap:8px;">',
@@ -8249,13 +8249,13 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
           '    <div style="width:26px; height:26px; border-radius:50%; background:' + (isActive ? 'var(--accent)' : (isPast ? '#10b981' : 'var(--surface-muted)')) + '; color:' + (isActive || isPast ? '#fff' : 'var(--ink-muted)') + '; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; flex-shrink:0;">' + (isPast ? '✓' : (idx + 1)) + '</div>',
           '    <div style="flex:1;">',
           '      <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px;">',
-          '        <strong style="font-size:14px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(st.title || st.step || 'Stage ' + (idx + 1)) + '</strong>',
-          st.method ? '        <span class="tag tag--xs" style="font-family:var(--font-mono); font-weight:700; background:#dbeafe; color:#1d4ed8; font-size:11px;">' + window.Clarity.utils.escapeHtml(st.method) + '</span>' : '',
+          '        <strong style="font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(st.title || st.step || 'Stage ' + (idx + 1)) + '</strong>',
+          st.method ? '        <span class="tag tag--xs" style="font-family:var(--font-mono); font-weight:700; background:#dbeafe; color:#1d4ed8; font-size:11px;">' + window.Darkness.utils.escapeHtml(st.method) + '</span>' : '',
           '      </div>',
-          st.detail || st.description ? '      <div style="font-size:12.5px; color:var(--ink-muted); margin-top:4px; line-height:1.45;">' + window.Clarity.utils.escapeHtml(st.detail || st.description) + '</div>' : '',
+          st.detail || st.description ? '      <div style="font-size:12.5px; color:var(--ink-muted); margin-top:4px; line-height:1.45;">' + window.Darkness.utils.escapeHtml(st.detail || st.description) + '</div>' : '',
           stepFiles.length > 0 ? [
             '      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">',
-            stepFiles.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Clarity.utils.escapeHtml(f) + '" style="font-size:11px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Clarity.utils.escapeHtml(f) + '</button>').join(""),
+            stepFiles.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>').join(""),
             '      </div>'
           ].join("") : '',
           '    </div>',
@@ -8370,7 +8370,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
   async function loadAdvisorReport() {
     if (!targetProjectId) return;
     try {
-      const res = await window.Clarity.api.get("/api/projects/" + targetProjectId + "/advisor");
+      const res = await window.Darkness.api.get("/api/projects/" + targetProjectId + "/advisor");
       if (res && res.advisor) {
         advisorData = res.advisor;
         const countBadge = document.getElementById("vmaAdvisorIssueBadge");
@@ -8407,7 +8407,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
       '      <div style="display:flex; align-items:center; gap:8px;">',
       '        <span style="font-size:18px;">🔧</span>',
       '        <div>',
-      '          <strong style="font-size:15px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(issue.title) + '</strong>',
+      '          <strong style="font-size:15px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(issue.title) + '</strong>',
       '          <div class="muted" style="font-size:11.5px; margin-top:2px;">Architecture Advisor Connection Repair</div>',
       '        </div>',
       '      </div>',
@@ -8416,21 +8416,21 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
       '    <div style="padding:20px; overflow-y:auto; display:flex; flex-direction:column; gap:16px;">',
       '      <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--surface-muted); border-radius:8px; border:1px solid var(--line);">',
       '        <div style="display:flex; align-items:center; gap:8px; font-family:var(--font-mono); font-size:13px; color:var(--ink); font-weight:600;">',
-      '          <span>📄</span> ' + window.Clarity.utils.escapeHtml(diff.file),
+      '          <span>📄</span> ' + window.Darkness.utils.escapeHtml(diff.file),
       '        </div>',
       '        <span class="tag tag--xs" style="background:#e0e7ff; color:#4338ca; font-weight:600;">' + (hasBefore ? "Modify File" : "Create File") + '</span>',
       '      </div>',
-      '      <div style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(diff.explanation || issue.explanation || "Applies recommended architecture modifications to verify the connection.") + '</div>',
+      '      <div style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(diff.explanation || issue.explanation || "Applies recommended architecture modifications to verify the connection.") + '</div>',
       '      <div style="display:flex; flex-direction:column; gap:10px;">',
       hasBefore ? [
         '        <div>',
         '          <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#dc2626; margin-bottom:6px;">− Original Snippet:</div>',
-        '          <pre class="arch-code-snippet" style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:10px 12px; border-radius:8px; font-size:12px; max-height:140px; overflow:auto; margin:0;">' + window.Clarity.utils.escapeHtml(diff.before) + '</pre>',
+        '          <pre class="arch-code-snippet" style="background:#fef2f2; border:1px solid #fecaca; color:#991b1b; padding:10px 12px; border-radius:8px; font-size:12px; max-height:140px; overflow:auto; margin:0;">' + window.Darkness.utils.escapeHtml(diff.before) + '</pre>',
         '        </div>'
       ].join("") : '',
       '        <div>',
       '          <div style="font-size:11.5px; font-weight:700; text-transform:uppercase; color:#16a34a; margin-bottom:6px;">+ Proposed Implementation:</div>',
-      '          <pre class="arch-code-snippet" style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:10px 12px; border-radius:8px; font-size:12px; max-height:220px; overflow:auto; margin:0;">' + window.Clarity.utils.escapeHtml(diff.after) + '</pre>',
+      '          <pre class="arch-code-snippet" style="background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; padding:10px 12px; border-radius:8px; font-size:12px; max-height:220px; overflow:auto; margin:0;">' + window.Darkness.utils.escapeHtml(diff.after) + '</pre>',
       '        </div>',
       '      </div>',
       '      <div style="display:flex; align-items:flex-start; gap:10px; padding:10px 12px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; font-size:12px; color:#92400e;">',
@@ -8461,8 +8461,8 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
       }
 
       try {
-        const effectivePid = targetProjectId || (analysis && (analysis.id || analysis.projectId)) || (window.Clarity.currentProject && window.Clarity.currentProject.id) || window.Clarity.currentProjectId || (window.location.hash.split('/')[2] || '').split('?')[0] || '';
-        const res = await window.Clarity.api.post("/api/projects/" + effectivePid + "/advisor/apply-fix", {
+        const effectivePid = targetProjectId || (analysis && (analysis.id || analysis.projectId)) || (window.Darkness.currentProject && window.Darkness.currentProject.id) || window.Darkness.currentProjectId || (window.location.hash.split('/')[2] || '').split('?')[0] || '';
+        const res = await window.Darkness.api.post("/api/projects/" + effectivePid + "/advisor/apply-fix", {
           file: diff.file,
           before: diff.before,
           after: diff.after,
@@ -8470,7 +8470,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
         });
 
         cleanup();
-        window.Clarity.toast.show("Fix applied successfully to " + (res.file || diff.file) + "! System re-analyzed.", "success");
+        window.Darkness.toast.show("Fix applied successfully to " + (res.file || diff.file) + "! System re-analyzed.", "success");
         
         // Optimistically remove the issue from local advisorData
         if (advisorData && advisorData.issues) {
@@ -8483,7 +8483,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
         renderAdvisorView();
       } catch (err) {
         console.error("Failed to apply fix:", err);
-        window.Clarity.toast.show("Failed to apply fix: " + (err.message || "Unknown error"), "danger");
+        window.Darkness.toast.show("Failed to apply fix: " + (err.message || "Unknown error"), "danger");
         if (applyBtn) {
           applyBtn.disabled = false;
           applyBtn.innerHTML = "Retry Applying Fix";
@@ -8494,7 +8494,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
 
   function openRepairAllAdvisorModal(issuesToRepair, callback) {
     if (!issuesToRepair || issuesToRepair.length === 0) {
-      window.Clarity.toast.show("No active issues to repair.", "info");
+      window.Darkness.toast.show("No active issues to repair.", "info");
       return;
     }
     const portal = document.getElementById("vmaFixModalPortal") || document.getElementById("archFixModalPortal") || document.body;
@@ -8524,7 +8524,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
       '      <div style="background:var(--surface-muted); border:1px solid var(--line); border-radius:10px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;">',
       '        <div>',
       '          <div style="font-size:13px; font-weight:700; color:var(--ink);">' + fixCount + ' Actionable Issues Selected</div>',
-      '          <div class="muted" style="font-size:12px; margin-top:2px;">Across ' + filesAffected.length + ' project files (' + filesAffected.slice(0, 3).map(f => window.Clarity.utils.escapeHtml(f)).join(", ") + (filesAffected.length > 3 ? '...' : '') + ')</div>',
+      '          <div class="muted" style="font-size:12px; margin-top:2px;">Across ' + filesAffected.length + ' project files (' + filesAffected.slice(0, 3).map(f => window.Darkness.utils.escapeHtml(f)).join(", ") + (filesAffected.length > 3 ? '...' : '') + ')</div>',
       '        </div>',
       '        <span class="tag tag--xs" style="background:#e0e7ff; color:#4338ca; font-weight:700; font-size:12px; padding:4px 10px;">Ready to Apply</span>',
       '      </div>',
@@ -8536,9 +8536,9 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
         return '<div style="display:flex; align-items:center; justify-content:space-between; font-size:12px; padding:4px 0; border-bottom:1px solid var(--line);">' +
           '<div style="display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:75%;">' +
           '<span style="color:#10b981; font-weight:700;">#' + (idx + 1) + '</span> ' +
-          '<span style="font-weight:600; color:var(--ink);">' + window.Clarity.utils.escapeHtml(iss.title) + '</span>' +
+          '<span style="font-weight:600; color:var(--ink);">' + window.Darkness.utils.escapeHtml(iss.title) + '</span>' +
           '</div>' +
-          '<span style="font-family:var(--font-mono); color:var(--ink-muted); font-size:11px;">' + window.Clarity.utils.escapeHtml(file) + '</span>' +
+          '<span style="font-family:var(--font-mono); color:var(--ink-muted); font-size:11px;">' + window.Darkness.utils.escapeHtml(file) + '</span>' +
           '</div>';
       }).join("") +
       '        </div>',
@@ -8604,7 +8604,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
       if (progressPercent) progressPercent.textContent = "25%";
 
       try {
-        const effectivePid = targetProjectId || (analysis && (analysis.id || analysis.projectId)) || (window.Clarity.currentProject && window.Clarity.currentProject.id) || window.Clarity.currentProjectId || (window.location.hash.split('/')[2] || '').split('?')[0] || '';
+        const effectivePid = targetProjectId || (analysis && (analysis.id || analysis.projectId)) || (window.Darkness.currentProject && window.Darkness.currentProject.id) || window.Darkness.currentProjectId || (window.location.hash.split('/')[2] || '').split('?')[0] || '';
         
         const fixesPayload = issuesToRepair.map(iss => {
           if (iss.fixDiff) return iss.fixDiff;
@@ -8620,7 +8620,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
         if (progressPercent) progressPercent.textContent = "60%";
         if (progressLabel) progressLabel.textContent = "Writing real AST fixes & compiling architecture model...";
 
-        const res = await window.Clarity.api.post("/api/projects/" + effectivePid + "/advisor/apply-all-fixes", {
+        const res = await window.Darkness.api.post("/api/projects/" + effectivePid + "/advisor/apply-all-fixes", {
           fixes: fixesPayload
         });
 
@@ -8630,7 +8630,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
 
         setTimeout(async () => {
           cleanup();
-          window.Clarity.toast.show("Successfully repaired " + (res.appliedCount || fixesPayload.length) + " architectural issues! Architecture 100% verified.", "success");
+          window.Darkness.toast.show("Successfully repaired " + (res.appliedCount || fixesPayload.length) + " architectural issues! Architecture 100% verified.", "success");
           if (typeof callback === "function") {
             await callback();
           }
@@ -8638,7 +8638,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
 
       } catch (err) {
         console.error("Failed to repair all issues:", err);
-        window.Clarity.toast.show("Failed to repair all issues: " + (err.message || "Unknown error"), "danger");
+        window.Darkness.toast.show("Failed to repair all issues: " + (err.message || "Unknown error"), "danger");
         if (confirmBtn) {
           confirmBtn.disabled = false;
           confirmBtn.innerHTML = "Retry Repair All";
@@ -8692,24 +8692,24 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
             '<tr style="border-bottom:1px solid var(--line); font-size:13px;">',
             '  <td style="padding:10px 12px;">',
             '    <div style="display:flex; align-items:center; gap:6px;">',
-            '      <span class="tag tag--xs" style="font-weight:700; font-family:var(--font-mono); background:' + (r.method === 'GET' ? '#dbeafe; color:#1d4ed8;' : (r.method === 'POST' ? '#dcfce7; color:#15803d;' : '#fef3c7; color:#b45309;')) + '">' + window.Clarity.utils.escapeHtml(r.method) + '</span>',
-            '      <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">' + window.Clarity.utils.escapeHtml(r.path) + '</span>',
+            '      <span class="tag tag--xs" style="font-weight:700; font-family:var(--font-mono); background:' + (r.method === 'GET' ? '#dbeafe; color:#1d4ed8;' : (r.method === 'POST' ? '#dcfce7; color:#15803d;' : '#fef3c7; color:#b45309;')) + '">' + window.Darkness.utils.escapeHtml(r.method) + '</span>',
+            '      <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">' + window.Darkness.utils.escapeHtml(r.path) + '</span>',
             '    </div>',
-            r.clientFile ? '    <div style="margin-top:4px;"><button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Clarity.utils.escapeHtml(r.clientFile) + '" data-line="' + (r.clientLine || 1) + '" style="padding:0; font-size:11px; font-family:var(--font-mono); color:var(--accent);">' + window.Clarity.utils.escapeHtml(r.clientFile) + ':' + (r.clientLine || 1) + '</button></div>' : '',
+            r.clientFile ? '    <div style="margin-top:4px;"><button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(r.clientFile) + '" data-line="' + (r.clientLine || 1) + '" style="padding:0; font-size:11px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(r.clientFile) + ':' + (r.clientLine || 1) + '</button></div>' : '',
             '  </td>',
             '  <td style="padding:10px 12px;">',
             '    <span class="arch-health-chip ' + badgeClass + '" style="font-size:11px; padding:2px 8px;">' + badgeIcon + ' ' + r.status + '</span>',
             '  </td>',
             '  <td style="padding:10px 12px; font-family:var(--font-mono); font-size:12px;">',
             r.serverFile
-              ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Clarity.utils.escapeHtml(r.serverFile) + '" data-line="' + (r.serverLine || 1) + '" style="padding:0; font-size:11.5px; font-family:var(--font-mono); color:var(--accent); font-weight:600;">' + window.Clarity.utils.escapeHtml(r.serverFile) + ':' + (r.serverLine || 1) + '</button>'
+              ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(r.serverFile) + '" data-line="' + (r.serverLine || 1) + '" style="padding:0; font-size:11.5px; font-family:var(--font-mono); color:var(--accent); font-weight:600;">' + window.Darkness.utils.escapeHtml(r.serverFile) + ':' + (r.serverLine || 1) + '</button>'
               : '<span style="color:#ef4444; font-weight:600;">⚠ No Route Handler Declared</span>',
             '  </td>',
-            '  <td style="padding:10px 12px; color:var(--ink-muted); font-size:12.5px; line-height:1.4;">' + window.Clarity.utils.escapeHtml(r.detail || "Direct HTTP API dispatch.") + '</td>',
+            '  <td style="padding:10px 12px; color:var(--ink-muted); font-size:12.5px; line-height:1.4;">' + window.Darkness.utils.escapeHtml(r.detail || "Direct HTTP API dispatch.") + '</td>',
             '  <td style="padding:10px 12px; text-align:right; white-space:nowrap;">',
             relatedIssue
-              ? '<button class="btn btn--primary btn--sm vma-open-fix-btn" data-issue-id="' + window.Clarity.utils.escapeHtml(relatedIssue.id) + '" style="font-size:11.5px; padding:3px 10px; gap:4px;"><span>Repair</span></button>'
-              : (r.clientFile ? '<button class="btn btn--outline btn--sm vma-jump-file-btn" data-file="' + window.Clarity.utils.escapeHtml(r.clientFile) + '" data-line="' + (r.clientLine || 1) + '" style="font-size:11.5px; padding:3px 10px;">Inspect Code</button>' : '<span class="muted" style="font-size:11px;">Verified</span>'),
+              ? '<button class="btn btn--primary btn--sm vma-open-fix-btn" data-issue-id="' + window.Darkness.utils.escapeHtml(relatedIssue.id) + '" style="font-size:11.5px; padding:3px 10px; gap:4px;"><span>Repair</span></button>'
+              : (r.clientFile ? '<button class="btn btn--outline btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(r.clientFile) + '" data-line="' + (r.clientLine || 1) + '" style="font-size:11.5px; padding:3px 10px;">Inspect Code</button>' : '<span class="muted" style="font-size:11px;">Verified</span>'),
             '  </td>',
             '</tr>'
           ].join("");
@@ -8779,17 +8779,17 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
               '  <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;">',
               '    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">',
               '      <span class="tag tag--xs" style="background:' + badgeBg + '; color:' + badgeCol + '; font-weight:700; text-transform:uppercase;">' + issue.severity + '</span>',
-              '      <strong style="font-size:14px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(issue.title) + '</strong>',
+              '      <strong style="font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(issue.title) + '</strong>',
               '    </div>',
-              '    <button class="btn btn--primary btn--sm vma-open-fix-btn" data-issue-id="' + window.Clarity.utils.escapeHtml(issue.id) + '" style="font-size:11.5px; padding:4px 10px; gap:4px;"><span>🔧 1-Click Repair</span></button>',
+              '    <button class="btn btn--primary btn--sm vma-open-fix-btn" data-issue-id="' + window.Darkness.utils.escapeHtml(issue.id) + '" style="font-size:11.5px; padding:4px 10px; gap:4px;"><span>🔧 1-Click Repair</span></button>',
               '  </div>',
-              '  <div style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(issue.explanation) + '</div>',
+              '  <div style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(issue.explanation) + '</div>',
               (issue.sourceFile || issue.targetFile) ? [
                 '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; margin-top:2px;">',
                 '    <span class="muted">Evidence:</span>',
-                issue.sourceFile ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Clarity.utils.escapeHtml(issue.sourceFile) + '" data-line="' + (issue.sourceLine || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:11.5px; color:var(--accent);">📄 ' + window.Clarity.utils.escapeHtml(issue.sourceFile) + (issue.sourceLine ? ':' + issue.sourceLine : '') + '</button>' : '',
+                issue.sourceFile ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(issue.sourceFile) + '" data-line="' + (issue.sourceLine || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:11.5px; color:var(--accent);">📄 ' + window.Darkness.utils.escapeHtml(issue.sourceFile) + (issue.sourceLine ? ':' + issue.sourceLine : '') + '</button>' : '',
                 (issue.sourceFile && issue.targetFile) ? '<span class="muted">→</span>' : '',
-                issue.targetFile ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Clarity.utils.escapeHtml(issue.targetFile) + '" data-line="' + (issue.targetLine || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:11.5px; color:var(--accent);">📄 ' + window.Clarity.utils.escapeHtml(issue.targetFile) + (issue.targetLine ? ':' + issue.targetLine : '') + '</button>' : '',
+                issue.targetFile ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(issue.targetFile) + '" data-line="' + (issue.targetLine || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:11.5px; color:var(--accent);">📄 ' + window.Darkness.utils.escapeHtml(issue.targetFile) + (issue.targetLine ? ':' + issue.targetLine : '') + '</button>' : '',
                 '  </div>'
               ].join("") : '',
               '</div>'
@@ -8874,22 +8874,22 @@ function renderDataFlowTab(container, analysis, switchTabToFile) {
     '    <h3 style="font-size:16px; font-weight:600; color:var(--ink); margin:0;">End-to-End Execution & Data Pipeline</h3>',
     flowsList.length > 0 ? '    <span class="tag tag--xs tag--info">' + flowsList.length + ' Verified Application Flows</span>' : '',
     '  </div>',
-    '  <p style="font-size:14.5px; line-height:1.6; color:var(--ink-muted); margin:0;">' + window.Clarity.utils.escapeHtml((analysis.dataFlow && analysis.dataFlow.summary) || 'System execution trace') + '</p>',
+    '  <p style="font-size:14.5px; line-height:1.6; color:var(--ink-muted); margin:0;">' + window.Darkness.utils.escapeHtml((analysis.dataFlow && analysis.dataFlow.summary) || 'System execution trace') + '</p>',
     '</div>',
 
     '<div class="flow-timeline">',
     (analysis.dataFlow && analysis.dataFlow.steps ? analysis.dataFlow.steps : []).map(step => {
       const filesList = (step.files || []).map(f => {
-        return '<button class="arch-file-tag" data-nav-file="' + window.Clarity.utils.escapeHtml(f) + '">' + window.Clarity.utils.escapeHtml(f) + '</button>';
+        return '<button class="arch-file-tag" data-nav-file="' + window.Darkness.utils.escapeHtml(f) + '">' + window.Darkness.utils.escapeHtml(f) + '</button>';
       }).join("");
 
       return '<div class="flow-step-item">' +
         '<div class="flow-step-marker">' + step.step + '</div>' +
         '<div class="hstack" style="justify-content:space-between; margin-bottom:6px;">' +
-          '<strong style="font-size:14.5px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(step.title) + '</strong>' +
-          '<span class="muted" style="font-size:12px; font-family:var(--font-mono);">' + window.Clarity.utils.escapeHtml(step.source) + ' → ' + window.Clarity.utils.escapeHtml(step.target) + '</span>' +
+          '<strong style="font-size:14.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(step.title) + '</strong>' +
+          '<span class="muted" style="font-size:12px; font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(step.source) + ' → ' + window.Darkness.utils.escapeHtml(step.target) + '</span>' +
         '</div>' +
-        '<p style="font-size:13.5px; color:var(--ink-muted); line-height:1.5; margin-bottom:10px;">' + window.Clarity.utils.escapeHtml(step.description) + '</p>' +
+        '<p style="font-size:13.5px; color:var(--ink-muted); line-height:1.5; margin-bottom:10px;">' + window.Darkness.utils.escapeHtml(step.description) + '</p>' +
         '<div class="arch-files-list">' + filesList + '</div>' +
       '</div>';
     }).join(""),
@@ -8933,8 +8933,8 @@ function renderApisTab(container, analysis, switchTabToFile) {
       const methodClass = method === "GET" ? "api-badge--get" : method === "POST" ? "api-badge--post" : method === "PUT" ? "api-badge--put" : method === "DELETE" ? "api-badge--delete" : "api-badge--any";
       return '<div class="api-row">' +
         '<div><span class="api-badge ' + methodClass + '">' + method + '</span></div>' +
-        '<div><strong style="font-family:var(--font-mono); font-size:13.5px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(ep.path || "/") + '</strong></div>' +
-        '<div><button class="btn btn--ghost btn--sm" data-nav-file="' + window.Clarity.utils.escapeHtml(ep.file || "") + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent);">' + window.Clarity.utils.escapeHtml(ep.file || "") + ':' + (ep.line || 1) + '</button></div>' +
+        '<div><strong style="font-family:var(--font-mono); font-size:13.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(ep.path || "/") + '</strong></div>' +
+        '<div><button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(ep.file || "") + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent);">' + window.Darkness.utils.escapeHtml(ep.file || "") + ':' + (ep.line || 1) + '</button></div>' +
         '<div>' + (ep.authRequired ? '<span class="tag tag--xs" style="background:rgba(239,68,68,0.12); color:#dc2626;">Auth Protected</span>' : '<span class="muted" style="font-size:12px;">Public</span>') + '</div>' +
       '</div>';
     }).join(""),
@@ -8969,10 +8969,10 @@ function renderDatabaseTab(container, analysis, switchTabToFile) {
   container.innerHTML = [
     '<div class="card" style="padding:20px; border:1px solid var(--line); background:var(--surface); margin-bottom:20px;">',
     '<div class="hstack" style="justify-content:space-between; margin-bottom:8px;">',
-    '<h3 style="font-size:16px; font-weight:600; color:var(--ink);">Database Engine: ' + window.Clarity.utils.escapeHtml(db.system || "Detected Database") + '</h3>',
+    '<h3 style="font-size:16px; font-weight:600; color:var(--ink);">Database Engine: ' + window.Darkness.utils.escapeHtml(db.system || "Detected Database") + '</h3>',
     '<span class="tag tag--xs" style="background:rgba(245,158,11,0.12); color:#d97706; font-weight:600;">Detected</span>',
     '</div>',
-    '<p style="font-size:14px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(db.description || "Database schema detected in codebase.") + '</p>',
+    '<p style="font-size:14px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(db.description || "Database schema detected in codebase.") + '</p>',
     '</div>',
 
     '<h4 style="font-size:15px; font-weight:600; color:var(--ink); margin-bottom:12px;">Discovered Models / Tables (' + models.length + ')</h4>',
@@ -8980,8 +8980,8 @@ function renderDatabaseTab(container, analysis, switchTabToFile) {
     models.map(m => {
       return '<div class="card" style="padding:16px; border:1px solid var(--line); background:var(--surface);">' +
         '<div class="hstack" style="justify-content:space-between; margin-bottom:8px;">' +
-          '<strong style="font-size:15px; color:var(--ink); font-family:var(--font-mono);">' + window.Clarity.utils.escapeHtml(m.name || "Model") + '</strong>' +
-          '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Clarity.utils.escapeHtml(m.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent);">' + window.Clarity.utils.escapeHtml(m.file || "") + '</button>' +
+          '<strong style="font-size:15px; color:var(--ink); font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(m.name || "Model") + '</strong>' +
+          '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(m.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(m.file || "") + '</button>' +
         '</div>' +
         '<div class="muted" style="font-size:12.5px;">Model definition verified in source repository.</div>' +
       '</div>';
@@ -9015,7 +9015,7 @@ function renderDependenciesTab(container, analysis) {
         deps.map(d => {
           return '<div class="card" style="padding:12px 14px; border:1px solid var(--line); background:var(--surface); display:flex; flex-direction:column; gap:4px;">' +
             '<div class="hstack" style="justify-content:space-between;">' +
-              '<strong style="font-size:13.5px; color:var(--ink); font-family:var(--font-mono);">' + window.Clarity.utils.escapeHtml(d.name || "package") + '</strong>' +
+              '<strong style="font-size:13.5px; color:var(--ink); font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(d.name || "package") + '</strong>' +
               '<span class="tag tag--xs" style="font-size:11px;">' + (d.version || "latest") + '</span>' +
             '</div>' +
             '<div class="muted" style="font-size:11.5px;">Imported ' + (d.usageCount || 1) + ' time' + (d.usageCount === 1 ? '' : 's') + ' in codebase</div>' +
@@ -9031,11 +9031,11 @@ function renderDependenciesTab(container, analysis) {
     : cqIssues.map(iss => {
         return '<div class="security-finding-card" style="margin-bottom:12px; padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--surface);">' +
           '<div class="hstack" style="justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">' +
-            '<strong style="font-size:14px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(iss.title || "Code issue") + '</strong>' +
-            '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Clarity.utils.escapeHtml(iss.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent); padding:2px 6px;">' + window.Clarity.utils.escapeHtml(iss.file || "") + (iss.line ? ':' + iss.line : '') + '</button>' +
+            '<strong style="font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(iss.title || "Code issue") + '</strong>' +
+            '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(iss.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent); padding:2px 6px;">' + window.Darkness.utils.escapeHtml(iss.file || "") + (iss.line ? ':' + iss.line : '') + '</button>' +
           '</div>' +
-          '<p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin-bottom:8px;">' + window.Clarity.utils.escapeHtml(iss.whyItMatters || "") + '</p>' +
-          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink);"><strong style="color:var(--accent);">Fix:</strong> <span>' + window.Clarity.utils.escapeHtml(iss.suggestedFix || "") + '</span></div>' +
+          '<p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin-bottom:8px;">' + window.Darkness.utils.escapeHtml(iss.whyItMatters || "") + '</p>' +
+          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink);"><strong style="color:var(--accent);">Fix:</strong> <span>' + window.Darkness.utils.escapeHtml(iss.suggestedFix || "") + '</span></div>' +
         '</div>';
       }).join("");
 
@@ -9062,7 +9062,7 @@ function renderDependenciesTab(container, analysis) {
 
   container.querySelectorAll("[data-nav-file]").forEach(btn => {
     btn.addEventListener("click", () => {
-      window.Clarity.jumpToFile(btn.getAttribute("data-nav-file"));
+      window.Darkness.jumpToFile(btn.getAttribute("data-nav-file"));
     });
   });
 
@@ -9112,13 +9112,13 @@ function renderSecurityTab(container, analysis, switchTabToFile) {
             '<div class="hstack" style="justify-content:space-between;">' +
               '<div class="hstack" style="gap:8px;">' +
                 '<span class="severity-pill ' + sevClass + '">' + f.severity + '</span>' +
-                '<strong style="font-size:14.5px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(f.title || "Security note") + '</strong>' +
+                '<strong style="font-size:14.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(f.title || "Security note") + '</strong>' +
               '</div>' +
-              '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Clarity.utils.escapeHtml(f.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent);">' + window.Clarity.utils.escapeHtml(f.file || "") + ':' + (f.line || 1) + '</button>' +
+              '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(f.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(f.file || "") + ':' + (f.line || 1) + '</button>' +
             '</div>' +
-            '<p style="font-size:13.5px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(f.description || "") + '</p>' +
-            (f.redactedSnippet ? '<div class="code-evidence-box"><code>' + window.Clarity.utils.escapeHtml(f.redactedSnippet) + '</code></div>' : '') +
-            '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink);"><strong style="color:var(--success);">Remediation:</strong> <span>' + window.Clarity.utils.escapeHtml(f.suggestedFix || "") + '</span></div>' +
+            '<p style="font-size:13.5px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(f.description || "") + '</p>' +
+            (f.redactedSnippet ? '<div class="code-evidence-box"><code>' + window.Darkness.utils.escapeHtml(f.redactedSnippet) + '</code></div>' : '') +
+            '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink);"><strong style="color:var(--success);">Remediation:</strong> <span>' + window.Darkness.utils.escapeHtml(f.suggestedFix || "") + '</span></div>' +
           '</div>';
         }).join("")
   ].join("");
@@ -9160,7 +9160,7 @@ function renderQualityTab(container, analysis, switchTabToFile) {
       '<div style="border-top:1px dashed ' + scoreBorder + '; padding-top:12px; margin-top:8px;">',
         '<strong style="font-size:12px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-secondary); display:block; margin-bottom:8px;">Reasons for Low Score:</strong>',
         '<ul style="margin:0; padding-left:18px; font-size:13px; color:var(--ink); line-height:1.6;">',
-          cqIssues.map(iss => '<li><strong>' + window.Clarity.utils.escapeHtml(iss.file || "") + '</strong>: ' + window.Clarity.utils.escapeHtml(iss.title || "") + ' &mdash; <em style="color:var(--ink-muted);">' + window.Clarity.utils.escapeHtml(iss.suggestedFix || "") + '</em></li>').join(''),
+          cqIssues.map(iss => '<li><strong>' + window.Darkness.utils.escapeHtml(iss.file || "") + '</strong>: ' + window.Darkness.utils.escapeHtml(iss.title || "") + ' &mdash; <em style="color:var(--ink-muted);">' + window.Darkness.utils.escapeHtml(iss.suggestedFix || "") + '</em></li>').join(''),
         '</ul>',
       '</div>',
 
@@ -9177,15 +9177,15 @@ function renderQualityTab(container, analysis, switchTabToFile) {
           '<div class="hstack" style="justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">' +
             '<div style="display:flex; align-items:center; gap:8px;">' +
               '<span style="background:rgba(239,68,68,0.1); color:var(--danger); font-size:11px; font-weight:700; padding:2px 8px; border-radius:4px;">ISSUE #' + (idx + 1) + '</span>' +
-              '<strong style="font-size:14.5px; color:var(--ink);">' + window.Clarity.utils.escapeHtml(iss.title || "Code issue") + '</strong>' +
+              '<strong style="font-size:14.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(iss.title || "Code issue") + '</strong>' +
             '</div>' +
             '<div style="display:flex; align-items:center; gap:8px;">' +
-              '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Clarity.utils.escapeHtml(iss.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent);">' + window.Clarity.utils.escapeHtml(iss.file || "") + (iss.line ? ':' + iss.line : '') + '</button>' +
+              '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(iss.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(iss.file || "") + (iss.line ? ':' + iss.line : '') + '</button>' +
               '<button class="btn btn--primary btn--sm auto-fix-single-quality-btn" data-issue-idx="' + idx + '" style="font-size:12px; font-weight:600; padding:3px 10px; background:var(--accent); color:#fff; border-radius:4px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;">⚡ Auto-Fix with AI</button>' +
             '</div>' +
           '</div>' +
-          '<p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin-bottom:8px;"><strong>Why it affects quality:</strong> ' + window.Clarity.utils.escapeHtml(iss.whyItMatters || "") + '</p>' +
-          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink); background:var(--bg); padding:8px 12px; border-radius:6px; border:1px solid var(--line);"><strong style="color:var(--accent);">Suggested Fix:</strong> <span>' + window.Clarity.utils.escapeHtml(iss.suggestedFix || "") + '</span></div>' +
+          '<p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin-bottom:8px;"><strong>Why it affects quality:</strong> ' + window.Darkness.utils.escapeHtml(iss.whyItMatters || "") + '</p>' +
+          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink); background:var(--bg); padding:8px 12px; border-radius:6px; border:1px solid var(--line);"><strong style="color:var(--accent);">Suggested Fix:</strong> <span>' + window.Darkness.utils.escapeHtml(iss.suggestedFix || "") + '</span></div>' +
         '</div>';
       }).join("");
 
@@ -9271,7 +9271,7 @@ function renderVivaTab(container, analysis, switchTabToFile) {
     '      Copy Pitch',
     '    </button>',
     '  </div>',
-    '  <div style="background:var(--surface-muted); padding:16px; border-radius:8px; font-size:14px; line-height:1.6; color:var(--ink); border-left:4px solid var(--accent); white-space:pre-wrap;">' + window.Clarity.utils.escapeHtml(pi.hackathonPitch ? pi.hackathonPitch.duration30to60s : (pi.summary || "Project pitch")) + '</div>',
+    '  <div style="background:var(--surface-muted); padding:16px; border-radius:8px; font-size:14px; line-height:1.6; color:var(--ink); border-left:4px solid var(--accent); white-space:pre-wrap;">' + window.Darkness.utils.escapeHtml(pi.hackathonPitch ? pi.hackathonPitch.duration30to60s : (pi.summary || "Project pitch")) + '</div>',
     '</div>',
 
     '<div class="card" style="padding:22px; border:1px solid var(--line); background:var(--surface); border-radius:12px; margin-bottom:20px;">',
@@ -9279,27 +9279,27 @@ function renderVivaTab(container, analysis, switchTabToFile) {
     '  <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:16px;">',
     '    <div style="background:var(--surface-muted); padding:14px; border-radius:8px;">',
     '      <strong style="font-size:13px; color:var(--ink); display:block; margin-bottom:4px;">🎯 Problem Statement</strong>',
-    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(pi.problemStatement || "Grounded codebase synthesis") + '</span>',
+    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(pi.problemStatement || "Grounded codebase synthesis") + '</span>',
     '    </div>',
     '    <div style="background:var(--surface-muted); padding:14px; border-radius:8px;">',
     '      <strong style="font-size:13px; color:var(--ink); display:block; margin-bottom:4px;">💡 Proposed Solution</strong>',
-    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(pi.proposedSolution || "Comprehensive architecture understanding") + '</span>',
+    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(pi.proposedSolution || "Comprehensive architecture understanding") + '</span>',
     '    </div>',
     '    <div style="background:var(--surface-muted); padding:14px; border-radius:8px;">',
     '      <strong style="font-size:13px; color:var(--ink); display:block; margin-bottom:4px;">🤖 AI Components</strong>',
-    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(pi.aiComponents ? pi.aiComponents.description : "Integrated multimodal intelligence") + '</span>',
+    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(pi.aiComponents ? pi.aiComponents.description : "Integrated multimodal intelligence") + '</span>',
     '    </div>',
     '    <div style="background:var(--surface-muted); padding:14px; border-radius:8px;">',
     '      <strong style="font-size:13px; color:var(--ink); display:block; margin-bottom:4px;">📚 RAG Implementation</strong>',
-    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(pi.ragComponents ? pi.ragComponents.description : "Semantic retrieval across codebase documents") + '</span>',
+    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(pi.ragComponents ? pi.ragComponents.description : "Semantic retrieval across codebase documents") + '</span>',
     '    </div>',
     '    <div style="background:var(--surface-muted); padding:14px; border-radius:8px;">',
     '      <strong style="font-size:13px; color:var(--ink); display:block; margin-bottom:4px;">⭐ Innovation / USP</strong>',
-    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml(pi.innovation || "End-to-end fullstack intelligence") + '</span>',
+    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(pi.innovation || "End-to-end fullstack intelligence") + '</span>',
     '    </div>',
     '    <div style="background:var(--surface-muted); padding:14px; border-radius:8px;">',
     '      <strong style="font-size:13px; color:var(--ink); display:block; margin-bottom:4px;">👥 Target Users</strong>',
-    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Clarity.utils.escapeHtml((pi.targetUsers || []).join(", ") || "Engineers, Architects, Evaluators") + '</span>',
+    '      <span style="font-size:13px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml((pi.targetUsers || []).join(", ") || "Engineers, Architects, Evaluators") + '</span>',
     '    </div>',
     '  </div>',
     '</div>'
@@ -9321,15 +9321,15 @@ function renderVivaTab(container, analysis, switchTabToFile) {
     '<div style="display:flex; flex-direction:column; gap:16px;">',
     vqs.map((q, idx) => {
       const filesList = (q.relatedFiles || []).map(f => {
-        return '<button class="arch-file-tag" data-nav-file="' + window.Clarity.utils.escapeHtml(f) + '">' + window.Clarity.utils.escapeHtml(f) + '</button>';
+        return '<button class="arch-file-tag" data-nav-file="' + window.Darkness.utils.escapeHtml(f) + '">' + window.Darkness.utils.escapeHtml(f) + '</button>';
       }).join("");
 
       return '<div class="card" style="padding:18px 20px; border:1px solid var(--line); background:var(--surface);">' +
         '<div class="hstack" style="justify-content:space-between; margin-bottom:10px;">' +
-          '<strong style="font-size:15px; color:var(--ink);">Q' + (idx + 1) + ': ' + window.Clarity.utils.escapeHtml(q.question || "Viva question") + '</strong>' +
+          '<strong style="font-size:15px; color:var(--ink);">Q' + (idx + 1) + ': ' + window.Darkness.utils.escapeHtml(q.question || "Viva question") + '</strong>' +
         '</div>' +
         '<div style="background:var(--surface-muted); border-left:3px solid var(--accent); padding:12px 16px; border-radius:0 var(--r-sm) var(--r-sm) 0; font-size:14px; line-height:1.6; color:var(--ink); margin-bottom:12px;">' +
-          window.Clarity.utils.escapeHtml(q.answer || "") +
+          window.Darkness.utils.escapeHtml(q.answer || "") +
         '</div>' +
         '<div class="hstack" style="gap:8px; font-size:12px; align-items:center;">' +
           '<span class="muted">Reference Code:</span>' +
@@ -9343,7 +9343,7 @@ function renderVivaTab(container, analysis, switchTabToFile) {
   document.getElementById("copyHackathonPitchBtn")?.addEventListener("click", () => {
     if (pi && pi.hackathonPitch && pi.hackathonPitch.duration30to60s) {
       navigator.clipboard.writeText(pi.hackathonPitch.duration30to60s);
-      window.Clarity.toast.show("Hackathon pitch copied to clipboard!", "success");
+      window.Darkness.toast.show("Hackathon pitch copied to clipboard!", "success");
     }
   });
 
@@ -9504,13 +9504,13 @@ async function renderArtifactsTab(t, e, n, r) {
     }
 
     try {
-      const res = await window.Clarity.api.post("/api/projects/" + e + "/generate", {
+      const res = await window.Darkness.api.post("/api/projects/" + e + "/generate", {
         prompt: effectivePrompt,
         format: selectedFormat,
         template: selectedFormat === "pptx" ? "presentation" : selectedFormat === "docx" ? "document" : selectedFormat === "xlsx" ? "spreadsheet" : selectedFormat === "svg" ? "diagram" : "document"
       });
 
-      window.Clarity.toast.show("Successfully generated " + (res.artifact?.filename || `${selectedFormat.toUpperCase()} file`), "success");
+      window.Darkness.toast.show("Successfully generated " + (res.artifact?.filename || `${selectedFormat.toUpperCase()} file`), "success");
       if (statusMsg) {
         statusMsg.style.color = "var(--success, #16a34a)";
         statusMsg.textContent = "✓ " + selectedFormat.toUpperCase() + " generated successfully!";
@@ -9519,8 +9519,8 @@ async function renderArtifactsTab(t, e, n, r) {
       await l(); // Re-fetch artifacts
       d(); // Re-render list
 
-      if (res.artifact && window.Clarity.artifact && window.Clarity.artifact.openPreview) {
-        setTimeout(() => window.Clarity.artifact.openPreview(res.artifact), 400);
+      if (res.artifact && window.Darkness.artifact && window.Darkness.artifact.openPreview) {
+        setTimeout(() => window.Darkness.artifact.openPreview(res.artifact), 400);
       }
     } catch (err) {
       console.error("Artifact generation error:", err);
@@ -9528,7 +9528,7 @@ async function renderArtifactsTab(t, e, n, r) {
         statusMsg.style.color = "var(--danger, #dc2626)";
         statusMsg.textContent = "Error: " + (err.message || "Generation failed");
       }
-      window.Clarity.toast.show("Generation error: " + (err.message || ""), "danger");
+      window.Darkness.toast.show("Generation error: " + (err.message || ""), "danger");
     } finally {
         const dz = document.getElementById('ragDropZone');
         if (dz) dz.classList.remove('uploading-pulse');
@@ -9547,7 +9547,7 @@ async function renderArtifactsTab(t, e, n, r) {
     const A = document.getElementById("projectArtifactsContainer");
     if (!A) return;
     try {
-      const z = await window.Clarity.api.get("/api/projects/" + e + "/artifacts");
+      const z = await window.Darkness.api.get("/api/projects/" + e + "/artifacts");
       o = z.artifacts || [];
       d();
     } catch (z) {
@@ -9599,14 +9599,14 @@ async function renderArtifactsTab(t, e, n, r) {
     }
     
     container.innerHTML = filtered.map(art => {
-      if (window.Clarity.artifact && window.Clarity.artifact.renderCard) {
-        return window.Clarity.artifact.renderCard(art);
+      if (window.Darkness.artifact && window.Darkness.artifact.renderCard) {
+        return window.Darkness.artifact.renderCard(art);
       }
       return '';
     }).join("");
     
-    if (window.Clarity.artifact && window.Clarity.artifact.bindEvents) {
-      window.Clarity.artifact.bindEvents(container);
+    if (window.Darkness.artifact && window.Darkness.artifact.bindEvents) {
+      window.Darkness.artifact.bindEvents(container);
     }
   }
 
@@ -9635,7 +9635,7 @@ async function renderArtifactsTab(t, e, n, r) {
    ============================================================ */
 function renderProjectChatTab(container, projectId, analysis) {
   let projectChatAttachments = [];
-  const storageKey = 'clarity_proj_chats_' + projectId;
+  const storageKey = 'darkness_proj_chats_' + projectId;
 
   function getStoredChats() {
     try {
@@ -9682,7 +9682,7 @@ function renderProjectChatTab(container, projectId, analysis) {
     '<div class="project-chat-head">',
     '<div style="display:flex; align-items:center; gap:8px;">',
     '<button class="btn btn--icon-sm btn--ghost" id="projToggleHistoryBtn" type="button" title="Toggle Chat History Sidebar" style="display:inline-flex; align-items:center; justify-content:center; cursor:pointer; padding:4px 6px; border-radius:6px; background:var(--surface); border:1px solid var(--line); color:var(--ink);" aria-label="Toggle History"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg></button>',
-    '<div><strong style="font-size:14px; color:var(--ink);">AI Assistant — ' + window.Clarity.utils.escapeHtml(analysis.projectName) + '</strong><span class="muted" style="font-size:12px; margin-left:8px;">Grounded exclusively in this codebase</span></div>',
+    '<div><strong style="font-size:14px; color:var(--ink);">AI Assistant — ' + window.Darkness.utils.escapeHtml(analysis.projectName) + '</strong><span class="muted" style="font-size:12px; margin-left:8px;">Grounded exclusively in this codebase</span></div>',
     '</div>',
     '<div style="display:flex; align-items:center; gap:10px;">',
     '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent); font-weight:600;">Isolated Context</span>',
@@ -9711,7 +9711,7 @@ function renderProjectChatTab(container, projectId, analysis) {
     '<span style="font-size:12px;">Attach</span>',
     '</button>',
     '<input type="file" id="projectChatFileInput" hidden multiple accept=".pdf,.docx,.doc,.pptx,.ppt,.txt,.md,.csv,.json,.xml,.yaml,.yml,.js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.sql,.html,.css,.scss,.sh,.zip,.png,.jpg,.jpeg,.webp,.gif">',
-    '<input type="text" id="projectChatInput" placeholder="Message AI Assistant for ' + window.Clarity.utils.escapeHtml(analysis.projectName) + '..." autocomplete="off" style="flex:1;">',
+    '<input type="text" id="projectChatInput" placeholder="Message AI Assistant for ' + window.Darkness.utils.escapeHtml(analysis.projectName) + '..." autocomplete="off" style="flex:1;">',
     '<button class="btn btn--primary" type="submit">Send</button>',
     '</form>',
     '</div>',
@@ -9734,7 +9734,7 @@ function renderProjectChatTab(container, projectId, analysis) {
       const raw = el.getAttribute("data-raw") || "";
       const isUser = el.classList.contains("project-chat-msg--user");
       const bodyEl = el.querySelector(".project-chat-msg-body");
-      const cleanHtml = bodyEl ? bodyEl.innerHTML : (el.getAttribute("data-raw") ? window.Clarity.utils.escapeHtml(el.getAttribute("data-raw")) : el.innerHTML);
+      const cleanHtml = bodyEl ? bodyEl.innerHTML : (el.getAttribute("data-raw") ? window.Darkness.utils.escapeHtml(el.getAttribute("data-raw")) : el.innerHTML);
       const msgId = el.getAttribute("data-msg-id") || "";
       msgs.push({
         id: msgId,
@@ -9810,9 +9810,9 @@ function renderProjectChatTab(container, projectId, analysis) {
         e.stopPropagation();
         try {
           await navigator.clipboard.writeText(rawText || msgEl.getAttribute("data-raw") || "");
-          window.Clarity?.toast?.show("Message copied to clipboard", "success");
+          window.Darkness?.toast?.show("Message copied to clipboard", "success");
         } catch {
-          window.Clarity?.toast?.show("Failed to copy message", "danger");
+          window.Darkness?.toast?.show("Failed to copy message", "danger");
         }
       };
 
@@ -9827,7 +9827,7 @@ function renderProjectChatTab(container, projectId, analysis) {
         e.stopPropagation();
         msgEl.remove();
         saveCurrentChatState();
-        window.Clarity?.toast?.show("Message deleted", "info");
+        window.Darkness?.toast?.show("Message deleted", "info");
       };
 
       actionsBar.appendChild(editBtn);
@@ -9845,8 +9845,8 @@ function renderProjectChatTab(container, projectId, analysis) {
       readBtn.innerHTML = '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg><span>Read Aloud</span>';
       readBtn.onclick = (e) => {
         e.stopPropagation();
-        if (window.Clarity && window.Clarity.narrationSync) {
-          window.Clarity.narrationSync.toggleReadAloud(msgId, msgEl);
+        if (window.Darkness && window.Darkness.narrationSync) {
+          window.Darkness.narrationSync.toggleReadAloud(msgId, msgEl);
         }
       };
 
@@ -9868,7 +9868,7 @@ function renderProjectChatTab(container, projectId, analysis) {
           msgEl.remove();
           sendProjectMsg(prevPrompt);
         } else {
-          window.Clarity?.toast?.show("No previous prompt found to retry", "warning");
+          window.Darkness?.toast?.show("No previous prompt found to retry", "warning");
         }
       };
 
@@ -9884,9 +9884,9 @@ function renderProjectChatTab(container, projectId, analysis) {
         try {
           const textToCopy = rawText || msgEl.getAttribute("data-raw") || msgEl.innerText || "";
           await navigator.clipboard.writeText(textToCopy);
-          window.Clarity?.toast?.show("Response copied to clipboard", "success");
+          window.Darkness?.toast?.show("Response copied to clipboard", "success");
         } catch {
-          window.Clarity?.toast?.show("Failed to copy response", "danger");
+          window.Darkness?.toast?.show("Failed to copy response", "danger");
         }
       };
 
@@ -9901,7 +9901,7 @@ function renderProjectChatTab(container, projectId, analysis) {
         e.stopPropagation();
         msgEl.remove();
         saveCurrentChatState();
-        window.Clarity?.toast?.show("Response deleted", "info");
+        window.Darkness?.toast?.show("Response deleted", "info");
       };
 
       actionsBar.appendChild(readBtn);
@@ -9911,14 +9911,14 @@ function renderProjectChatTab(container, projectId, analysis) {
 
       // 5. Attach Accessible Narration Player Bar (Play/Pause, Stop, Replay, Speed, Voice, Preview)
       let playerBar = msgEl.querySelector(".narration-player-bar");
-      if (!playerBar && window.Clarity.narrationSync) {
+      if (!playerBar && window.Darkness.narrationSync) {
         const textSample = rawText || msgEl.getAttribute("data-raw") || msgEl.innerText || "";
-        const detected = window.Clarity.LanguageDetector ? window.Clarity.LanguageDetector.detect(textSample) : { lang: "en" };
+        const detected = window.Darkness.LanguageDetector ? window.Darkness.LanguageDetector.detect(textSample) : { lang: "en" };
         const tempDiv = document.createElement("div");
-        tempDiv.innerHTML = window.Clarity.narrationSync.renderPlayerBarHtml(msgId, detected.lang);
+        tempDiv.innerHTML = window.Darkness.narrationSync.renderPlayerBarHtml(msgId, detected.lang);
         playerBar = tempDiv.firstElementChild;
         msgEl.appendChild(playerBar);
-        window.Clarity.narrationSync.bindPlayerBarEvents(playerBar, msgId);
+        window.Darkness.narrationSync.bindPlayerBarEvents(playerBar, msgId);
       }
     }
 
@@ -10005,7 +10005,7 @@ function renderProjectChatTab(container, projectId, analysis) {
     if (!historyListEl) return;
     historyListEl.innerHTML = projectChats.map(c => {
       const isActive = c.id === currentSessionId;
-      const title = window.Clarity.utils.escapeHtml(c.title || "Chat");
+      const title = window.Darkness.utils.escapeHtml(c.title || "Chat");
       return `
         <div class="proj-hist-item ${isActive ? 'is-active' : ''}" data-id="${c.id}" style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; border-radius:6px; font-size:12px; cursor:pointer; background:${isActive ? 'var(--surface-hover, #e2e8f0)' : 'transparent'}; font-weight:${isActive ? '600' : '400'}; color:var(--ink);">
           <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1;">${title}</span>
@@ -10045,11 +10045,11 @@ function renderProjectChatTab(container, projectId, analysis) {
 
   function loadSession(id) {
     if (!feed) return;
-    if (window.Clarity && window.Clarity.speechController) {
-      window.Clarity.speechController.stop(false);
+    if (window.Darkness && window.Darkness.speechController) {
+      window.Darkness.speechController.stop(false);
     }
-    if (window.Clarity && window.Clarity.narrationSync) {
-      window.Clarity.narrationSync.clearHighlights();
+    if (window.Darkness && window.Darkness.narrationSync) {
+      window.Darkness.narrationSync.clearHighlights();
     }
     const sess = projectChats.find(c => c.id === id);
     feed.innerHTML = "";
@@ -10066,9 +10066,9 @@ function renderProjectChatTab(container, projectId, analysis) {
         cleanHtml = cleanHtml.replace(/<div class="project-chat-msg-actions"[^>]*>[\s\S]*?<\/div>/gi, "");
         cleanHtml = cleanHtml.replace(/<div class="narration-player-bar"[\s\S]*?<\/div>\s*<\/div>/gi, "");
         if (!cleanHtml) {
-          cleanHtml = m.role === "assistant" && window.Clarity.markdown?.render
-            ? window.Clarity.markdown.render(m.raw || "")
-            : window.Clarity.utils.escapeHtml(m.raw || "");
+          cleanHtml = m.role === "assistant" && window.Darkness.markdown?.render
+            ? window.Darkness.markdown.render(m.raw || "")
+            : window.Darkness.utils.escapeHtml(m.raw || "");
         }
 
         const bodyEl = document.createElement("div");
@@ -10079,8 +10079,8 @@ function renderProjectChatTab(container, projectId, analysis) {
         feed.appendChild(msgEl);
         attachProjectMsgActions(msgEl, m.role, m.raw || "");
 
-        if (m.role === "assistant" && window.Clarity?.renderMermaid) {
-          window.Clarity.renderMermaid(msgEl);
+        if (m.role === "assistant" && window.Darkness?.renderMermaid) {
+          window.Darkness.renderMermaid(msgEl);
         }
       });
     } else {
@@ -10090,9 +10090,9 @@ function renderProjectChatTab(container, projectId, analysis) {
     renderHistorySidebar();
   }
 
-  window.Clarity = window.Clarity || {};
+  window.Darkness = window.Darkness || {};
   let pendingProjectCodeContext = null;
-  window.Clarity.sendProjectPrompt = function(promptText, selectedCodeContext) {
+  window.Darkness.sendProjectPrompt = function(promptText, selectedCodeContext) {
     pendingProjectCodeContext = selectedCodeContext || null;
     const input = document.getElementById("projectChatInput");
     const form = document.getElementById("projectChatForm");
@@ -10120,7 +10120,7 @@ function renderProjectChatTab(container, projectId, analysis) {
           const msgs = data.messages.map(m => ({
             role: m.role,
             raw: m.content || "",
-            html: window.Clarity.markdown?.render ? window.Clarity.markdown.render(m.content || "") : window.Clarity.utils.escapeHtml(m.content || "")
+            html: window.Darkness.markdown?.render ? window.Darkness.markdown.render(m.content || "") : window.Darkness.utils.escapeHtml(m.content || "")
           }));
           const existing = projectChats.find(c => c.id === cid);
           if (existing) {
@@ -10171,11 +10171,11 @@ function renderProjectChatTab(container, projectId, analysis) {
           return `
             <div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:16px; background:var(--surface); border:1px dashed var(--accent); font-size:12px; color:var(--ink);">
               <span class="spinner" style="width:12px; height:12px;"></span>
-              <span>Uploading ${window.Clarity.utils.escapeHtml(att.name)}...</span>
+              <span>Uploading ${window.Darkness.utils.escapeHtml(att.name)}...</span>
             </div>
           `;
         }
-        const safeName = window.Clarity.utils.escapeHtml(att.name || "document");
+        const safeName = window.Darkness.utils.escapeHtml(att.name || "document");
         const chipId = String(att.id || att.file_id || "");
         return `
           <div style="display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:16px; background:var(--surface); border:1px solid var(--line-strong); font-size:12px; color:var(--ink);">
@@ -10206,7 +10206,7 @@ function renderProjectChatTab(container, projectId, analysis) {
     const oversized = selectedFiles.filter(f => f.size > MAX_UPLOAD_SIZE);
     if (oversized.length > 0) {
       const names = oversized.map(f => `${f.name} (${(f.size / (1024 * 1024)).toFixed(1)} MB)`).join(', ');
-      window.Clarity.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB.`, "danger");
+      window.Darkness.toast.show(`File exceeds 100 MB limit: ${names}. Maximum allowed file size is 100 MB.`, "danger");
     }
     const validFiles = selectedFiles.filter(f => f.size <= MAX_UPLOAD_SIZE);
     if (validFiles.length === 0) return;
@@ -10226,7 +10226,7 @@ function renderProjectChatTab(container, projectId, analysis) {
     try {
       const formData = new FormData();
       validFiles.forEach(f => formData.append("files", f, f.name));
-      const resp = await fetch((window.Clarity.api?.base || "") + "/api/files/upload", {
+      const resp = await fetch((window.Darkness.api?.base || "") + "/api/files/upload", {
         method: "POST",
         body: formData,
         credentials: "include"
@@ -10253,10 +10253,10 @@ function renderProjectChatTab(container, projectId, analysis) {
           content: resItem.content || ""
         });
       }
-      window.Clarity.toast.show(`Attached ${returnedFiles.length} file(s) to Project Assistant`, "success");
+      window.Darkness.toast.show(`Attached ${returnedFiles.length} file(s) to Project Assistant`, "success");
     } catch (err) {
       projectChatAttachments = projectChatAttachments.filter(a => !a.isUploading);
-      window.Clarity.toast.show("File upload failed: " + (err.message || ""), "danger");
+      window.Darkness.toast.show("File upload failed: " + (err.message || ""), "danger");
     }
     renderProjectChatAttachments();
   }
@@ -10322,11 +10322,11 @@ function renderProjectChatTab(container, projectId, analysis) {
 
   async function sendProjectMsg(query) {
     if ((!query || !query.trim()) && projectChatAttachments.length === 0) return;
-    if (window.Clarity && window.Clarity.speechController) {
-      window.Clarity.speechController.stop(false);
+    if (window.Darkness && window.Darkness.speechController) {
+      window.Darkness.speechController.stop(false);
     }
-    if (window.Clarity && window.Clarity.narrationSync) {
-      window.Clarity.narrationSync.clearHighlights();
+    if (window.Darkness && window.Darkness.narrationSync) {
+      window.Darkness.narrationSync.clearHighlights();
     }
     const userText = String(query || "").trim();
     const attachmentsToSend = projectChatAttachments.slice();
@@ -10345,10 +10345,10 @@ function renderProjectChatTab(container, projectId, analysis) {
     let userMsgHtml = "";
     if (attachmentsToSend.length > 0) {
       userMsgHtml += `<div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:6px;">` +
-        attachmentsToSend.map(att => `<span style="font-size:11px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.2); display:inline-flex; align-items:center; gap:4px;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>${window.Clarity.utils.escapeHtml(att.name)}</span>`).join("") +
+        attachmentsToSend.map(att => `<span style="font-size:11px; padding:2px 6px; border-radius:4px; background:rgba(255,255,255,0.2); display:inline-flex; align-items:center; gap:4px;"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>${window.Darkness.utils.escapeHtml(att.name)}</span>`).join("") +
         `</div>`;
     }
-    userMsgHtml += `<div class="project-chat-msg-text">${window.Clarity.utils.escapeHtml(userText)}</div>`;
+    userMsgHtml += `<div class="project-chat-msg-text">${window.Darkness.utils.escapeHtml(userText)}</div>`;
     
     const userBodyEl = document.createElement("div");
     userBodyEl.className = "project-chat-msg-body";
@@ -10384,7 +10384,7 @@ function renderProjectChatTab(container, projectId, analysis) {
     });
 
     try {
-      const resp = await fetch(window.Clarity.api.base + "/api/projects/" + projectId + "/chat", {
+      const resp = await fetch(window.Darkness.api.base + "/api/projects/" + projectId + "/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -10446,15 +10446,15 @@ function renderProjectChatTab(container, projectId, analysis) {
               if (isExplanation && !aiEl.classList.contains("code-explanation-viewer")) {
                 aiEl.classList.add("markdown-body", "code-explanation-viewer");
               }
-              const rendered = window.Clarity.ResponseDocumentBuilder
-                ? window.Clarity.ResponseDocumentBuilder.build(fullText)
-                : (window.Clarity.markdown && window.Clarity.markdown.render
-                  ? window.Clarity.markdown.render(fullText)
-                  : window.Clarity.utils.escapeHtml(fullText));
+              const rendered = window.Darkness.ResponseDocumentBuilder
+                ? window.Darkness.ResponseDocumentBuilder.build(fullText)
+                : (window.Darkness.markdown && window.Darkness.markdown.render
+                  ? window.Darkness.markdown.render(fullText)
+                  : window.Darkness.utils.escapeHtml(fullText));
               
               let linkedRender = rendered.replace(/📄\s*([a-zA-Z0-9_\-\.\/]+)(?::(\d+))?/g, (match, path, line) => {
                 const lineStr = line ? `, ${line}` : '';
-                return `<a href="#" class="file-jump-link" onclick="window.Clarity.jumpToFile('${path}'${lineStr}); return false;" style="color:var(--accent); text-decoration:underline;">${match}</a>`;
+                return `<a href="#" class="file-jump-link" onclick="window.Darkness.jumpToFile('${path}'${lineStr}); return false;" style="color:var(--accent); text-decoration:underline;">${match}</a>`;
               });
 
               // Post-process for Code Change plans
@@ -10467,10 +10467,10 @@ function renderProjectChatTab(container, projectId, analysis) {
                     let ui = `<div class="code-change-proposal" style="margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--surface-hover);">
                        <h4 style="margin:0 0 8px 0; color:var(--ink);">Proposed Code Changes</h4>`;
                     changePlan.files.forEach((f) => {
-                       ui += `<div><span style="font-family:monospace; font-size:12px;"><a href="#" onclick="window.Clarity.jumpToFile('${f.path}'); return false;">${window.Clarity.utils.escapeHtml(f.path)}</a></span></div>`;
+                       ui += `<div><span style="font-family:monospace; font-size:12px;"><a href="#" onclick="window.Darkness.jumpToFile('${f.path}'); return false;">${window.Darkness.utils.escapeHtml(f.path)}</a></span></div>`;
                     });
                     ui += `<div style="margin-top: 12px; display: flex; gap: 8px;">
-                       <button class="btn btn--sm btn--primary review-changes-btn" data-plan='${window.Clarity.utils.escapeHtml(JSON.stringify(changePlan))}'>Review & Apply Changes</button>
+                       <button class="btn btn--sm btn--primary review-changes-btn" data-plan='${window.Darkness.utils.escapeHtml(JSON.stringify(changePlan))}'>Review & Apply Changes</button>
                     </div></div>`;
                     
                     linkedRender += ui;
@@ -10488,7 +10488,7 @@ function renderProjectChatTab(container, projectId, analysis) {
                  linkedRender += `<div class="project-chat-diagram-box" style="margin: 14px 0; background: #ffffff; border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); max-width: 100%;">
                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
                      <span style="font-weight: 700; font-size: 13.5px; color: var(--ink); display: flex; align-items: center; gap: 6px;">
-                       📊 ${window.Clarity.utils.escapeHtml(dTitle)}
+                       📊 ${window.Darkness.utils.escapeHtml(dTitle)}
                      </span>
                      <div style="display: flex; gap: 6px;">
                        <a href="data:image/png;base64,${p64}" download="${pName}" class="btn btn--sm btn--primary" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-size:11.5px; padding:4px 10px; background:#4f46e5; color:#fff; border-radius:6px;">⬇️ Download PNG</a>
@@ -10518,11 +10518,11 @@ function renderProjectChatTab(container, projectId, analysis) {
                     linkedRender += `
                       <div class="inline-image-card" style="border-radius:12px; border:1px solid var(--line); background:var(--surface,#ffffff); padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
                         <div style="text-align:center; background:var(--surface-subtle,#f8fafc); border-radius:8px; padding:8px; overflow:hidden;">
-                          <img src="${url}" alt="${window.Clarity.utils.escapeHtml(title)}" style="max-width:100%; max-height:480px; object-fit:contain; border-radius:6px; cursor:zoom-in;" />
+                          <img src="${url}" alt="${window.Darkness.utils.escapeHtml(title)}" style="max-width:100%; max-height:480px; object-fit:contain; border-radius:6px; cursor:zoom-in;" />
                         </div>
                         <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; flex-wrap:wrap; gap:6px;">
                           <span style="font-weight:600; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:6px;">
-                            🖼️ ${window.Clarity.utils.escapeHtml(title)}
+                            🖼️ ${window.Darkness.utils.escapeHtml(title)}
                           </span>
                           <a href="${url}" download="${downloadName}" class="btn btn--sm btn--primary" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-size:12px; padding:4px 10px; background:#4f46e5; color:#ffffff; border-radius:6px;">
                             ⬇️ Download Image
@@ -10539,8 +10539,8 @@ function renderProjectChatTab(container, projectId, analysis) {
                   linkedRender += `<div class="project-chat-artifacts" style="margin-top:14px; display:flex; flex-direction:column; gap:8px;">`;
                   linkedRender += `<div style="font-weight:600; font-size:12px; color:var(--ink-muted); text-transform:uppercase; letter-spacing:0.04em;">Official Project Deliverables & Documents (${fileArts.length})</div>`;
                   fileArts.forEach(a => {
-                    if (window.Clarity.artifact && window.Clarity.artifact.renderCard) {
-                      linkedRender += window.Clarity.artifact.renderCard(a);
+                    if (window.Darkness.artifact && window.Darkness.artifact.renderCard) {
+                      linkedRender += window.Darkness.artifact.renderCard(a);
                     } else {
                       const dlUrl = `/api/artifacts/${a.id}/download`;
                       linkedRender += `
@@ -10548,8 +10548,8 @@ function renderProjectChatTab(container, projectId, analysis) {
                           <div style="display:flex; align-items:center; gap:8px;">
                             <span style="font-size:18px;">📄</span>
                             <div>
-                              <div style="font-weight:600; font-size:13.5px; color:var(--ink);">${window.Clarity.utils.escapeHtml(a.filename)}</div>
-                              <div style="font-size:11.5px; color:var(--ink-muted);">${window.Clarity.utils.escapeHtml(a.description || "")}</div>
+                              <div style="font-weight:600; font-size:13.5px; color:var(--ink);">${window.Darkness.utils.escapeHtml(a.filename)}</div>
+                              <div style="font-size:11.5px; color:var(--ink-muted);">${window.Darkness.utils.escapeHtml(a.description || "")}</div>
                             </div>
                           </div>
                           <a href="${dlUrl}" download="${a.filename}" class="btn btn--sm btn--primary" style="text-decoration:none; display:inline-flex; align-items:center; gap:4px; font-size:12px; padding:4px 10px; background:#2563eb; color:#fff; border-radius:6px;">
@@ -10564,8 +10564,8 @@ function renderProjectChatTab(container, projectId, analysis) {
               }
 
               aiBodyEl.innerHTML = linkedRender;
-              if (window.Clarity.artifact && window.Clarity.artifact.bindEvents) {
-                window.Clarity.artifact.bindEvents(aiBodyEl);
+              if (window.Darkness.artifact && window.Darkness.artifact.bindEvents) {
+                window.Darkness.artifact.bindEvents(aiBodyEl);
               }
               
               // Bind apply buttons
@@ -10585,7 +10585,7 @@ function renderProjectChatTab(container, projectId, analysis) {
                         
                     plan.files.forEach(f => {
                        modalHtml += `<h4 style="color:#9cdcfe; margin-top:0;">${f.path}</h4>
-                       <pre style="white-space: pre-wrap; font-family: monospace; font-size: 13px;">${window.Clarity.utils.escapeHtml(f.content)}</pre><hr style="border-color:#333; margin: 16px 0;" />`;
+                       <pre style="white-space: pre-wrap; font-family: monospace; font-size: 13px;">${window.Darkness.utils.escapeHtml(f.content)}</pre><hr style="border-color:#333; margin: 16px 0;" />`;
                     });
                     
                     modalHtml += `</div>
@@ -10617,15 +10617,15 @@ function renderProjectChatTab(container, projectId, analysis) {
       
       aiEl.setAttribute("data-raw", fullText);
 
-      if (window.Clarity && window.Clarity.renderMermaid) {
-        window.Clarity.renderMermaid(aiEl);
+      if (window.Darkness && window.Darkness.renderMermaid) {
+        window.Darkness.renderMermaid(aiEl);
       }
       attachProjectMsgActions(aiEl, "assistant", fullText);
       saveCurrentChatState();
     } catch (err) {
       aiBodyEl.innerHTML = `
         <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 14px; border-radius:8px; background:rgba(239,68,68,0.1); border:1px solid var(--danger); color:var(--danger); font-size:13.5px;">
-          <span>Error: ${window.Clarity.utils.escapeHtml(err.message || "Failed to communicate with AI")}</span>
+          <span>Error: ${window.Darkness.utils.escapeHtml(err.message || "Failed to communicate with AI")}</span>
           <button type="button" class="btn btn--sm proj-error-retry-btn" style="border:1px solid var(--danger); background:transparent; color:var(--danger); font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:4px; padding:4px 8px; border-radius:6px;">
             <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
             Retry
@@ -10727,8 +10727,8 @@ function renderProjectChatTab(container, projectId, analysis) {
 
     exportPdfBtn?.addEventListener("click", async () => {
       exportDropdown.style.display = "none";
-      if (window.Clarity && window.Clarity.exportChatToPdf) {
-        await window.Clarity.exportChatToPdf({
+      if (window.Darkness && window.Darkness.exportChatToPdf) {
+        await window.Darkness.exportChatToPdf({
           feed: document.getElementById("projectChatFeed"),
           projectName: analysis.projectName,
           projectId: analysis.projectId
@@ -10938,7 +10938,7 @@ function renderRunTestTab(container, projectId, analysis) {
   
   function getTerminalColorClasses(str) {
       if (!str) return "";
-      let escaped = window.Clarity.utils.escapeHtml(str);
+      let escaped = window.Darkness.utils.escapeHtml(str);
       return escaped
         .replace(/\x1b\[0?m/g, '</span>')
         .replace(/\x1b\[1m/g, '<span style="font-weight:bold;">')
@@ -10974,7 +10974,7 @@ function renderRunTestTab(container, projectId, analysis) {
                 white-space: nowrap;
             ">
                <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="${iconColor}" stroke-width="2"><path d="M4 17l6-6-6-6"/><path d="M12 19h8"/></svg>
-               ${window.Clarity.utils.escapeHtml(titleStr.length > 20 ? titleStr.substring(0,20)+'...' : titleStr)}
+               ${window.Darkness.utils.escapeHtml(titleStr.length > 20 ? titleStr.substring(0,20)+'...' : titleStr)}
                <span class="close-tab-btn" data-id="${s.id}" style="margin-left:8px; display:${isActive ? 'block' : 'none'}; opacity:0.5; hover:opacity:1;">
                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                </span>
@@ -10987,7 +10987,7 @@ function renderRunTestTab(container, projectId, analysis) {
              const isClose = e.target.closest('.close-tab-btn');
              if (isClose) {
                  e.stopPropagation();
-                 window.Clarity.api.request('/api/terminals/' + id + '/stop?delete=true', { method: 'POST' }).catch(()=>{});
+                 window.Darkness.api.request('/api/terminals/' + id + '/stop?delete=true', { method: 'POST' }).catch(()=>{});
                  currentSessions = currentSessions.filter(s => s.id !== id);
                  if (activeSessionId === id) {
                      activeSessionId = currentSessions.length > 0 ? currentSessions[currentSessions.length - 1].id : null;
@@ -11055,8 +11055,8 @@ function renderRunTestTab(container, projectId, analysis) {
                         <span style="width:8px; height:8px; border-radius:50%; background:${statusColor}; display:inline-block;"></span>
                         ${portStr}
                      </div>
-                     <div class="muted" style="font-size:11.5px; margin-top:4px;">${window.Clarity.utils.escapeHtml(s.title)}</div>
-                     <div style="font-size:12px; color:${statusColor === '#ef4444' ? 'var(--danger)' : 'var(--ink-muted)'}; margin-top:4px; font-weight:500;">${window.Clarity.utils.escapeHtml(statusText)}</div>
+                     <div class="muted" style="font-size:11.5px; margin-top:4px;">${window.Darkness.utils.escapeHtml(s.title)}</div>
+                     <div style="font-size:12px; color:${statusColor === '#ef4444' ? 'var(--danger)' : 'var(--ink-muted)'}; margin-top:4px; font-weight:500;">${window.Darkness.utils.escapeHtml(statusText)}</div>
                   </div>
                   ${showBtn ? `<a href="${diag.previewUrl || `/api/preview/${s.port}/`}" target="_blank" class="btn btn--sm btn--primary" style="text-decoration:none;">Open Preview</a>` : ''}
                </div>
@@ -11111,7 +11111,7 @@ function renderRunTestTab(container, projectId, analysis) {
                      <svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--danger)" stroke-width="2" style="flex-shrink:0; margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                      <div>
                         <div style="font-weight:600; font-size:13px; color:var(--danger);">Connection Fault</div>
-                        <div style="font-size:12px; color:var(--ink-muted); margin-top:4px; font-family:monospace; word-break:break-all;">${window.Clarity.utils.escapeHtml(failureMsg)}</div>
+                        <div style="font-size:12px; color:var(--ink-muted); margin-top:4px; font-family:monospace; word-break:break-all;">${window.Darkness.utils.escapeHtml(failureMsg)}</div>
                      </div>
                   </div>`;
               }
@@ -11132,7 +11132,7 @@ function renderRunTestTab(container, projectId, analysis) {
 
   const fetchTerminals = async () => {
     try {
-      const res = await window.Clarity.api.request('/api/projects/' + projectId + '/terminals');
+      const res = await window.Darkness.api.request('/api/projects/' + projectId + '/terminals');
       if (Array.isArray(res)) {
           currentSessions = res;
           if (currentSessions.length > 0 && !activeSessionId) {
@@ -11158,7 +11158,7 @@ function renderRunTestTab(container, projectId, analysis) {
   async function spawnTerminal(command, title) {
       try {
           if (termOut && currentSessions.length === 0) termOut.innerHTML = ''; 
-          const res = await window.Clarity.api.request('/api/projects/' + projectId + '/terminals', {
+          const res = await window.Darkness.api.request('/api/projects/' + projectId + '/terminals', {
               method: 'POST',
               body: JSON.stringify({ command, title })
           });
@@ -11173,7 +11173,7 @@ function renderRunTestTab(container, projectId, analysis) {
           renderActiveSession();
           startPolling();
       } catch(e) {
-          window.Clarity.toast.show(e.message || "Failed to launch terminal", "error");
+          window.Darkness.toast.show(e.message || "Failed to launch terminal", "error");
       }
   }
 
@@ -11181,7 +11181,7 @@ function renderRunTestTab(container, projectId, analysis) {
   let defaultBuildCmd = "npm run build";
   let defaultTestCmd = "npm test";
 
-  window.Clarity.api.get('/api/projects/' + projectId + '/detect').then(res => {
+  window.Darkness.api.get('/api/projects/' + projectId + '/detect').then(res => {
       if (res && res.projectType) {
           const badge = container.querySelector('#detectedProjectBadge');
           if (badge) {
@@ -11210,7 +11210,7 @@ function renderRunTestTab(container, projectId, analysis) {
   stopBtn?.addEventListener('click', async () => {
       if (!activeSessionId) return;
       try {
-          await window.Clarity.api.request('/api/terminals/' + activeSessionId + '/stop', { method: 'POST' });
+          await window.Darkness.api.request('/api/terminals/' + activeSessionId + '/stop', { method: 'POST' });
           fetchTerminals();
       } catch(e) {}
   });
@@ -11231,7 +11231,7 @@ function renderRunTestTab(container, projectId, analysis) {
       const active = activeSessionId ? currentSessions.find(s => s.id === activeSessionId) : null;
       if (active && (active.status === 'running' || active.status === 'starting')) {
          try {
-            await window.Clarity.api.request('/api/terminals/' + activeSessionId + '/input', {
+            await window.Darkness.api.request('/api/terminals/' + activeSessionId + '/input', {
               method: 'POST',
               body: JSON.stringify({ input })
             });

@@ -1,5 +1,5 @@
 /**
- * CLARITY UNIVERSAL PROBLEM-SOLVING & ANSWER REPRESENTATION ENGINE
+ * DARKNESS UNIVERSAL PROBLEM-SOLVING & ANSWER REPRESENTATION ENGINE
  * 
  * Provides universal problem decomposition, multi-domain classification,
  * deterministic mathematical and algorithmic solvers (Master Theorem, Recurrences,
@@ -1340,7 +1340,7 @@ export class UniversalExplanationEngine {
 
     const isProjectSpecific =
       intent === "PROJECT_ANALYSIS" ||
-      /\b(my project|our project|clarity project|indexed project|codebase|file|files|rag)\b/i.test(message.toLowerCase());
+      /\b(my project|our project|darkness project|indexed project|codebase|file|files|rag)\b/i.test(message.toLowerCase());
 
     const isProfessorMode = Boolean(
       (options && options.professorMode && options.professorMode !== "off" && options.professorMode !== "normal") ||
@@ -1372,7 +1372,7 @@ export class UniversalExplanationEngine {
     const { intent, domain, problemType, level, isProjectSpecific, shouldUseDiagram, language, plan, solvedProblem, isProfessorMode, professorModeStyle } = ctx;
 
     let directives = `==================================================
-CLARITY UNIVERSAL PEDAGOGY, PROBLEM-SOLVING & ACCURACY ARCHITECTURE
+DARKNESS UNIVERSAL PEDAGOGY, PROBLEM-SOLVING & ACCURACY ARCHITECTURE
 ==================================================
 You are Darkness, an expert reasoning, problem-solving, computer science, mathematics, and technical engineering teacher.
 
@@ -1400,7 +1400,7 @@ Teach like an inspiring, highly effective human professor:
 10. **Quick Recap**: Deliver a 1-sentence memorable takeaway.
 11. **Check Understanding**: Conclude with a short student practice check question.
 ${professorModeStyle === "beginner" ? "- **Beginner Depth**: Use everyday intuitive analogies first, avoid unexplained jargon, and build confidence." : ""}
-${professorModeStyle === "step-by-step" ? "- **Step-by-Step Depth**: Trace every operation and state change sequentially with absolute clarity." : ""}
+${professorModeStyle === "step-by-step" ? "- **Step-by-Step Depth**: Trace every operation and state change sequentially with absolute darkness." : ""}
 ${professorModeStyle === "detailed" ? "- **Detailed Depth**: Include computational complexity, memory behavior, and architectural nuance." : ""}
 
 ### 1. TOPIC HIERARCHY & STRUCTURE
@@ -1422,7 +1422,7 @@ For each important subtopic, follow an intuitive learning flow:
 2. **Intuitive Explanation**: Beginner-friendly explanation of the core idea.
 3. **How It Works (Step-by-Step)**: Clear sequential mechanism or workflow.
 4. **Concrete Example**: Demonstration showing the concept in action.
-5. **Formula / Diagram / Table**: Include math, diagrams, or comparison tables whenever they add genuine clarity.
+5. **Formula / Diagram / Table**: Include math, diagrams, or comparison tables whenever they add genuine darkness.
 6. **Common Misconceptions / Key Distinctions**: Highlight subtle traps or critical distinctions where relevant.
 
 ### 3. EXAMPLES THAT TEACH

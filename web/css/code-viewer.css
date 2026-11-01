@@ -1,5 +1,5 @@
 /* ============================================================
-   Clarity Professional AI Code Experience
+   Darkness Professional AI Code Experience
    Modern Code Cells & Workspace
    Fully theme-aware using Semantic CSS Tokens
    ============================================================ */
@@ -1072,7 +1072,7 @@ body.is-resizing-code-panel .code-side-panel {
    Fixes layout overlapping, provides scroll isolation, and clean chat hierarchy
    ============================================================ */
 .visual-learning-panel,
-#clarityVisualLearningPanel {
+#darknessVisualLearningPanel {
   position: fixed !important;
   top: 0 !important;
   right: 0 !important;
@@ -1254,7 +1254,7 @@ body.is-resizing-vl .vl-panel-resizer::after {
 /* Mobile Responsiveness for AI Tutor Panel */
 @media (max-width: 768px) {
   .visual-learning-panel,
-  #clarityVisualLearningPanel {
+  #darknessVisualLearningPanel {
     width: 100vw !important;
     max-width: 100vw !important;
     min-width: 100vw !important;

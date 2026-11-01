@@ -5,7 +5,7 @@
 Please report vulnerabilities privately to the repository owner (GitHub: *Security -> Report a vulnerability*)
 instead of opening a public issue.
 
-## Findings fixed in this fork (relative to upstream Clarity)
+## Findings fixed in this fork (relative to upstream Darkness)
 
 These were verified by `scripts/smoke.mjs` against the real server:
 
@@ -13,7 +13,7 @@ These were verified by `scripts/smoke.mjs` against the real server:
 |---|---|---|
 | 1 | A request with **no or an unknown token was treated as the most recently active / most recently registered user** - any anonymous visitor could read another user's data | Strict mode: unknown token = anonymous = `401`. `/api/auth/me` returns `{user:null}` and issues no cookie |
 | 2 | Hardcoded session token **`default_token`** mapped to a shared account, re-created on every boot | Not created in strict mode; purged from the database on upgrade |
-| 3 | Seeded demo account **`user@clarity.ai` / `password123`** | Not seeded in strict mode; purged on upgrade |
+| 3 | Seeded demo account **`user@darkness.local` / `password123`** | Not seeded in strict mode; purged on upgrade |
 | 4 | **Remote code execution surface**: terminals / run engine spawn user-supplied commands; `/api/preview/:port` proxies to local ports | `403` unless `ENABLE_RUN_ENGINE=true` (private, single-user instances only) |
 | 5 | CORS reflected **any origin with credentials**, cookies `SameSite=None` | Origin allow-list (`CORS_ORIGINS`), `SameSite=Lax` |
 | 6 | Debug/diagnostic endpoints disclosed routes and key lengths | Closed in strict mode |

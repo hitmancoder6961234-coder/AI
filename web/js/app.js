@@ -1,18 +1,18 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.app = {
+window.Darkness.app = {
   async init() {
-    const state = window.Clarity.settings.get();
-    if (window.Clarity.theme && typeof window.Clarity.theme.init === "function") {
-      window.Clarity.theme.init();
+    const state = window.Darkness.settings.get();
+    if (window.Darkness.theme && typeof window.Darkness.theme.init === "function") {
+      window.Darkness.theme.init();
     }
-    window.Clarity.settings.applyTheme(state.theme || "light");
+    window.Darkness.settings.applyTheme(state.theme || "light");
     document.documentElement.setAttribute("data-density", state.density || "comfortable");
 
     const sidebar = document.getElementById("sidebar");
     if (sidebar) {
       const isMobile = window.innerWidth < 1024;
-      const storedRail = localStorage.getItem("clarity_sidebar_rail");
+      const storedRail = localStorage.getItem("darkness_sidebar_rail");
       const isRailStored = storedRail === "true";
       // On mobile start closed (off-canvas), on desktop restore stored rail state.
       sidebar.classList.toggle("is-open", !isMobile);
@@ -22,13 +22,13 @@ window.Clarity.app = {
         sidebar.classList.remove("is-rail");
       }
     }
-    if (window.Clarity.sources && typeof window.Clarity.sources.toggle === "function") {
-      window.Clarity.sources.toggle(false);
+    if (window.Darkness.sources && typeof window.Darkness.sources.toggle === "function") {
+      window.Darkness.sources.toggle(false);
     }
 
-    window.Clarity.uiChat.init();
-    window.Clarity.uiTopbar.renderThemeToggle();
-    window.Clarity.uiSidebar.render();
+    window.Darkness.uiChat.init();
+    window.Darkness.uiTopbar.renderThemeToggle();
+    window.Darkness.uiSidebar.render();
 
     // Configure MutationObserver on #main container to auto-render KaTeX on new dynamic content
     const mainContainer = document.getElementById("main");
@@ -73,8 +73,8 @@ window.Clarity.app = {
         if (hasUnprocessedContent) {
           clearTimeout(katexDebounceTimer);
           katexDebounceTimer = setTimeout(() => {
-            if (window.Clarity && typeof window.Clarity.renderKaTeX === "function") {
-              window.Clarity.renderKaTeX(mainContainer);
+            if (window.Darkness && typeof window.Darkness.renderKaTeX === "function") {
+              window.Darkness.renderKaTeX(mainContainer);
             }
           }, 60);
         }
@@ -91,41 +91,41 @@ window.Clarity.app = {
 
     // Auth gate first: nothing that needs a session is requested until the
     // session is known, so no request can 401 during startup.
-    const user = await window.Clarity.auth.refresh();
+    const user = await window.Darkness.auth.refresh();
     if (!user) {
-      window.Clarity.auth.renderGate();
+      window.Darkness.auth.renderGate();
     } else {
-      window.Clarity.auth.clearGate();
-      window.Clarity.uiTopbar.renderUserMenu();
-      await window.Clarity.uiTopbar.initModelSelector();
-      await window.Clarity.uiSidebar.refresh();
+      window.Darkness.auth.clearGate();
+      window.Darkness.uiTopbar.renderUserMenu();
+      await window.Darkness.uiTopbar.initModelSelector();
+      await window.Darkness.uiSidebar.refresh();
       const hash = (window.location.hash || "").trim();
       if (!hash || hash === "#/") {
         window.location.hash = "#/chat";
       }
-      await this.navigate(window.Clarity.utils.routeFromHash());
+      await this.navigate(window.Darkness.utils.routeFromHash());
     }
 
     // React to future auth changes (logout, session expiry).
-    window.Clarity.auth.onChange((nextUser) => {
+    window.Darkness.auth.onChange((nextUser) => {
       if (!nextUser) {
-        window.Clarity.auth.renderGate();
+        window.Darkness.auth.renderGate();
         return;
       }
-      window.Clarity.auth.clearGate();
-      window.Clarity.uiTopbar.renderUserMenu();
+      window.Darkness.auth.clearGate();
+      window.Darkness.uiTopbar.renderUserMenu();
     });
   },
 
   async afterLogin() {
-    window.Clarity.auth.clearGate();
-    window.Clarity.uiTopbar.renderUserMenu();
-    await window.Clarity.uiTopbar.initModelSelector();
-    if (window.Clarity.uiSidebar) await window.Clarity.uiSidebar.refresh();
+    window.Darkness.auth.clearGate();
+    window.Darkness.uiTopbar.renderUserMenu();
+    await window.Darkness.uiTopbar.initModelSelector();
+    if (window.Darkness.uiSidebar) await window.Darkness.uiSidebar.refresh();
     if (window.location.hash !== "#/chat") {
       window.location.hash = "#/chat";
     }
-    await this.navigate(window.Clarity.utils.routeFromHash());
+    await this.navigate(window.Darkness.utils.routeFromHash());
   },
 
   bindGlobalEvents() {
@@ -147,16 +147,16 @@ window.Clarity.app = {
       const isOpen = open === undefined ? !sidebar.classList.contains("is-open") : open;
       sidebar.classList.toggle("is-open", isOpen);
       if (scrim) scrim.hidden = !isOpen;
-      if (window.Clarity.uiTooltip && typeof window.Clarity.uiTooltip.clear === "function") {
-        window.Clarity.uiTooltip.clear();
+      if (window.Darkness.uiTooltip && typeof window.Darkness.uiTooltip.clear === "function") {
+        window.Darkness.uiTooltip.clear();
       }
       const floatingBurger = document.getElementById("floatingBurger");
       if (floatingBurger) {
         floatingBurger.style.display = !isOpen ? "inline-flex" : "none";
       }
     };
-    window.Clarity.app.setSidebarOpen = setSidebarOpen;
-    window.Clarity.app.closeSidebar = () => {
+    window.Darkness.app.setSidebarOpen = setSidebarOpen;
+    window.Darkness.app.closeSidebar = () => {
       if (window.innerWidth < 1024) {
         setSidebarOpen(false);
       }
@@ -174,7 +174,7 @@ window.Clarity.app = {
         if (sidebar && sidebar.classList.contains("is-rail")) {
           event.preventDefault();
           sidebar.classList.remove("is-rail");
-          try { localStorage.setItem("clarity_sidebar_rail", "false"); } catch(e){}
+          try { localStorage.setItem("darkness_sidebar_rail", "false"); } catch(e){}
         }
       });
       brand.addEventListener("keydown", (event) => {
@@ -184,7 +184,7 @@ window.Clarity.app = {
         if (sidebar && sidebar.classList.contains("is-rail")) {
           event.preventDefault();
           sidebar.classList.remove("is-rail");
-          try { localStorage.setItem("clarity_sidebar_rail", "false"); } catch(e){}
+          try { localStorage.setItem("darkness_sidebar_rail", "false"); } catch(e){}
         }
       });
     }
@@ -205,10 +205,10 @@ window.Clarity.app = {
           sidebar.classList.add("is-open");
         }
         try {
-          localStorage.setItem("clarity_sidebar_rail", isRailNow ? "true" : "false");
+          localStorage.setItem("darkness_sidebar_rail", isRailNow ? "true" : "false");
         } catch(e){}
         syncCollapseAffordance();
-        if (window.Clarity.uiTooltip) window.Clarity.uiTooltip.refresh();
+        if (window.Darkness.uiTooltip) window.Darkness.uiTooltip.refresh();
       });
       syncCollapseAffordance();
     }
@@ -246,7 +246,7 @@ window.Clarity.app = {
     document.querySelectorAll("[data-theme-set]").forEach((button) => {
       button.addEventListener("click", () => {
         const theme = button.getAttribute("data-theme-set");
-        window.Clarity.settings.applyTheme(theme);
+        window.Darkness.settings.applyTheme(theme);
       });
     });
 
@@ -285,7 +285,7 @@ window.Clarity.app = {
           }
           syncBurgerAffordance();
         });
-        if (window.Clarity.uiTooltip) window.Clarity.uiTooltip.bind(burger);
+        if (window.Darkness.uiTooltip) window.Darkness.uiTooltip.bind(burger);
       });
       window.addEventListener("resize", syncBurgerAffordance);
       if (sidebar) {
@@ -295,8 +295,8 @@ window.Clarity.app = {
     }
 
     const handleNewChatAction = () => {
-      if (window.Clarity.uiChat && typeof window.Clarity.uiChat.startNewConversation === "function") {
-        window.Clarity.uiChat.startNewConversation();
+      if (window.Darkness.uiChat && typeof window.Darkness.uiChat.startNewConversation === "function") {
+        window.Darkness.uiChat.startNewConversation();
       }
       window.location.hash = "#/chat";
       // Auto close sidebar drawer on mobile
@@ -318,12 +318,12 @@ window.Clarity.app = {
     const refreshConv = document.getElementById("refreshConversations");
     if (refreshConv) {
       refreshConv.addEventListener("click", () => {
-        window.Clarity.uiSidebar.loadConversations();
+        window.Darkness.uiSidebar.loadConversations();
       });
     }
 
     window.addEventListener("hashchange", () => {
-      this.navigate(window.Clarity.utils.routeFromHash());
+      this.navigate(window.Darkness.utils.routeFromHash());
     });
 
     window.addEventListener("resize", () => {
@@ -370,12 +370,12 @@ window.Clarity.app = {
             sidebarCollapse.click();
           }
         }
-        window.Clarity?.toast?.show("Toggled main sidebar", "info");
+        window.Darkness?.toast?.show("Toggled main sidebar", "info");
       } else if (key === "n") {
         e.preventDefault();
-        window.Clarity.uiChat.startNewConversation();
+        window.Darkness.uiChat.startNewConversation();
         window.location.hash = "#/chat";
-        window.Clarity?.toast?.show("Started a new chat", "success");
+        window.Darkness?.toast?.show("Started a new chat", "success");
       }
     });
   },
@@ -396,9 +396,9 @@ window.Clarity.app = {
     if (rawPath.startsWith("#/chat/")) {
       const cid = rawPath.replace("#/chat/", "");
       if (cid) {
-        await window.Clarity.uiChat.loadConversation(cid);
+        await window.Darkness.uiChat.loadConversation(cid);
       } else {
-        window.Clarity.uiChat.renderChat();
+        window.Darkness.uiChat.renderChat();
       }
       return;
     }
@@ -419,31 +419,31 @@ window.Clarity.app = {
     );
 
     if (page === "chat") {
-      const cid = window.Clarity.store.get("active_conversation");
+      const cid = window.Darkness.store.get("active_conversation");
       if (cid) {
-        await window.Clarity.uiChat.loadConversation(cid);
+        await window.Darkness.uiChat.loadConversation(cid);
       } else {
-        window.Clarity.uiChat.renderChat();
+        window.Darkness.uiChat.renderChat();
       }
     } else {
-      const handler = window.Clarity.pages && window.Clarity.pages[page];
+      const handler = window.Darkness.pages && window.Darkness.pages[page];
       if (typeof handler === "function") {
         console.log(`[APP ROUTER] Executing page handler '${page}' for route '${rawPath}'`);
         await handler(rawPath);
       } else {
-        console.warn(`[APP ROUTER] Handler for '${page}' not found on window.Clarity.pages`);
+        console.warn(`[APP ROUTER] Handler for '${page}' not found on window.Darkness.pages`);
       }
     }
 
-    if (window.Clarity.uiSidebar) window.Clarity.uiSidebar.render();
-    if (window.Clarity.uiTopbar) {
-      window.Clarity.uiTopbar.renderThemeToggle();
-      await window.Clarity.uiTopbar.initModelSelector();
+    if (window.Darkness.uiSidebar) window.Darkness.uiSidebar.render();
+    if (window.Darkness.uiTopbar) {
+      window.Darkness.uiTopbar.renderThemeToggle();
+      await window.Darkness.uiTopbar.initModelSelector();
     }
   },
 };
 
 document.addEventListener("DOMContentLoaded", function () {
-  window.Clarity.app.init();
+  window.Darkness.app.init();
 });
 

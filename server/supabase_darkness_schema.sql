@@ -1,5 +1,5 @@
 -- ============================================================================
--- CLARITY PRODUCTION PERSISTENCE SCHEMA (SUPABASE POSTGRESQL)
+-- DARKNESS PRODUCTION PERSISTENCE SCHEMA (SUPABASE POSTGRESQL)
 -- ============================================================================
 -- Run this script in the Supabase SQL Editor to guarantee all persistence tables
 -- exist with primary keys, indexes, and full service-role compatibility.

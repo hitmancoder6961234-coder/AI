@@ -1,6 +1,6 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
-window.Clarity.sources = {
+window.Darkness.sources = {
   render(items, open = false) {
     const panel = document.getElementById('sourcePanel');
     if (!panel) return;
@@ -18,9 +18,9 @@ window.Clarity.sources = {
       card.className = 'doc-card';
       if (doc.onPreview && card && card.style) card.style.cursor = 'pointer';
       card.innerHTML = [
-        '<div class="doc-card__title">' + window.Clarity.utils.escapeHtml(doc.title || 'Untitled source') + '</div>',
-        '<div class="doc-card__meta">' + window.Clarity.utils.escapeHtml(doc.type || 'Reference') + '</div>',
-        '<div class="doc-card__snippet">' + window.Clarity.utils.escapeHtml(doc.snippet || 'No excerpt available.') + '</div>'
+        '<div class="doc-card__title">' + window.Darkness.utils.escapeHtml(doc.title || 'Untitled source') + '</div>',
+        '<div class="doc-card__meta">' + window.Darkness.utils.escapeHtml(doc.type || 'Reference') + '</div>',
+        '<div class="doc-card__snippet">' + window.Darkness.utils.escapeHtml(doc.snippet || 'No excerpt available.') + '</div>'
       ].join('');
       if (doc.onPreview) {
         card.addEventListener('click', () => doc.onPreview());
@@ -51,11 +51,11 @@ window.Clarity.sources = {
           snippet: 'Content of this file is included as context.',
           onPreview: async () => {
             try {
-              const data = await window.Clarity.api.get('/api/files/' + (att.file_id || att.id) + '/content');
-              const body = '<pre style="white-space:pre-wrap;max-height:60vh;overflow:auto;background:var(--surface-muted);padding:12px;border-radius:8px;font-size:12.5px;">' + window.Clarity.utils.escapeHtml(data.content || '(empty)') + '</pre>';
-              window.Clarity.modal.open(att.name, body, '<button class="btn btn--primary" data-modal-close="true">Close</button>');
+              const data = await window.Darkness.api.get('/api/files/' + (att.file_id || att.id) + '/content');
+              const body = '<pre style="white-space:pre-wrap;max-height:60vh;overflow:auto;background:var(--surface-muted);padding:12px;border-radius:8px;font-size:12.5px;">' + window.Darkness.utils.escapeHtml(data.content || '(empty)') + '</pre>';
+              window.Darkness.modal.open(att.name, body, '<button class="btn btn--primary" data-modal-close="true">Close</button>');
             } catch (e) {
-              window.Clarity.toast.show('Preview failed', 'danger');
+              window.Darkness.toast.show('Preview failed', 'danger');
             }
           }
         });
@@ -66,7 +66,7 @@ window.Clarity.sources = {
           snippet: 'Image attached to the conversation.',
           onPreview: () => {
             const body = '<div style="text-align:center;"><img src="' + att.url + '" style="max-width:100%;max-height:60vh;" /></div>';
-            window.Clarity.modal.open(att.name || 'Image', body, '<button class="btn btn--primary" data-modal-close="true">Close</button>');
+            window.Darkness.modal.open(att.name || 'Image', body, '<button class="btn btn--primary" data-modal-close="true">Close</button>');
           }
         });
       }

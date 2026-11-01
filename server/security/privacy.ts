@@ -280,7 +280,7 @@ export function registerPrivacyRoutes(app: Express, deps: PrivacyRouteDeps): voi
       return res.status(400).json({ error: 'Send {"confirm":"ERASE"} to permanently delete your account and data.' });
     }
     const removed = deps.eraseUser(uid);
-    res.clearCookie("clarity_session", { path: "/" });
+    res.clearCookie("darkness_session", { path: "/" });
     res.json({ ok: true, removed });
   });
 }

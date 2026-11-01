@@ -328,7 +328,7 @@
   white-space: nowrap;
 }
 
-/* Topbar Clarity brand: hide when the desktop sidebar is expanded to avoid
+/* Topbar Darkness brand: hide when the desktop sidebar is expanded to avoid
  * duplicate branding; show it again when the sidebar collapses. */
 .app:has(.sidebar:not(.is-rail)) .crumbs__root {
   display: none;

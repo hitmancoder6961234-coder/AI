@@ -1,4 +1,4 @@
-window.Clarity = window.Clarity || {};
+window.Darkness = window.Darkness || {};
 
 /**
  * Authentication Gate:
@@ -8,7 +8,7 @@ window.Clarity = window.Clarity || {};
  * - Thumbs-up hand held outward to the left with comfortable spacing from the head
  * - Happy glowing curved arch eyes & bright cyan smile
  */
-window.Clarity.auth = {
+window.Darkness.auth = {
   _user: null,
   _listeners: new Set(),
 
@@ -34,13 +34,13 @@ window.Clarity.auth = {
   _fetch(path, options) {
     const opts = Object.assign({ credentials: "include" }, options || {});
     let token = null;
-    try { token = localStorage.getItem("clarity_token"); } catch (e) {}
+    try { token = localStorage.getItem("darkness_token"); } catch (e) {}
     const authHeaders = token ? { "Authorization": `Bearer ${token}` } : {};
     opts.headers = Object.assign({}, authHeaders, opts.headers || {});
 
     let url = path;
-    if (window.Clarity?.api?._url) {
-      url = window.Clarity.api._url(path);
+    if (window.Darkness?.api?._url) {
+      url = window.Darkness.api._url(path);
     }
     return fetch(url, opts);
   },
@@ -51,10 +51,10 @@ window.Clarity.auth = {
       const json = await resp.json().catch(() => ({}));
       this._user = json.user || null;
       if (json.token) {
-        try { localStorage.setItem("clarity_token", json.token); } catch (e) {}
+        try { localStorage.setItem("darkness_token", json.token); } catch (e) {}
       }
       if (this._user) {
-        try { localStorage.setItem("clarity_user", JSON.stringify(this._user)); } catch (e) {}
+        try { localStorage.setItem("darkness_user", JSON.stringify(this._user)); } catch (e) {}
       }
     } catch (e) {
       this._user = null;
@@ -77,10 +77,10 @@ window.Clarity.auth = {
     const data = await r.json();
     this._user = data.user || { email, name };
     if (data.token) {
-      try { localStorage.setItem("clarity_token", data.token); } catch (e) {}
+      try { localStorage.setItem("darkness_token", data.token); } catch (e) {}
     }
     if (this._user) {
-      try { localStorage.setItem("clarity_user", JSON.stringify(this._user)); } catch (e) {}
+      try { localStorage.setItem("darkness_user", JSON.stringify(this._user)); } catch (e) {}
     }
     this._emit();
     return this._user;
@@ -100,10 +100,10 @@ window.Clarity.auth = {
     const data = await r.json();
     this._user = data.user || { email, name: email.split("@")[0] };
     if (data.token) {
-      try { localStorage.setItem("clarity_token", data.token); } catch (e) {}
+      try { localStorage.setItem("darkness_token", data.token); } catch (e) {}
     }
     if (this._user) {
-      try { localStorage.setItem("clarity_user", JSON.stringify(this._user)); } catch (e) {}
+      try { localStorage.setItem("darkness_user", JSON.stringify(this._user)); } catch (e) {}
     }
     this._emit();
     return this._user;
@@ -113,8 +113,8 @@ window.Clarity.auth = {
     try {
       await this._fetch("/api/auth/logout", { method: "POST", credentials: "include" });
     } catch (e) {}
-    try { localStorage.removeItem("clarity_token"); } catch (e) {}
-    try { localStorage.removeItem("clarity_user"); } catch (e) {}
+    try { localStorage.removeItem("darkness_token"); } catch (e) {}
+    try { localStorage.removeItem("darkness_user"); } catch (e) {}
     this._user = null;
     this._emit();
   },
@@ -590,7 +590,7 @@ window.Clarity.auth = {
             </div>
             <div class="auth-card-3d">
 
-              <!-- Brand Header matching reference with Clarity logo & wordmark -->
+              <!-- Brand Header matching reference with Darkness logo & wordmark -->
               <div class="auth-card-header">
                 <div class="auth-brand-badge">
                   <img src="/brand/darkness-logo.svg" alt="Darkness AI" class="auth-brand-logo" />
@@ -709,9 +709,9 @@ window.Clarity.auth = {
 
       try {
         if (mode === "signup") {
-          await window.Clarity.auth.signup(payload.email, payload.password, payload.name);
+          await window.Darkness.auth.signup(payload.email, payload.password, payload.name);
         } else {
-          await window.Clarity.auth.login(payload.email, payload.password);
+          await window.Darkness.auth.login(payload.email, payload.password);
         }
       } catch (err) {
         if (errEl) {
@@ -727,7 +727,7 @@ window.Clarity.auth = {
       submit.classList.remove("is-loading");
 
       // Clear gate and navigate into workspace
-      window.Clarity.app && window.Clarity.app.afterLogin && window.Clarity.app.afterLogin();
+      window.Darkness.app && window.Darkness.app.afterLogin && window.Darkness.app.afterLogin();
     });
   }
 };

@@ -8,12 +8,12 @@ a policy that matches your configuration. The same facts are served machine-read
 
 | Data | Location | Notes |
 |---|---|---|
-| Account (e-mail, name, scrypt password hash) | SQLite in `CLARITY_STORAGE_ROOT` | passwords are never stored in plain text |
+| Account (e-mail, name, scrypt password hash) | SQLite in `DARKNESS_STORAGE_ROOT` | passwords are never stored in plain text |
 | Conversations, messages, files, projects, artifacts | same | scoped to the owning account |
 | Model configurations incl. API keys you add | same | used server-side only; never returned to the browser |
 | Session tokens | same (30 days) + `httpOnly` cookie | `SameSite=Lax`, `Secure` over HTTPS |
 | Optional encrypted mirror | Aiven PostgreSQL | message bodies sealed with AES-256-GCM **before** leaving the server; user ids stored as keyed HMACs |
-| Optional cloud sync | Supabase | original Clarity feature, off unless configured |
+| Optional cloud sync | Supabase | original Darkness feature, off unless configured |
 
 ## What is sent to third parties
 
