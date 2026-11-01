@@ -95,6 +95,20 @@ function buildCsp(): string {
   ].join("; ");
 }
 
+/** The original Darkness app loads Google Sign-In and assorted CDN libraries, so its policy is broader than the new UI's. */
+const CSP_CLASSIC = [
+  "default-src 'self' https: data: blob:",
+  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
+  "style-src 'self' 'unsafe-inline' https:",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data: https:",
+  "connect-src 'self' https:",
+  "frame-src 'self' https://accounts.google.com blob: data:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "frame-ancestors 'self'",
+].join("; ");
+
 function securityHeaders(): RequestHandler {
   const mode = (process.env.PRIVACY_CSP || "report-only").toLowerCase(); // enforce | report-only | off
   const csp = buildCsp();
@@ -111,9 +125,10 @@ function securityHeaders(): RequestHandler {
       "camera=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=(), microphone=(self)"
     );
     if (isProd) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    if (mode === "enforce") res.setHeader("Content-Security-Policy", csp);
-    else if (mode !== "off") res.setHeader("Content-Security-Policy-Report-Only", csp);
-    if (req.path.startsWith("/api/")) {
+    const policy = req.path.startsWith("/classic") ? CSP_CLASSIC : csp;
+    if (mode === "enforce") res.setHeader("Content-Security-Policy", policy);
+    else if (mode !== "off") res.setHeader("Content-Security-Policy-Report-Only", policy);
+    if (isApiPath(req.path)) {
       res.setHeader("Cache-Control", "no-store, max-age=0");
       res.setHeader("Pragma", "no-cache");
     }
@@ -171,7 +186,12 @@ const PUBLIC_API = [
   /^\/api\/config\//,
   /^\/api\/auth\//,
   /^\/api\/privacy\/policy$/,
+  // The original Darkness API: health for the connection test, and share links (unguessable id = permission).
+  /^\/classic-api\/api\/health$/,
+  /^\/classic-api\/api\/share\/[A-Za-z0-9_-]+$/,
 ];
+
+const isApiPath = (p: string) => p.startsWith("/api/") || p.startsWith("/classic-api/");
 
 /** Diagnostic routes that disclose internals — closed completely in strict mode. */
 const BLOCKED_IN_STRICT = [/^\/api\/debug\/(?!ping$)/, /^\/api\/chat\/diagnostics$/, /^\/api\/diagnostics\//];
@@ -200,7 +220,7 @@ export type SessionValidator = (token: string) => boolean | Promise<boolean>;
 
 export function authGate(opts: { cookieName: string; isValidSession: SessionValidator }): RequestHandler {
   return async (req: Request, res: Response, next: NextFunction) => {
-    if (!PRIVACY_STRICT || !req.path.startsWith("/api/") || req.method === "OPTIONS") return next();
+    if (!PRIVACY_STRICT || !isApiPath(req.path) || req.method === "OPTIONS") return next();
     if (BLOCKED_IN_STRICT.some((re) => re.test(req.path))) {
       res.status(404).json({ error: "Not found" });
       return;
@@ -302,8 +322,10 @@ export function applyPrivacyMiddleware(app: Express, opts: { cookieName: string;
   app.use("/api/auth/login", authLimit);
   app.use("/api/auth/signup", authLimit);
   app.use("/api/agent/run", aiLimit);
-  app.use(/^\/api\/(conversations\/[^/]+\/(chat|regenerate)|chat|studio\/chat)$/, aiLimit);
+  app.use(/^\/api\/(conversations\/[^/]+\/(chat|regenerate)|chat|studio\/chat|studio\/[a-z-]+\/(generate|brief|outline|recommend|image))$/, aiLimit);
+  app.use(/^\/classic-api\/api\/(chat|chat\/stream|image|translate|search|code)$/, aiLimit);
   app.use("/api/", apiLimit);
+  app.use("/classic-api/", apiLimit);
 
   app.use(authGate(opts));
 }

@@ -46,11 +46,11 @@ else
   git clone --depth 1 --branch '$Branch' '$RepoUrl' repo
 fi
 if [ ! -f "`$APP_DIR/.env" ]; then
-  echo "MISSING `$APP_DIR/.env - create it from repo/darkness-ai/.env.example (chmod 600), then re-run." >&2
+  echo "MISSING `$APP_DIR/.env - create it from repo/.env.example (chmod 600), then re-run." >&2
   exit 2
 fi
 chmod 600 "`$APP_DIR/.env"
-cd repo/darkness-ai
+cd repo
 ln -sf "`$APP_DIR/.env" .env
 docker compose up -d --build
 docker compose ps

@@ -367,7 +367,7 @@ export function registerProjectAndFileRoutes(
         const fid = "file_" + Math.random().toString(36).substr(2, 9);
         const isImg = /image/i.test(f.mimetype) || /\.(png|jpe?g|gif|webp|svg|bmp|ico)$/i.test(f.originalname);
         const isPdf = /pdf/i.test(f.mimetype) || /\.pdf$/i.test(f.originalname);
-        const isDoc = /\.(docx?|pptx?|xlsx?|odt|rtf|csv|tsv|json|xml|yaml|yml|md|markdown|txt)$/i.test(f.originalname);
+        const isDoc = /\.(docx?|pptx?|xlsx?|odt|odp|ods|rtf|epub|html?|csv|tsv|json|jsonl|xml|yaml|yml|toml|ini|log|srt|vtt|md|markdown|rst|tex|txt)$/i.test(f.originalname);
         const isArchive = /zip|tar|gz|octet-stream/i.test(f.mimetype) && /\.zip$/i.test(f.originalname);
 
         let textContent: string | null = null;
@@ -378,7 +378,12 @@ export function registerProjectAndFileRoutes(
           textContent = null;
         } else if (isArchive) {
           fileType = "archive";
-          textContent = null;
+          try {
+            const docRes = await extractDocumentText(f.originalname, f.buffer);
+            textContent = docRes.text || null;
+          } catch {
+            textContent = null;
+          }
         } else if (isPdf || isDoc) {
           fileType = isPdf ? "pdf" : "document";
           try {
@@ -770,6 +775,9 @@ export function registerProjectAndFileRoutes(
       }
 
       let projectId = req.body?.projectId;
+      if (projectId && projects.has(projectId) && String((projects.get(projectId) as any)?.user_id || "").toLowerCase() !== String(user.id).toLowerCase()) {
+        return res.status(403).json({ error: "Not your project" });
+      }
       let pItem: any;
 
       if (projectId && projects.has(projectId)) {
@@ -970,6 +978,9 @@ export function registerProjectAndFileRoutes(
       }
 
       let projectId = req.body?.projectId;
+      if (projectId && projects.has(projectId) && String((projects.get(projectId) as any)?.user_id || "").toLowerCase() !== String(user.id).toLowerCase()) {
+        return res.status(403).json({ error: "Not your project" });
+      }
       let pItem: any;
 
       if (projectId && projects.has(projectId)) {

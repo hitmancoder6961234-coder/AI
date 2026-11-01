@@ -7,12 +7,15 @@ window.Darkness = window.Darkness || {};
 window.Darkness.data = {
   nav: [
     { id: 'chat', label: 'Chat', href: '#/chat', icon: 'chat' },
+    { id: 'builder', label: 'Project Studio', href: '#/builder', icon: 'sparkles' },
     { id: 'home', label: 'Home', href: '#/home', icon: 'house' },
     { id: 'document-studio', label: 'Word Studio', href: '#/document-studio', icon: 'file-text' },
     { id: 'presentation-studio', label: 'Slide Studio', href: '#/presentation-studio', icon: 'monitor' },
     { id: 'knowledge', label: 'My Library', href: '#/knowledge', icon: 'book' },
     { id: 'project', label: 'Projects', href: '#/project', icon: 'folder' },
-    { id: 'history', label: 'History', href: '#/history', icon: 'clock' }
+    { id: 'history', label: 'History', href: '#/history', icon: 'clock' },
+    { id: 'agent', label: 'Agent', href: '/agent.html', icon: 'bot' },
+    { id: 'classic', label: 'Classic Darkness', href: '/classic/', icon: 'globe' }
   ],
   secondaryNav: [
     { id: 'model', label: 'Model', href: '#/model', icon: 'cpu' },

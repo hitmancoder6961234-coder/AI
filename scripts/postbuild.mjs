@@ -21,7 +21,10 @@ if (!fs.existsSync(path.join(root, "index.html"))) {
 fs.mkdirSync(out, { recursive: true });
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 fs.writeFileSync(path.join(out, "index.html"), html.replace(/<head([^>]*)>/i, `<head$1>${INJECT}`));
-for (const f of ["manifest.json", "sw.js"]) {
-  if (fs.existsSync(path.join(root, f))) fs.copyFileSync(path.join(root, f), path.join(out, f));
+if (fs.existsSync(path.join(root, "manifest.json"))) fs.copyFileSync(path.join(root, "manifest.json"), path.join(out, "manifest.json"));
+if (fs.existsSync(path.join(root, "sw.js"))) {
+  // The original service worker only skipped caching for URLs starting with /api/; /classic-api/api/* must be skipped too.
+  const sw = fs.readFileSync(path.join(root, "sw.js"), "utf8").replace(/url\.pathname\.startsWith\((['"])\/api\/\1\)/g, "url.pathname.includes('/api/')");
+  fs.writeFileSync(path.join(out, "sw.js"), sw);
 }
 console.log("[postbuild] /classic published");

@@ -9,11 +9,15 @@
  */
 import type { Express, Request, Response } from "express";
 import { runAgent, type AgentEvent } from "./core.js";
-import { availableProviders, createLLM, type ChatMsg } from "./providers.js";
+import { availableProviders, createLLM, type ChatMsg, type LLM } from "./providers.js";
 import { ALL_TOOLS, selectTools } from "./tools.js";
 
 export interface AgentRouteDeps {
   getUserId: (req: Request) => string | null;
+  /** The user's own configured model first, the server's keys as a fallback. */
+  getLLM?: (userId: string, provider?: string) => LLM;
+  /** Which model would run for this user (never includes keys). */
+  llmInfo?: (userId: string) => { active: string | null; providers: string[] };
   /** Search the user's own knowledge base; returns formatted text. */
   knowledgeSearch?: (userId: string, query: string) => Promise<string>;
 }
@@ -32,11 +36,13 @@ function validHistory(input: unknown): ChatMsg[] {
 
 export function registerAgentRoutes(app: Express, deps: AgentRouteDeps): void {
   app.get("/api/agent/tools", (req, res) => {
-    if (!deps.getUserId(req)) return res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED" });
+    const uid = deps.getUserId(req);
+    if (!uid) return res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED" });
+    const info = deps.llmInfo ? deps.llmInfo(uid) : { active: availableProviders()[0] || null, providers: availableProviders() };
     res.json({
       tools: ALL_TOOLS.map((t) => ({ name: t.name, description: t.description, args: t.args })),
-      providers: availableProviders(),
-      active: availableProviders()[0] || null,
+      providers: info.providers,
+      active: info.active,
     });
   });
 
@@ -54,7 +60,8 @@ export function registerAgentRoutes(app: Express, deps: AgentRouteDeps): void {
 
     let llm;
     try {
-      llm = createLLM(process.env, typeof req.body?.provider === "string" ? req.body.provider : undefined);
+      const requested = typeof req.body?.provider === "string" ? req.body.provider : undefined;
+      llm = deps.getLLM ? deps.getLLM(userId, requested) : createLLM(process.env, requested);
     } catch (err: any) {
       return res.status(503).json({ error: err.message, code: "NO_PROVIDER" });
     }

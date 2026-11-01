@@ -24,6 +24,7 @@ import {
   listProjects,
 } from "./db.js";
 import { resolveProjectFilePath } from "./project-storage.js";
+import { extractExtra } from "./documents/extract.js";
 import {
   parseAndNormalizeMultilingualQuery,
   scoreChunkMultilingual,
@@ -511,6 +512,13 @@ export async function extractDocumentText(filename: string, buffer: Buffer | any
       } catch (err: any) {
         console.warn("Jupyter Notebook parse error, falling back to raw text:", err);
       }
+    }
+
+    // Everything else (pptx, odt/odp/ods, rtf, epub, legacy Office, html, zip, images, ...)
+    const extra = await extractExtra(filename, buf);
+    if (extra) {
+      const note = extra.warnings && extra.warnings.length ? `\n\n[${extra.warnings.join(" ")}]` : "";
+      return { text: extra.text + (extra.text ? note : ""), error: extra.text ? undefined : extra.warnings?.[0] };
     }
 
     // Default utf-8 text decoding for code, markdown, txt, csv, json, html, etc.

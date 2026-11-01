@@ -66,6 +66,7 @@ import "../js/pages/history.js";
 import "../js/pages/settings.js";
 import "../js/pages/model.js";
 import "../js/pages/project.js";
+import "../js/pages/builder.js";
 import "../js/app.js";
 import "./project-workspace-mount.jsx";
 

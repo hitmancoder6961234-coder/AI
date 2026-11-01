@@ -190,6 +190,14 @@ import {
 import { exportUserData, eraseUserData } from "./security/user-data.js";
 import { aivenStatus, eraseMirroredUser, initAiven } from "./security/aiven.js";
 import { registerAgentRoutes } from "./agent/routes.js";
+import { availableProviders, createLLM, createLLMFromConfig, type LLM } from "./agent/providers.js";
+import { registerDocumentRoutes } from "./documents/routes.js";
+import { registerClassicApi, eraseClassicUser } from "./classic/legacy-api.js";
+import { registerClassicPages } from "./classic/serve.js";
+import { registerStudioRoutes, eraseStudioUser } from "./studio/routes.js";
+import type { StudioEngine } from "./studio/pipeline.js";
+import { extractDocumentText } from "./rag-engine.js";
+import { db as sqliteDb } from "./db.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const SESSION_COOKIE = "darkness_session";
@@ -1049,17 +1057,141 @@ async function startServer() {
       for (const [tok, owner] of sessions) if (owner === uid) sessions.delete(tok);
       users.delete(uid);
       eraseMirroredUser(uid);
+      Object.assign(removed, eraseClassicUser(sqliteDb, uid));
+      removed.studioJobs = eraseStudioUser(uid);
       return removed;
     },
   });
 
+  // -------------------------------------------------------------------------
+  // Strict mode: a project / conversation id in the URL must belong to the caller
+  // -------------------------------------------------------------------------
+  if (PRIVACY_STRICT) {
+    const notFound = (res: express.Response) => res.status(404).json({ error: "Not found", type: "not_found" });
+    app.param("pid", (req, res, next, pid) => {
+      const p: any = projects.get(String(pid));
+      if (!p) return next();
+      const uid = privacyUserId(req);
+      return uid && isUserOwner(p.user_id, uid) ? next() : notFound(res);
+    });
+    app.param("cid", (req, res, next, cid) => {
+      const c: any = conversations.get(String(cid));
+      if (!c) return next();
+      const uid = privacyUserId(req);
+      return uid && isUserOwner(c.user_id, uid) ? next() : notFound(res);
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // One model layer for the agent, the original Darkness API and the Project Studio:
+  // the user's own configured model first, the server's environment keys as a fallback.
+  // -------------------------------------------------------------------------
+  const getLLMForUser = (userId: string, provider?: string): LLM => {
+    if (!provider) {
+      const m = resolveModelConfig(null, userId);
+      if (m && m.enabled && m.apiKey && m.modelName) {
+        try {
+          return createLLMFromConfig({ provider: m.provider, apiKey: m.apiKey, baseUrl: m.baseUrl || undefined, model: m.modelName });
+        } catch {
+          /* fall through to the server's keys */
+        }
+      }
+    }
+    return createLLM(process.env, provider);
+  };
+  const tryLLMForUser = (userId: string): LLM | null => {
+    try {
+      return getLLMForUser(userId);
+    } catch {
+      return null;
+    }
+  };
+  const llmInfoForUser = (userId: string) => {
+    const llm = tryLLMForUser(userId);
+    return { active: llm ? `${llm.provider} / ${llm.model}` : null, providers: availableProviders() };
+  };
+
+  // Real images only: the image service quietly substitutes a generic diagram when no provider is available,
+  // which would be misleading as an illustration - surface a clear error instead.
+  const makeRealImage = async (prompt: string, aspectRatio: "1:1" | "3:4" | "4:3" | "9:16" | "16:9") => {
+    const out: any = await generateProjectImage({ projectId: "darkness-studio", prompt, assetType: "concept_image", aspectRatio });
+    if (!out || out.isFallbackUsed || out.source !== "gemini_ai" || !out.bufferBase64 || String(out.bufferBase64).length < 2000) {
+      throw new Error("No image model is available. Set GEMINI_API_KEY on the server (or IMAGE_ALLOW_THIRD_PARTY=true to use a free third-party generator).");
+    }
+    return { mimeType: String(out.mimeType || "image/png"), base64: String(out.bufferBase64) };
+  };
+
   registerAgentRoutes(app, {
     getUserId: privacyUserId,
+    getLLM: getLLMForUser,
+    llmInfo: llmInfoForUser,
     knowledgeSearch: async (uid, query) => {
       const owned = Array.from(projects.values()).filter((p) => isUserOwner((p as any).user_id, uid)).slice(0, 5);
       const hits = owned.flatMap((p) => searchKnowledge((p as any).id, query, 4));
       return hits.length ? assembleContext(hits.slice(0, 8)) : "No matching private documents.";
     },
+  });
+
+  registerDocumentRoutes(app, { getUserId: privacyUserId, extractText: extractDocumentText });
+
+  registerClassicApi(app, {
+    db: sqliteDb,
+    getUserId: privacyUserId,
+    getLLM: getLLMForUser,
+    extractText: extractDocumentText,
+    generateImage: makeRealImage,
+  });
+  registerClassicPages(app, { isSignedIn: (req) => privacyUserId(req) !== null });
+
+  registerStudioRoutes(app, {
+    getUserId: privacyUserId,
+    listProjects: (uid) =>
+      Array.from(projects.values())
+        .filter((p) => isUserOwner((p as any).user_id, uid))
+        .map((p: any) => ({ id: p.id, name: p.name, updatedAt: p.updated_at, fileCount: p.file_count }))
+        .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)),
+    loadProject: async (uid, pid) => {
+      const p: any = projects.get(pid);
+      if (!p || !isUserOwner(p.user_id, uid)) return null;
+      const fromDb = (dbListFiles(pid) as any[]).map((f) => ({ path: f.path, content: f.content || "", size: f.size, isBinary: Boolean(f.is_binary) }));
+      const seen = new Set(fromDb.map((f) => f.path));
+      const fromMap = Array.from(files.values())
+        .filter((f) => f.project_id === pid && !seen.has(f.filename))
+        .map((f) => ({ path: f.filename, content: f.content || "", size: f.size, isBinary: f.file_type === "binary" }));
+      const all = [...fromDb, ...fromMap];
+      let analysis = projectAnalyses.get(pid);
+      if (!analysis && all.length) {
+        try {
+          const extracted: ExtractedFile[] = all.map((f) => ({
+            path: f.path,
+            name: path.basename(f.path),
+            extension: path.extname(f.path).toLowerCase(),
+            size: f.size || f.content.length,
+            isBinary: f.isBinary,
+            content: f.content,
+            lineCount: f.content ? f.content.split(/\r?\n/).length : 0,
+          }));
+          analysis = analyzeProject(p.name, pid, extracted);
+          projectAnalyses.set(pid, analysis);
+        } catch (err) {
+          console.warn("[studio] analysis failed:", (err as Error).message);
+        }
+      }
+      return { id: pid, name: p.name, description: p.description || "", files: all, analysis };
+    },
+    getEngine: (uid): StudioEngine => ({
+      llm: tryLLMForUser(uid),
+      makeImage: makeRealImage,
+      makeDiagram: async (ctx) => {
+        // Nothing to draw for an idea-only project: no components were detected.
+        if (!ctx.analysis || !ctx.analysis.architecture?.nodes?.length) return null;
+        const svg = generateArchitectureDiagramSvg(ctx.analysis);
+        if (!svg) return null;
+        // The project's renderer sanitises the SVG's XML (stray "&") and has a resvg fallback.
+        const png = await renderSvgToPngBuffer(svg, 1600);
+        return { mimeType: "image/png", base64: png.toString("base64") };
+      },
+    }),
   });
 
   app.get("/api/aiven/status", (req, res) => {

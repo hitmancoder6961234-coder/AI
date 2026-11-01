@@ -219,7 +219,8 @@ export class PollinationsImageProvider implements ImageGenerationProvider {
   name = "Pollinations AI Image Engine";
 
   async isAvailable(): Promise<boolean> {
-    return true;
+    // Sends the prompt to a third-party service (pollinations.ai): opt-in only.
+    return (process.env.IMAGE_ALLOW_THIRD_PARTY || "").toLowerCase() === "true";
   }
 
   async generate(options: GenerateImageOptions): Promise<ImageProviderOutput | null> {
@@ -417,7 +418,7 @@ export class ImageGenerationService {
     const filename = `${assetType}_${timestamp}.png`;
     const assetId = `img_${Math.random().toString(36).substring(2, 10)}`;
 
-    console.log(`[ImagePipeline] imageRequestStarted - Project: ${projectId}, Asset: ${assetType}, Prompt: "${(prompt || "").slice(0, 60)}..."`);
+    console.log(`[ImagePipeline] imageRequestStarted - Project: ${projectId}, Asset: ${assetType}, Prompt: ${(prompt || "").length} chars`);
     console.log(`[ImagePipeline] imagePromptBuilt - Prompt length: ${(prompt || "").length} chars, Refined with project architecture context.`);
 
     let output: ImageProviderOutput | null = null;

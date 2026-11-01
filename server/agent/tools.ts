@@ -143,29 +143,52 @@ export const datetime: Tool = {
 
 // --- web_search --------------------------------------------------------------------------------
 
-async function duckDuckGo(query: string, signal?: AbortSignal): Promise<string[]> {
+export interface SearchHit {
+  title: string;
+  url: string;
+  snippet: string;
+  source: string;
+}
+
+async function duckDuckGo(query: string, signal?: AbortSignal): Promise<SearchHit[]> {
   const r = await safeFetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, signal);
-  const out: string[] = [];
+  const out: SearchHit[] = [];
   const re = /<a[^>]*class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(r.body)) && out.length < 6) {
     let href = m[1];
     const uddg = /[?&]uddg=([^&]+)/.exec(href);
     if (uddg) href = decodeURIComponent(uddg[1]);
-    out.push(`${htmlToText(m[2])}\n${href}\n${htmlToText(m[3])}`);
+    out.push({ title: htmlToText(m[2]), url: href, snippet: htmlToText(m[3]), source: "DuckDuckGo" });
   }
   return out;
 }
 
-async function wikipedia(query: string, signal?: AbortSignal): Promise<string[]> {
+async function wikipedia(query: string, signal?: AbortSignal): Promise<SearchHit[]> {
   const r = await safeFetch(
     `https://en.wikipedia.org/w/api.php?action=query&list=search&srlimit=5&format=json&srsearch=${encodeURIComponent(query)}`,
     signal
   );
   const json = JSON.parse(r.body);
-  return (json?.query?.search || []).map(
-    (s: any) => `${s.title}\nhttps://en.wikipedia.org/wiki/${encodeURIComponent(String(s.title).replace(/ /g, "_"))}\n${htmlToText(s.snippet)}`
-  );
+  return (json?.query?.search || []).map((s: any) => ({
+    title: String(s.title),
+    url: `https://en.wikipedia.org/wiki/${encodeURIComponent(String(s.title).replace(/ /g, "_"))}`,
+    snippet: htmlToText(s.snippet),
+    source: "Wikipedia",
+  }));
+}
+
+/** Web search used by the agent tool and the original Darkness /search endpoint. */
+export async function searchWeb(query: string, signal?: AbortSignal): Promise<SearchHit[]> {
+  const q = String(query ?? "").trim().slice(0, 300);
+  if (!q) throw new Error("query is required");
+  let hits: SearchHit[] = [];
+  try {
+    hits = await duckDuckGo(q, signal);
+  } catch {
+    /* fall through to Wikipedia */
+  }
+  return hits.length ? hits : wikipedia(q, signal);
 }
 
 export const webSearch: Tool = {
@@ -173,16 +196,8 @@ export const webSearch: Tool = {
   description: "Search the public web (DuckDuckGo, falling back to Wikipedia). Returns titles, URLs and snippets. Use fetch_url to read a result.",
   args: '{"query": "string"}',
   async run({ query }, ctx) {
-    const q = String(query ?? "").trim().slice(0, 300);
-    if (!q) throw new Error("query is required");
-    let results: string[] = [];
-    try {
-      results = await duckDuckGo(q, ctx.signal);
-    } catch {
-      /* fall through to Wikipedia */
-    }
-    if (!results.length) results = await wikipedia(q, ctx.signal);
-    return results.length ? results.map((r, n) => `${n + 1}. ${r}`).join("\n\n") : "No results.";
+    const results = await searchWeb(String(query ?? ""), ctx.signal);
+    return results.length ? results.map((r, n) => `${n + 1}. ${r.title}\n${r.url}\n${r.snippet}`).join("\n\n") : "No results.";
   },
 };
 

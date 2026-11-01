@@ -407,6 +407,7 @@ window.Darkness.app = {
     const page = (
       cleanPath === "" || cleanPath === "#" || cleanPath === "#/" || cleanPath === "#/chat" ? "chat" :
       cleanPath === "#/home" ? "home" :
+      cleanPath === "#/builder" ? "builder" :
       cleanPath === "#/knowledge" ? "knowledge" :
       cleanPath === "#/collections" ? "collections" :
       cleanPath === "#/document-studio" ? "document-studio" :

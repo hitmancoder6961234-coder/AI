@@ -48,6 +48,13 @@ import {
 
 const upload = sharedMulter;
 
+/** A caller may only address their own knowledge space or a project they own. */
+function pidAllowed(pid: string, userId: string): boolean {
+  if (pid === `knowledge_${userId}`) return true;
+  const proj: any = getProject(pid);
+  return Boolean(proj && String(proj.user_id || "").toLowerCase() === String(userId).toLowerCase());
+}
+
 export function registerRagRoutes(
   app: express.Application,
   resolveUser?: (req: express.Request) => any,
@@ -449,6 +456,7 @@ export function registerRagRoutes(
       }
 
       const reqPid = String(req.query.projectId || userKnowledgePid);
+      if (!pidAllowed(reqPid, user.id)) return res.status(403).json({ error: "Not your project" });
       const status = getProjectRagStatus(reqPid);
       
       // Aggregate documents from user knowledge + global
@@ -478,6 +486,7 @@ export function registerRagRoutes(
     try {
       const user = await getUser(req);
       let pid = String(req.body?.projectId || `knowledge_${user.id}`);
+      if (!pidAllowed(pid, user.id)) return res.status(403).json({ error: "Not your project" });
       
       let proj = getProject(pid);
       if (!proj) {
@@ -650,6 +659,7 @@ export function registerRagRoutes(
   app.delete("/api/knowledge/rag/documents/clear-all", async (req, res) => {
     const user = await getUser(req);
     const pid = String(req.body?.projectId || `knowledge_${user.id}`);
+    if (!pidAllowed(pid, user.id)) return res.status(403).json({ error: "Not your project" });
     try {
       // Global nuclear delete on SQLite knowledge tables
       try {
@@ -684,6 +694,7 @@ export function registerRagRoutes(
   app.post("/api/knowledge/rag/reindex", async (req, res) => {
     const user = await getUser(req);
     const pid = String(req.body?.projectId || `knowledge_${user.id}`);
+    if (!pidAllowed(pid, user.id)) return res.status(403).json({ error: "Not your project" });
     const docPath = req.body?.docPath || req.body?.path;
     try {
       let filesToProcess;

@@ -29,11 +29,13 @@ export default async function handler(request) {
 
   const incoming = new URL(request.url);
   const captured = incoming.searchParams.get('path');
-  const pathname = captured !== null ? `/api/${captured}` : incoming.pathname;
+  const scope = incoming.searchParams.get('scope') === 'classic' ? '/classic-api' : '/api';
+  const pathname = captured !== null ? `${scope}/${captured}` : incoming.pathname;
   incoming.searchParams.delete('path');
+  incoming.searchParams.delete('scope');
 
-  // Only ever forward to /api/* on the configured backend — never an arbitrary host or path.
-  if (!pathname.startsWith('/api/') || pathname.includes('..')) return fail(400, 'Bad path');
+  // Only ever forward to /api/* or /classic-api/* on the configured backend: never an arbitrary host or path.
+  if (!(pathname.startsWith('/api/') || pathname.startsWith('/classic-api/')) || pathname.includes('..')) return fail(400, 'Bad path');
   const target = new URL(pathname + (incoming.search || ''), backend);
   if (target.origin !== new URL(backend).origin) return fail(400, 'Bad target');
 

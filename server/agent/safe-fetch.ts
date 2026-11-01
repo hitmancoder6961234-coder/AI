@@ -117,19 +117,28 @@ export interface SafeResponse {
   truncated: boolean;
 }
 
-function once(url: URL, signal?: AbortSignal): Promise<{ res: http.IncomingMessage; req: http.ClientRequest }> {
+export interface SafeInit {
+  method?: "GET" | "POST";
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+function once(url: URL, signal?: AbortSignal, init: SafeInit = {}): Promise<{ res: http.IncomingMessage; req: http.ClientRequest }> {
   const mod = url.protocol === "https:" ? https : http;
+  const method = init.method || "GET";
   return new Promise((resolve, reject) => {
     const req = mod.request(
       url,
       {
-        method: "GET",
+        method,
         lookup: guardedLookup as any,
         timeout: TIMEOUT_MS,
         headers: {
           "user-agent": "DarknessAI-Agent/1.0 (+privacy-respecting; no cookies)",
           accept: "text/html,text/plain,application/json,application/xml;q=0.9,*/*;q=0.1",
           "accept-encoding": "identity",
+          ...(init.body !== undefined ? { "content-length": String(Buffer.byteLength(init.body)) } : {}),
+          ...(init.headers || {}),
         },
         signal,
       },
@@ -137,16 +146,18 @@ function once(url: URL, signal?: AbortSignal): Promise<{ res: http.IncomingMessa
     );
     req.on("timeout", () => req.destroy(new Error("Request timed out")));
     req.on("error", reject);
+    if (init.body !== undefined) req.write(init.body);
     req.end();
   });
 }
 
-export async function safeFetch(rawUrl: string, signal?: AbortSignal): Promise<SafeResponse> {
+export async function safeFetch(rawUrl: string, signal?: AbortSignal, init: SafeInit = {}): Promise<SafeResponse> {
   let url = validateUrl(rawUrl);
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
-    const { res, req } = await once(url, signal);
+    const { res, req } = await once(url, signal, init);
     const status = res.statusCode || 0;
-    if (status >= 300 && status < 400 && res.headers.location) {
+    // A POST is never silently replayed to another host: redirects are followed for GET only.
+    if (status >= 300 && status < 400 && res.headers.location && (init.method || "GET") === "GET") {
       res.resume();
       url = validateUrl(new URL(res.headers.location, url).toString());
       continue;

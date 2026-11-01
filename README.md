@@ -1,77 +1,84 @@
 # Darkness AI
 
-A private, multi-model AI workspace: chat with citations, a knowledge base (RAG), projects, document and
-slide studios, diagrams, exports, and a **working tool-using agent**. Built on the Darkness engine, hardened
-for public deployment, with dynamic backgrounds.
+One project, everything in it: a private multi-model AI workspace, a **Project Studio** that turns a project
+into a professional report and presentation, a working **agent**, universal document upload and export, and your
+original Darkness app - all behind one login, one server and one deployment.
 
 | | |
 |---|---|
-| **Chat & knowledge** | Streaming chat, multi-document RAG, multilingual answers, math/diagram/code rendering |
-| **Studios** | Word, slide, project and artifact generation (DOCX, PPTX, PDF, XLSX exports) |
-| **Agent** | `/agent.html` - reasons step by step, calls tools, streams its work (see [Agent](#agent)) |
-| **Privacy** | Strict identity mode, per-user isolation, export/erase, log redaction, encrypted mirror ([PRIVACY.md](PRIVACY.md)) |
-| **Atmospheres** | Classic - Blood Moon - Deep Water, switchable from the orb in the corner ([Atmospheres](#atmospheres)) |
-| **Deploy** | Vercel (UI) + Render (API) + Aiven (PostgreSQL), or Docker on your own server ([DEPLOY.md](DEPLOY.md)) |
+| **Project Studio** | Upload code, documents or just an idea. Darkness analyses it, asks you the right questions, recommends improvements, then writes the **report (DOCX/PDF/...)**, the **presentation (PPTX with speaker notes)** and **illustrations** - with prompts written for deep understanding. Use the inbuilt prompts or write your own. |
+| **Documents** | Upload almost anything (PDF, Word, PowerPoint, Excel, ODF, RTF, EPUB, HTML, Markdown, CSV, JSON, code, ZIP, images). Export to DOCX, PDF, PPTX, XLSX, ODT, RTF, HTML, Markdown, TXT, CSV, JSON - or convert one file to another type. |
+| **Chat & knowledge** | Streaming multi-model chat, knowledge base (RAG) over your documents, Word and Slide studios, diagrams, project workspace. |
+| **Agent** | `/agent.html` - reasons step by step with a calculator, date/time, web search, page fetch, notes and your own documents. |
+| **Classic Darkness** | Your original app, unchanged, at `/classic/` - served by the same server, with its API ported to `/classic-api`. |
+| **Atmospheres** | Classic - Blood Moon - Deep Water: dynamic backgrounds and light, switchable from the orb in the corner. |
+| **Privacy** | Strict identity mode, per-user isolation, export/erase, log redaction, encrypted mirror ([PRIVACY.md](PRIVACY.md), [SECURITY.md](SECURITY.md)). |
 
 ## Quick start
 
 Requires **Node 22.13+** (uses the built-in `node:sqlite`).
 
 ```bash
-cd darkness-ai
 cp .env.example .env        # add at least one provider key, e.g. GEMINI_API_KEY
 npm install
 npm run dev                 # http://localhost:3000
 ```
 
-`PRIVACY_STRICT` is on by default, so you sign up with an e-mail and a password of 8+ characters on first
-run. There is no demo account. Set `PRIVACY_STRICT=false` only for throw-away local experiments.
+Sign up with an e-mail and a password of 8+ characters. There is no demo account. Without any AI key the Studio
+still works in **offline mode** (content derived from your project's structure, never invented); add a model in
+*Model* or set a provider key for deeper writing.
 
 ```bash
-npm test                    # unit tests (vault, redaction, calculator, SSRF guard, agent loop, rate limiter)
-npm run build && node scripts/smoke.mjs   # end-to-end: boots the real server and checks privacy + agent over HTTP
+npm test                    # 54 unit tests
+npm run build && npm run smoke   # 38 end-to-end checks against the real server
 ```
 
-## Atmospheres
+## Project Studio
 
-Click the orb at the bottom-right (or open any page with `?atmosphere=blood`).
+`#/builder` in the app. Five steps:
 
-* **Classic** - the interface exactly as shipped. Nothing is drawn.
-* **Blood Moon** - crimson sky, a glowing blood moon whose light breathes, drifting fog, rising embers, blood
-  that drips from the top edge and droplets that stop, start and run down the screen like rain on glass.
-* **Deep Water** - swaying light shafts, living caustics, bubbles and plankton, click ripples, a blue that slowly
-  drifts between ink and teal.
+1. **Project** - pick one, upload files / a ZIP, import from GitHub, or just describe your idea.
+2. **Deliverables & prompts** - report formats, presentation theme, illustrations, audience, tone, length, language.
+   For the report, the presentation and the images you choose **"Darkness expert prompt"** or **"My own prompt"**
+   (you can read and edit the inbuilt one first). You can also create **images from your own words**.
+3. **Brief & recommendations** - what Darkness understood, a few questions that change the output, and concrete
+   recommendations (for the project and for the documents). Tick what you want applied; add your own changes.
+4. **Outline** - the report sections and slides. Ask for changes and Darkness revises the outline.
+5. **Build** - live progress, then download each file or everything as one ZIP. `prompts-used.md` records exactly
+   which prompts produced them.
 
-One `<canvas>` (two in Blood Moon), no dependencies, paused when the tab is hidden, static under
-`prefers-reduced-motion`, lighter on phones. Files: `public/atmosphere/atmosphere.{js,css}`.
-
-## Agent
-
-`public/agent.html` talks to `POST /api/agent/run` (Server-Sent Events).
-
-* **Loop** - ReAct-style, provider-agnostic JSON protocol (`agent/core.ts`). Max 12 steps, repeat-call cut-off, a
-  forced final answer when the budget runs out.
-* **Providers** - Gemini, Anthropic, OpenAI, OpenRouter, Groq, Together, Mistral (`agent/providers.ts`). Keys stay
-  on the server.
-* **Tools** - `calculator` (a real parser, no `eval`), `datetime`, `web_search`, `fetch_url`, `scratchpad`,
-  `knowledge_search` (the signed-in user's own documents only).
-* **Safety** - tool output is wrapped as untrusted data; `fetch_url` blocks private/loopback/link-local/metadata
-  addresses at **connect time** (no DNS-rebinding window), re-validates every redirect, caps size and time;
-  per-user concurrency limit; goals and answers are never logged.
+**How the prompts work.** Each prompt has three layers: a fixed *contract* (output format and accuracy rules - no
+invented facts, cite real files), an editable *guidance* layer (the writing / design style guide - this is what
+"my own prompt" replaces) and *evidence* (a digest of your project, treated as data and never as instructions). A
+custom prompt can change style and emphasis but cannot break the output or license invention.
+See [`server/studio/prompts.ts`](server/studio/prompts.ts).
 
 ## Layout
 
 ```
-agent/        working agent: core loop, providers, tools, SSRF-safe fetch, routes
-security/     privacy layer: strict mode, headers, rate limits, redaction, vault, Aiven mirror, export/erase
-public/       static assets: atmosphere engine, agent page, brand, icons
-js/ css/ src/ the web UI (vanilla modules + React islands, built with Vite)
-server.ts     API server (Express 5) - db.ts, supabase.ts, rag-engine.ts, ... are the Darkness engine
-deploy/       Aiven (Terraform), Caddy example     scripts/  PowerShell + smoke test
+index.html manifest.json sw.js site/   your original Darkness app (also what GitHub Pages serves)
+web/            the new UI (Vite): js/ css/ src/ public/ (atmosphere engine, agent page, brand)
+server/         API server (Express 5)
+  studio/         Project Studio: prompts, dossier, pipeline, renderers, routes
+  documents/      universal extract + export (docx, pdf, pptx, xlsx, ...)
+  classic/        your original backend, ported (+ the /classic pages)
+  agent/          working agent: loop, providers, tools, SSRF-safe fetch
+  security/       strict mode, headers, rate limits, redaction, vault, Aiven mirror, export/erase
+legacy/         your original server.js, package.json, render.yaml (kept for reference)
+deploy/ scripts/ api/   Aiven (Terraform), Caddy, PowerShell + smoke test, Vercel proxy
 ```
 
-## What was changed from upstream Darkness
+`node server.js` still works (it starts the unified server), so old start commands keep functioning.
 
-Darkness's own behaviour is unchanged unless noted here. The privacy hardening (strict mode, closed
-diagnostics, code-execution gate, CORS allow-list, SameSite=Lax cookies, no argument dumps in SQL error
-logs) is documented in [SECURITY.md](SECURITY.md).
+## Atmospheres
+
+Click the orb at the bottom-right (or open any page with `?atmosphere=blood`). **Classic** is the interface exactly as
+shipped. **Blood Moon**: crimson sky, a glowing moon whose light breathes, drifting fog, embers, blood dripping from
+the top edge and droplets running down the screen. **Deep Water**: swaying light shafts, living caustics, bubbles,
+click ripples, a blue that drifts between ink and teal. One canvas per layer, no dependencies, paused when hidden,
+static under `prefers-reduced-motion`.
+
+## Deploy
+
+See [DEPLOY.md](DEPLOY.md): Vercel (UI + proxy) + Render (API) + Aiven (PostgreSQL mirror), or Docker on your own
+server with a PowerShell SSH-key setup.
