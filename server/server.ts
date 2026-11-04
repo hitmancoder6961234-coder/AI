@@ -195,6 +195,7 @@ import { registerDocumentRoutes } from "./documents/routes.js";
 import { registerClassicApi, eraseClassicUser } from "./classic/legacy-api.js";
 import { registerClassicPages } from "./classic/serve.js";
 import { registerStudioRoutes, eraseStudioUser } from "./studio/routes.js";
+import { registerCopilotRoutes, eraseCopilotUser } from "./copilot/routes.js";
 import type { StudioEngine } from "./studio/pipeline.js";
 import { extractDocumentText } from "./rag-engine.js";
 import { db as sqliteDb } from "./db.js";
@@ -1059,6 +1060,7 @@ async function startServer() {
       eraseMirroredUser(uid);
       Object.assign(removed, eraseClassicUser(sqliteDb, uid));
       removed.studioJobs = eraseStudioUser(uid);
+      Object.assign(removed, eraseCopilotUser(sqliteDb, uid));
       return removed;
     },
   });
@@ -1142,6 +1144,18 @@ async function startServer() {
     generateImage: makeRealImage,
   });
   registerClassicPages(app, { isSignedIn: (req) => privacyUserId(req) !== null });
+
+  registerCopilotRoutes(app, {
+    db: sqliteDb,
+    getUserId: privacyUserId,
+    getLLM: tryLLMForUser,
+    projectContext: async (uid, pid, query) => {
+      const p: any = projects.get(pid);
+      if (!p || !isUserOwner(p.user_id, uid)) return null;
+      const hits = searchKnowledge(pid, query, 6);
+      return { name: p.name, text: hits.length ? assembleContext(hits.slice(0, 6)).slice(0, 12000) : "(no matching excerpts were found in this project)" };
+    },
+  });
 
   registerStudioRoutes(app, {
     getUserId: privacyUserId,

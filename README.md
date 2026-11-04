@@ -8,6 +8,7 @@ original Darkness app - all behind one login, one server and one deployment.
 |---|---|
 | **Project Studio** | Upload code, documents or just an idea. Darkness analyses it, asks you the right questions, recommends improvements, then writes the **report (DOCX/PDF/...)**, the **presentation (PPTX with speaker notes)** and **illustrations** - with prompts written for deep understanding. Use the inbuilt prompts or write your own. |
 | **Documents** | Upload almost anything (PDF, Word, PowerPoint, Excel, ODF, RTF, EPUB, HTML, Markdown, CSV, JSON, code, ZIP, images). Export to DOCX, PDF, PPTX, XLSX, ODT, RTF, HTML, Markdown, TXT, CSV, JSON - or convert one file to another type. |
+| **Copilot** | A ChatGPT-style assistant: answers stream token by token, Markdown with code blocks and a Copy button, saved conversations, stop / regenerate / edit, optional web search with numbered citations, and optional grounding in one of your projects. Full page at `/copilot.html` and a slide-in panel on every page (**Ctrl+/**). |
 | **Chat & knowledge** | Streaming multi-model chat, knowledge base (RAG) over your documents, Word and Slide studios, diagrams, project workspace. |
 | **Agent** | `/agent.html` - reasons step by step with a calculator, date/time, web search, page fetch, notes and your own documents. |
 | **Classic Darkness** | Your original app, unchanged, at `/classic/` - served by the same server, with its API ported to `/classic-api`. |
@@ -29,9 +30,19 @@ still works in **offline mode** (content derived from your project's structure, 
 *Model* or set a provider key for deeper writing.
 
 ```bash
-npm test                    # 54 unit tests
-npm run build && npm run smoke   # 38 end-to-end checks against the real server
+npm test                    # 63 unit tests
+npm run build && npm run smoke   # 46 end-to-end checks against the real server
 ```
+
+## Copilot
+
+Open **Copilot** in the sidebar, press **Ctrl+/** anywhere, or go to `/copilot.html`.
+
+* **Streaming** - real provider streaming (OpenAI-compatible, Anthropic, Gemini), not a typewriter effect.
+* **Conversations** - saved per user, auto-titled, renameable, deletable; **Stop**, **Regenerate** and **Edit** a message.
+* **Context, only when you ask** - *Search the web* adds numbered results the model cites as [1]; *Project* adds excerpts from one of **your** projects (ownership-checked).
+* **Behaviour** - the prompt in [`server/copilot/prompts.ts`](server/copilot/prompts.ts): answer first, clean Markdown, complete code, honest about uncertainty, never claims to browse or see files unless context was supplied.
+* It uses your own model from the Model page, or the server's provider key.
 
 ## Project Studio
 
@@ -62,7 +73,8 @@ server/         API server (Express 5)
   studio/         Project Studio: prompts, dossier, pipeline, renderers, routes
   documents/      universal extract + export (docx, pdf, pptx, xlsx, ...)
   classic/        your original backend, ported (+ the /classic pages)
-  agent/          working agent: loop, providers, tools, SSRF-safe fetch
+  copilot/        the ChatGPT-style assistant: prompt, streaming chat API, conversation storage
+  agent/          working agent: loop, providers (with real streaming), tools, SSRF-safe fetch
   security/       strict mode, headers, rate limits, redaction, vault, Aiven mirror, export/erase
 legacy/         your original server.js, package.json, render.yaml (kept for reference)
 deploy/ scripts/ api/   Aiven (Terraform), Caddy, PowerShell + smoke test, Vercel proxy

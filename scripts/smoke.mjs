@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * End-to-end smoke test. Boots the production bundle (dist/server.js) with a throw-away data
  * directory and a mock OpenAI-compatible model server, then exercises privacy and the agent over HTTP.
@@ -27,7 +27,7 @@ async function check(name, fn) {
     console.log(`  ok   ${name}`);
   } catch (e) {
     failures.push(name);
-    console.log(`  FAIL ${name}\n       ${String(e.message).split("\n")[0]}`);
+    console.log(`  FAIL ${name}\n       ${String(e.message).split("\n").slice(0, 8).join(" | ")}`);
   }
 }
 
@@ -39,7 +39,8 @@ const mock = http.createServer((req, res) => {
   let body = "";
   req.on("data", (c) => (body += c));
   req.on("end", () => {
-    const msgs = JSON.parse(body).messages;
+    const parsed = JSON.parse(body);
+    const msgs = parsed.messages;
     const task = (msgs.find((m) => m.role === "user") || {}).content || "";
     let content;
     if (/produce a BRIEF/i.test(task)) content = JSON.stringify(BRIEF);
@@ -49,11 +50,18 @@ const mock = http.createServer((req, res) => {
     else if (task.includes("Turn each idea into an image-generator prompt")) content = JSON.stringify({ images: [] });
     else if (msgs[0].content.includes("professional translator")) content = "TRANSLATED";
     else if (msgs[0].content.includes("DARKNESS")) content = "Hello from the model.";
+    else if (msgs[0].content.includes("Darkness Copilot")) content = "Hello **world** from Copilot." + (msgs[0].content.includes("<project_context name=") ? " [project-context-seen]" : "");
     else {
       const sawObservation = msgs.some((m) => m.role === "user" && m.content.includes("<observation"));
       content = sawObservation
         ? '{"thought":"I have the number","final":"The result is **9** (via calculator)."}'
         : '{"thought":"Use the calculator","tool":"calculator","args":{"expression":"(7+2)*1"}}';
+    }
+    if (parsed.stream) {
+      res.writeHead(200, { "content-type": "text/event-stream" });
+      for (const piece of content.match(/.{1,6}/gs) || []) res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: piece } }] })}\n\n`);
+      res.write("data: [DONE]\n\n");
+      return res.end();
     }
     res.setHeader("content-type", "application/json");
     res.end(JSON.stringify({ choices: [{ message: { role: "assistant", content } }] }));
@@ -84,7 +92,7 @@ function boot(extraEnv = {}) {
 }
 const stopChild = (child) => new Promise((r) => { child.once("exit", r); child.kill(); });
 
-// Phase 0 — simulate an existing install that ran in the old, open mode: it seeds the public
+// Phase 0 â€” simulate an existing install that ran in the old, open mode: it seeds the public
 // demo account and "default_token" into the database. The strict boot below must purge both.
 const legacy = boot({ PRIVACY_STRICT: "false" });
 let server = legacy;
@@ -216,7 +224,7 @@ try {
     assert.ok(t.tools.some((x) => x.name === "calculator"));
     assert.match(t.active, /^openai/);
   });
-  await check("agent runs end-to-end over SSE (mock model → calculator → answer)", async () => {
+  await check("agent runs end-to-end over SSE (mock model â†’ calculator â†’ answer)", async () => {
     const r = await post("/api/agent/run", { goal: "What is (7+2)*1?" }, tokA);
     assert.equal(r.status, 200);
     assert.match(r.headers.get("content-type"), /text\/event-stream/);
@@ -402,6 +410,84 @@ try {
     assert.equal((await postJson("/api/builder/image", { words: "ab" }, tokB)).status, 400);
   });
 
+  console.log("\nCopilot (streaming chat)");
+  const sseEvents = async (res) => {
+    const text = await res.text();
+    return [...text.split("\n\n")].map((f) => ({ ev: /^event: (.+)$/m.exec(f)?.[1], data: /^data: (.+)$/m.exec(f)?.[1] })).filter((x) => x.ev).map((x) => ({ ev: x.ev, d: JSON.parse(x.data) }));
+  };
+  let cpConv, cpUserMsg;
+  await check("Copilot needs a session; status reports the model and streaming", async () => {
+    assert.equal((await get("/api/copilot/status")).status, 401);
+    assert.equal((await postJson("/api/copilot/chat", { message: "hi" })).status, 401);
+    const st = await j(await get("/api/copilot/status", tokB));
+    assert.match(st.model, /^openai/); assert.equal(st.streaming, true);
+  });
+  await check("an answer streams token by token and is saved with an automatic title", async () => {
+    const res = await postJson("/api/copilot/chat", { message: "Hello there, who are you?" }, tokB);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get("content-type"), /event-stream/);
+    const ev = await sseEvents(res);
+    assert.equal(ev[0].ev, "meta");
+    const tokens = ev.filter((e) => e.ev === "token").map((e) => e.d.t);
+    assert.ok(tokens.length >= 3, "several separate token events, not one blob: " + tokens.length);
+    assert.equal(tokens.join(""), "Hello **world** from Copilot.");
+    assert.equal(ev.at(-1).ev, "done");
+    cpConv = ev[0].d.conversationId; cpUserMsg = ev[0].d.userMessageId;
+    assert.equal(ev[0].d.title, "Hello there, who are you?");
+    const full = await j(await get(`/api/copilot/conversations/${cpConv}`, tokB));
+    assert.deepEqual(full.messages.map((m) => m.role), ["user", "assistant"]);
+    assert.equal(full.messages[1].content, "Hello **world** from Copilot.");
+    assert.ok(JSON.stringify(await j(await get("/api/copilot/conversations", tokB))).includes(cpConv));
+  });
+  await check("regenerate replaces the last answer; edit rewrites the conversation from that message", async () => {
+    await (await postJson("/api/copilot/chat", { conversationId: cpConv, regenerate: true }, tokB)).text();
+    let full = await j(await get(`/api/copilot/conversations/${cpConv}`, tokB));
+    assert.equal(full.messages.length, 2, "still one exchange after regenerate");
+    const ev = await sseEvents(await postJson("/api/copilot/chat", { conversationId: cpConv, editMessageId: cpUserMsg, message: "Edited question" }, tokB));
+    assert.equal(ev.at(-1).ev, "done");
+    full = await j(await get(`/api/copilot/conversations/${cpConv}`, tokB));
+    assert.equal(full.messages.length, 2);
+    assert.equal(full.messages[0].content, "Edited question");
+  });
+  await check("a project can ground the answer, but only the owner's project", async () => {
+    const own = await sseEvents(await postJson("/api/copilot/chat", { message: "What does my project do?", projectId: pidB }, tokB));
+    const ownText = own.filter((e) => e.ev === "token").map((e) => e.d.t).join("");
+    assert.ok(ownText.includes("project-context-seen"), "the owner's project excerpts reached the model: " + ownText);
+    assert.ok(!own.some((e) => e.ev === "notice"));
+    const other = await sseEvents(await postJson("/api/copilot/chat", { message: "What does it do?", projectId: pidB }, tokC));
+    assert.ok(other.some((e) => e.ev === "notice"), "another user's project is refused");
+    assert.ok(!other.filter((e) => e.ev === "token").map((e) => e.d.t).join("").includes("project-context-seen"));
+  });
+  await check("conversations are private; input is validated", async () => {
+    assert.equal((await get(`/api/copilot/conversations/${cpConv}`, tokC)).status, 404);
+    assert.equal((await fetch(`${base}/api/copilot/conversations/${cpConv}`, { method: "DELETE", headers: { authorization: `Bearer ${tokC}` } })).status, 404);
+    assert.equal((await postJson("/api/copilot/chat", { conversationId: cpConv, message: "hijack" }, tokC)).status, 404);
+    assert.equal((await postJson("/api/copilot/chat", { message: "   " }, tokB)).status, 400);
+    assert.equal((await postJson("/api/copilot/chat", { message: "x".repeat(20001) }, tokB)).status, 413);
+    assert.equal((await postJson("/api/copilot/chat", { conversationId: "../../x", message: "hi" }, tokB)).status, 404);
+  });
+  await check("rename, delete one, and clear all work", async () => {
+    const ren = await fetch(`${base}/api/copilot/conversations/${cpConv}`, { method: "PATCH", headers: { authorization: `Bearer ${tokB}`, "content-type": "application/json" }, body: JSON.stringify({ title: "Renamed" }) });
+    assert.equal(ren.status, 200);
+    assert.ok(JSON.stringify(await j(await get("/api/copilot/conversations", tokB))).includes("Renamed"));
+    assert.equal((await fetch(`${base}/api/copilot/conversations/${cpConv}`, { method: "DELETE", headers: { authorization: `Bearer ${tokB}` } })).status, 200);
+    assert.equal((await get(`/api/copilot/conversations/${cpConv}`, tokB)).status, 404);
+    await fetch(`${base}/api/copilot/conversations`, { method: "DELETE", headers: { authorization: `Bearer ${tokB}` } });
+    assert.equal((await j(await get("/api/copilot/conversations", tokB))).conversations.length, 0);
+  });
+  await check("the privacy export includes Copilot chats and original-app chats (and only the user's own)", async () => {
+    await (await postJson("/api/copilot/chat", { message: "Export-me question" }, tokB)).text();
+    const exp = await (await get("/api/privacy/export", tokB)).text();
+    assert.ok(exp.includes("Export-me question") && exp.includes("Hello **world** from Copilot."), "Copilot messages exported");
+    assert.ok(exp.includes("Bob only"), "original-app conversation exported");
+    assert.ok(!(await (await get("/api/privacy/export", tokC)).text()).includes("Export-me question"), "another user's export is clean");
+  });
+  await check("the Copilot page and launcher are served", async () => {
+    assert.equal((await get("/copilot.html")).status, 200);
+    assert.equal((await get("/copilot-launcher.js")).status, 200);
+    assert.match(await (await get("/")).text(), /copilot-launcher\.js/);
+  });
+
   console.log("\nerasure");
   await check("erase requires explicit confirmation", async () => {
     const r = await fetch(`${base}/api/privacy/erase`, { method: "DELETE", headers: { authorization: `Bearer ${tokA}`, "content-type": "application/json" }, body: "{}" });
@@ -427,7 +513,9 @@ try {
   server.kill();
   legacy.kill();
   mock.close();
-  fs.rmSync(dataDir, { recursive: true, force: true });
+  // let the server release its database file before deleting the temp directory (Windows locks open files)
+  await new Promise((done) => { server.once("exit", done); setTimeout(done, 3000); });
+  try { fs.rmSync(dataDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 }); } catch { /* temp dir cleanup is best effort */ }
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`);

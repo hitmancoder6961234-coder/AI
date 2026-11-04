@@ -21,6 +21,15 @@ function maskModel(m: any) {
   return { ...rest, hasApiKey: Boolean(apiKey || api_key) };
 }
 
+/** Rows from the feature tables (Copilot, original app). They may not exist yet, so a missing table is just "none". */
+function tableRows(sql: string, userId: string): any[] {
+  try {
+    return db.prepare(sql).all(userId) as any[];
+  } catch {
+    return [];
+  }
+}
+
 export function exportUserData(userId: string) {
   const user: any = dbGetUser(userId);
   const conversations = (listConversations(userId) as any[]).map((c) => ({
@@ -38,6 +47,15 @@ export function exportUserData(userId: string) {
     projects: (listProjects(userId) as any[]).map((p) => ({ id: p.id, name: p.name, created_at: p.created_at })),
     workspaceFiles: (listWorkspaceFiles(userId) as any[]).map((f) => ({ id: f.id, filename: f.filename })),
     models: (dbGetModels(userId) as any[]).map(maskModel),
+    copilot: tableRows("SELECT id, title, created_at, updated_at FROM copilot_conversations WHERE user_id = ? ORDER BY updated_at DESC", userId).map((c) => ({
+      ...c,
+      messages: db.prepare("SELECT role, content, created_at FROM copilot_messages WHERE conversation_id = ? AND user_id = ? ORDER BY seq").all(c.id, userId),
+    })),
+    originalApp: {
+      conversations: tableRows("SELECT id, title, messages, created_at, updated_at FROM classic_conversations WHERE user_id = ?", userId),
+      analyticsEvents: tableRows("SELECT event, data, created_at FROM classic_analytics WHERE user_id = ?", userId),
+      webhooks: tableRows("SELECT id, url, events, created_at FROM classic_webhooks WHERE user_id = ?", userId),
+    },
   };
 }
 

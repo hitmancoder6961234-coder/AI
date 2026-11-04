@@ -8,6 +8,7 @@ window.Darkness.data = {
   nav: [
     { id: 'chat', label: 'Chat', href: '#/chat', icon: 'chat' },
     { id: 'builder', label: 'Project Studio', href: '#/builder', icon: 'sparkles' },
+    { id: 'copilot', label: 'Copilot', href: '/copilot.html', icon: 'zap' },
     { id: 'home', label: 'Home', href: '#/home', icon: 'house' },
     { id: 'document-studio', label: 'Word Studio', href: '#/document-studio', icon: 'file-text' },
     { id: 'presentation-studio', label: 'Slide Studio', href: '#/presentation-studio', icon: 'monitor' },

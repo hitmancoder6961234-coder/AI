@@ -9,6 +9,7 @@ that matches your configuration. The same facts are served machine-readably at `
 |---|---|---|
 | Account (e-mail, name, scrypt password hash) | SQLite in `DARKNESS_STORAGE_ROOT` | passwords are never stored in plain text |
 | Conversations, messages, files, projects, artifacts | same | scoped to the owning account |
+| Copilot conversations and messages | same | scoped to the owning account; deletable one by one or all at once |
 | Studio builds (generated reports, decks, images) | server memory, one hour | owner-scoped; not written to disk |
 | Original-app data (`/classic-api`): chats, shares, analytics, webhooks | same SQLite | scoped to the account (share links are public by design) |
 | Model configurations incl. API keys you add | same | used server-side only; never returned to the browser |
@@ -18,7 +19,7 @@ that matches your configuration. The same facts are served machine-readably at `
 
 ## What is sent to third parties
 
-* The text you send - chat messages, and the **digest of your project plus your instructions** when you use the Studio -
+* The text you send - chat and Copilot messages, and the **digest of your project plus your instructions** when you use the Studio -
   is forwarded to the **AI provider you select**. Their terms apply. Secrets found in files are scrubbed first.
 * Image prompts go to the configured image model (Gemini) on the server; with `IMAGE_ALLOW_THIRD_PARTY=true` they may go
   to a free third-party generator instead. Off by default.
@@ -29,7 +30,7 @@ that matches your configuration. The same facts are served machine-readably at `
 
 * **Export** - `GET /api/privacy/export` returns everything stored about the signed-in user (credentials excluded).
 * **Erase** - `DELETE /api/privacy/erase` with `{"confirm":"ERASE"}` removes the account, conversations, projects, files,
-  models, sessions, original-app data, Studio builds, in-memory caches and the Aiven mirror rows. Immediate and irreversible.
+  models, sessions, original-app data, Copilot chats, Studio builds, in-memory caches and the Aiven mirror rows. Immediate and irreversible.
 * **Isolation** - no shared or anonymous account in strict mode; every API call is bound to the caller's session and
   every project / conversation / build id is ownership-checked.
 

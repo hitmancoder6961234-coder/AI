@@ -322,7 +322,7 @@ export function applyPrivacyMiddleware(app: Express, opts: { cookieName: string;
   app.use("/api/auth/login", authLimit);
   app.use("/api/auth/signup", authLimit);
   app.use("/api/agent/run", aiLimit);
-  app.use(/^\/api\/(conversations\/[^/]+\/(chat|regenerate)|chat|studio\/chat|studio\/[a-z-]+\/(generate|brief|outline|recommend|image))$/, aiLimit);
+  app.use(/^\/api\/(conversations\/[^/]+\/(chat|regenerate)|chat|studio\/chat|copilot\/chat|studio\/[a-z-]+\/(generate|brief|outline|recommend|image))$/, aiLimit);
   app.use(/^\/classic-api\/api\/(chat|chat\/stream|image|translate|search|code)$/, aiLimit);
   app.use("/api/", apiLimit);
   app.use("/classic-api/", apiLimit);

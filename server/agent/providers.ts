@@ -26,6 +26,8 @@ export interface LLM {
   provider: string;
   model: string;
   complete(messages: ChatMsg[], opts?: CompleteOptions): Promise<string>;
+  /** Token-by-token output (server-sent events from the provider). Optional: use streamText() to fall back. */
+  stream?(messages: ChatMsg[], opts?: CompleteOptions): AsyncGenerator<string>;
 }
 
 export interface LLMConfig {
@@ -63,6 +65,60 @@ async function postJson(url: string, headers: Record<string, string>, body: unkn
   return json;
 }
 
+const STREAM_TIMEOUT_MS = 300_000;
+
+/** POST and yield each server-sent-event `data:` payload as a string (without the prefix). */
+async function* postSse(url: string, headers: Record<string, string>, body: unknown, signal?: AbortSignal): AsyncGenerator<string> {
+  const t = AbortSignal.timeout(STREAM_TIMEOUT_MS);
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json", accept: "text/event-stream", ...headers },
+    body: JSON.stringify(body),
+    signal: signal ? AbortSignal.any([signal, t]) : t,
+  });
+  if (!res.ok || !res.body) {
+    const text = await res.text().catch(() => "");
+    let detail = text.slice(0, 300);
+    try {
+      const j = JSON.parse(text);
+      detail = j?.error?.message || (typeof j?.error === "string" ? j.error : detail);
+    } catch {
+      /* not JSON */
+    }
+    throw new Error(`LLM request failed (${res.status}): ${detail}`);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buf = "";
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      let idx: number;
+      while ((idx = buf.search(/\r?\n\r?\n/)) !== -1) {
+        const frame = buf.slice(0, idx);
+        buf = buf.slice(idx).replace(/^\r?\n\r?\n/, "");
+        const data = frame.split(/\r?\n/).filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trimStart()).join("\n");
+        if (data) yield data;
+      }
+    }
+    const tail = buf.split(/\r?\n/).filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trimStart()).join("\n");
+    if (tail) yield tail;
+  } finally {
+    reader.cancel().catch(() => {});
+  }
+}
+
+/** Stream if the provider adapter supports it, otherwise deliver the full answer as one chunk. */
+export async function* streamText(llm: LLM, messages: ChatMsg[], opts: CompleteOptions = {}): AsyncGenerator<string> {
+  if (llm.stream) {
+    yield* llm.stream(messages, opts);
+    return;
+  }
+  yield await llm.complete(messages, opts);
+}
+
 // --- adapters --------------------------------------------------------------------------------
 
 function openAiCompatible(cfg: LLMConfig & { baseUrl: string }): LLM {
@@ -80,6 +136,20 @@ function openAiCompatible(cfg: LLMConfig & { baseUrl: string }): LLM {
       const out = json?.choices?.[0]?.message?.content;
       if (typeof out !== "string") throw new Error("LLM returned no content");
       return out;
+    },
+    async *stream(messages, opts = {}) {
+      for await (const data of postSse(`${baseUrl}/chat/completions`, { authorization: `Bearer ${cfg.apiKey}` }, { model: cfg.model, messages, temperature: opts.temperature ?? 0.7, max_tokens: opts.maxTokens ?? 4096, stream: true }, opts.signal)) {
+        if (data === "[DONE]") return;
+        let j: any;
+        try {
+          j = JSON.parse(data);
+        } catch {
+          continue;
+        }
+        if (j?.error) throw new Error(String(j.error.message || j.error).slice(0, 300));
+        const piece = j?.choices?.[0]?.delta?.content;
+        if (typeof piece === "string" && piece) yield piece;
+      }
     },
   };
 }
@@ -102,10 +172,25 @@ function anthropicLLM(cfg: LLMConfig): LLM {
       if (!out) throw new Error("LLM returned no content");
       return out;
     },
+    async *stream(messages, opts = {}) {
+      const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+      const turns = messages.filter((m) => m.role !== "system");
+      for await (const data of postSse(`${baseUrl}/messages`, { "x-api-key": cfg.apiKey, "anthropic-version": "2023-06-01" }, { model: cfg.model, system, messages: turns, temperature: opts.temperature ?? 0.7, max_tokens: opts.maxTokens ?? 4096, stream: true }, opts.signal)) {
+        let j: any;
+        try {
+          j = JSON.parse(data);
+        } catch {
+          continue;
+        }
+        if (j?.type === "error") throw new Error(String(j.error?.message || "stream error").slice(0, 300));
+        if (j?.type === "content_block_delta" && j.delta?.type === "text_delta" && j.delta.text) yield j.delta.text;
+        if (j?.type === "message_stop") return;
+      }
+    },
   };
 }
 
-function geminiNative(cfg: LLMConfig): LLM {
+export function geminiNative(cfg: LLMConfig, base = "https://generativelanguage.googleapis.com/v1beta"): LLM {
   return {
     provider: cfg.provider,
     model: cfg.model,
@@ -115,7 +200,7 @@ function geminiNative(cfg: LLMConfig): LLM {
         .filter((m) => m.role !== "system")
         .map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
       const json = await postJson(
-        `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(cfg.model)}:generateContent`,
+        `${base}/models/${encodeURIComponent(cfg.model)}:generateContent`,
         { "x-goog-api-key": cfg.apiKey },
         {
           systemInstruction: system ? { parts: [{ text: system }] } : undefined,
@@ -127,6 +212,28 @@ function geminiNative(cfg: LLMConfig): LLM {
       const out = (json?.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("");
       if (!out) throw new Error("LLM returned no content");
       return out;
+    },
+    async *stream(messages, opts = {}) {
+      const system = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+      const contents = messages
+        .filter((m) => m.role !== "system")
+        .map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+      for await (const data of postSse(
+        `${base}/models/${encodeURIComponent(cfg.model)}:streamGenerateContent?alt=sse`,
+        { "x-goog-api-key": cfg.apiKey },
+        { systemInstruction: system ? { parts: [{ text: system }] } : undefined, contents, generationConfig: { temperature: opts.temperature ?? 0.7, maxOutputTokens: opts.maxTokens ?? 4096 } },
+        opts.signal
+      )) {
+        let j: any;
+        try {
+          j = JSON.parse(data);
+        } catch {
+          continue;
+        }
+        if (j?.error) throw new Error(String(j.error.message || "stream error").slice(0, 300));
+        const piece = (j?.candidates?.[0]?.content?.parts || []).map((x: any) => x.text || "").join("");
+        if (piece) yield piece;
+      }
     },
   };
 }
