@@ -104,6 +104,10 @@
     .pill.on { color:var(--ink); border-color:var(--accent); } .pill input { accent-color:var(--accent); margin:0; }
     .pill select { background:none; border:0; color:inherit; font:inherit; max-width:170px; }
     .pill select option { color:#111; }
+    .pill.field { cursor:text; padding:2px 6px 2px 11px; } .pill.field input { background:none; border:0; outline:0; color:var(--ink); font:inherit; width:210px; max-width:52vw; padding:3px 0; }
+    .pill[hidden] { display:none; }
+    .focus-note { max-width:780px; margin:0 auto 8px; font-size:12px; color:var(--muted); }
+    .focus-note b { color:var(--accent); font-weight:600; }
     .composer { max-width:780px; margin:0 auto; display:flex; align-items:flex-end; gap:8px; padding:8px 8px 8px 16px; border:1px solid var(--line); border-radius:22px; background:var(--panel); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); box-shadow:0 8px 30px rgba(0,0,0,.25); }
     .composer:focus-within { border-color:var(--accent); }
     .composer textarea { flex:1; background:none; border:0; outline:0; color:var(--ink); font:inherit; resize:none; max-height:220px; padding:7px 0; line-height:1.5; }
@@ -141,9 +145,13 @@
     <button class="jump" id="jump" type="button" aria-label="Scroll to latest"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></button>
     <div class="dock">
       <div class="tools">
+        <label class="pill" id="focusPill" title="Limit what the Copilot answers"><span>Focus</span><select id="focus" aria-label="Focus"><option value="open">Anything</option><option value="topic">One topic</option><option value="project">My project</option></select></label>
+        <label class="pill field" id="topicPill" hidden><input id="topic" maxlength="200" placeholder="Topic, e.g. Python programming" aria-label="Focus topic"></label>
+        <label class="pill" id="projPill" hidden><span>Project</span><select id="proj" aria-label="Project"><option value="">Choose...</option></select></label>
+        <label class="pill" id="modelPill" hidden title="Which model answers"><span>Model</span><select id="choice" aria-label="Model"><option value="auto">Auto</option><option value="gpt">GPT (OpenAI)</option><option value="mine">My model</option></select></label>
         <label class="pill" id="webPill"><input type="checkbox" id="web"> Search the web</label>
-        <label class="pill" title="Ground answers in one of your projects"><span>Project</span><select id="proj" aria-label="Project context"><option value="">None</option></select></label>
       </div>
+      <div class="focus-note" id="focusNote" hidden></div>
       <form class="composer" id="form" autocomplete="off">
         <textarea id="input" rows="1" maxlength="20000" placeholder="Message Darkness Copilot" aria-label="Message"></textarea>
         <button class="send" id="send" type="submit" aria-label="Send" disabled><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
@@ -255,9 +263,15 @@
       '<div class="acts"><button type="button" data-act="copy" title="Copy">' + ICON.copy + ' Copy</button>' + (isLast ? '<button type="button" data-act="redo" title="Regenerate">' + ICON.redo + ' Regenerate</button>' : '') + '</div></div></div>';
   }
 
+  function emptyHint() {
+    var f = LOCKED ? { scope: { mode: 'topic', topic: LOCKED } } : focusState();
+    if (!f.error && f.scope.mode === 'topic') return 'Focused on <b>' + esc(f.scope.topic) + '</b>. Questions about anything else will be politely declined.';
+    if (!f.error && f.scope.mode === 'project') return 'Focused on your project. Answers come only from its files.';
+    return 'Ask anything. Answers stream in as they are written.';
+  }
   function renderAll() {
     if (!S.msgs.length) {
-      col.innerHTML = '<div class="empty"><img src="/brand/darkness-logo.svg" alt=""><h1>How can I help you today?</h1><p>Ask anything. Answers stream in as they are written.</p><div class="sugg">' + SUGGESTIONS.map(function (s, i) { return '<button type="button" data-sg="' + i + '"><b>' + esc(s[0]) + '</b><span>' + esc(s[1]) + '</span></button>'; }).join('') + '</div></div>';
+      col.innerHTML = '<div class="empty"><img src="/brand/darkness-logo.svg" alt=""><h1>How can I help you today?</h1><p>' + emptyHint() + '</p><div class="sugg">' + SUGGESTIONS.map(function (s, i) { return '<button type="button" data-sg="' + i + '"><b>' + esc(s[0]) + '</b><span>' + esc(s[1]) + '</span></button>'; }).join('') + '</div></div>';
     } else {
       var lastAssistant = -1; for (var k = S.msgs.length - 1; k >= 0; k--) if (S.msgs[k].role === 'assistant') { lastAssistant = k; break; }
       col.innerHTML = S.msgs.map(function (m, i) { return messageHtml(m, i, i === lastAssistant && !S.busy); }).join('');
@@ -297,11 +311,49 @@
     try {
       var r = await api('GET', '/api/copilot/conversations/' + encodeURIComponent(id));
       S.id = id; S.msgs = r.messages; S.title = r.conversation.title; S.stick = true;
+      restoreFocus(r.conversation.scope);
       renderAll(); renderList(); closeSide();
     } catch (e) { toast(e.message); }
   }
   function fresh() { if (S.busy) return; S.id = null; S.msgs = []; S.title = 'New chat'; renderAll(); renderList(); closeSide(); $('input').focus(); }
   function toast(msg) { var d = document.createElement('div'); d.textContent = msg; d.style.cssText = 'position:fixed;left:50%;bottom:110px;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);padding:8px 14px;border-radius:12px;z-index:50;font-size:13px'; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 2800); }
+
+  // ---------- focus (what the Copilot may talk about) ----------
+  var LOCKED = null;
+  function focusState() {
+    if (LOCKED) return { scope: { mode: 'topic', topic: LOCKED } };
+    var mode = $('focus').value;
+    if (mode === 'topic') {
+      var t = $('topic').value.trim();
+      if (t.length < 3) return { error: 'Type the topic to focus on (at least 3 characters), or set Focus to Anything.', scope: { mode: 'open' } };
+      return { scope: { mode: 'topic', topic: t } };
+    }
+    if (mode === 'project') {
+      if (!$('proj').value) return { error: 'Choose which project to focus on, or set Focus to Anything.', scope: { mode: 'open' } };
+      return { scope: { mode: 'project' }, projectId: $('proj').value };
+    }
+    return { scope: { mode: 'open' } };
+  }
+  function syncFocus(save) {
+    var mode = $('focus').value;
+    $('topicPill').hidden = mode !== 'topic'; $('projPill').hidden = mode !== 'project';
+    $('focusPill').classList.toggle('on', mode !== 'open' || Boolean(LOCKED));
+    var note = $('focusNote'), f = focusState(), ph = 'Message Darkness Copilot';
+    if (LOCKED) { note.hidden = false; note.innerHTML = 'Answers are limited to: <b>' + esc(LOCKED) + '</b>'; ph = 'Ask about ' + LOCKED; }
+    else if (mode === 'topic' && !f.error) { note.hidden = false; note.innerHTML = 'Answering only about <b>' + esc(f.scope.topic) + '</b>. Anything else is politely declined.'; ph = 'Ask about ' + f.scope.topic; }
+    else if (mode === 'project' && !f.error) { var nm = $('proj').options[$('proj').selectedIndex].text; note.hidden = false; note.innerHTML = 'Answering only from the project <b>' + esc(nm) + '</b>. If it is not in the files, it says so.'; ph = 'Ask about ' + nm; }
+    else note.hidden = true;
+    $('input').placeholder = ph;
+    if (!S.msgs.length && !S.busy) renderAll();
+    if (save !== false) { try { localStorage.setItem('darkness_copilot_focus', JSON.stringify({ focus: mode, topic: $('topic').value, proj: $('proj').value, choice: $('choice').value })); } catch (e) { /* optional */ } }
+  }
+  function restoreFocus(scope) {
+    if (!scope) return;
+    $('focus').value = scope.mode === 'topic' || scope.mode === 'project' ? scope.mode : 'open';
+    if (scope.topic) $('topic').value = scope.topic;
+    if (scope.projectId && $('proj').querySelector('option[value="' + scope.projectId.replace(/"/g, '') + '"]')) $('proj').value = scope.projectId;
+    syncFocus(false);
+  }
 
   // ---------- sending ----------
   function setBusy(b) {
@@ -317,6 +369,7 @@
     // opts: {message} | {regenerate:true} | {message, editMessageId}
     if (S.busy) return;
     var text = (opts.message || '').trim();
+    var fcheck = focusState(); if (fcheck.error) { toast(fcheck.error); return false; }
     if (opts.regenerate) { while (S.msgs.length && S.msgs[S.msgs.length - 1].role === 'assistant') S.msgs.pop(); }
     else if (opts.editMessageId) { var at = S.msgs.findIndex(function (m) { return m.id === opts.editMessageId; }); if (at >= 0) S.msgs = S.msgs.slice(0, at); S.msgs.push({ role: 'user', content: text }); }
     else S.msgs.push({ role: 'user', content: text });
@@ -329,7 +382,8 @@
     var pending = false, acc = '';
     function paint() { pending = false; if (bubble) { bubble.innerHTML = md(acc, reply.sources); bubble.classList.add('caret'); } stick(); }
     try {
-      var body = { conversationId: S.id || undefined, message: text, regenerate: opts.regenerate || undefined, editMessageId: opts.editMessageId || undefined, webSearch: $('web').checked, projectId: $('proj').value || undefined, page: PAGE || undefined };
+      var fs = focusState();
+      var body = { conversationId: S.id || undefined, message: text, regenerate: opts.regenerate || undefined, editMessageId: opts.editMessageId || undefined, webSearch: $('web').checked, page: PAGE || undefined, model: $('choice').value, scope: fs.scope, projectId: fs.scope.mode === 'project' ? fs.projectId : undefined };
       var res = await fetch('/api/copilot/chat', { method: 'POST', headers: headers(true), credentials: 'include', body: JSON.stringify(body), signal: S.ctrl.signal });
       if (!res.ok) { var j = await res.json().catch(function () { return {}; }); var e = new Error(j.error || res.statusText); e.code = j.code; throw e; }
       var reader = res.body.getReader(), dec = new TextDecoder(), buf = '';
@@ -369,6 +423,7 @@
     e.preventDefault();
     if (S.busy) { if (S.ctrl) S.ctrl.abort(); return; }
     var t = input.value.trim(); if (!t) return;
+    var fc = focusState(); if (fc.error) { toast(fc.error); return; } // keep the typed message
     input.value = ''; autosize(); ask({ message: t });
   });
   document.addEventListener('keydown', function (e) {
@@ -378,7 +433,9 @@
   });
   $('newChat').addEventListener('click', fresh);
   $('web').addEventListener('change', function () { $('webPill').classList.toggle('on', this.checked); });
-  $('proj').addEventListener('change', function () { $('proj').closest('.pill').classList.toggle('on', Boolean(this.value)); });
+  ['focus', 'proj', 'topic', 'choice'].forEach(function (id) { $(id).addEventListener('change', syncFocus); });
+  $('topic').addEventListener('input', syncFocus);
+  $('topic').addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); $('input').focus(); } });
 
   col.addEventListener('click', function (e) {
     var sg = e.target.closest('[data-sg]'); if (sg) { ask({ message: SUGGESTIONS[Number(sg.getAttribute('data-sg'))][1] }); return; }
@@ -414,8 +471,14 @@
       var st = await api('GET', '/api/copilot/status');
       S.model = st.model; $('model').textContent = st.model || 'No model';
       if (!st.model) $('model').style.borderColor = 'var(--bad)';
+      var ch = st.choices || {}; $('modelPill').hidden = !(ch.gpt && ch.mine);
+      if (!ch.gpt) $('choice').querySelector('option[value="gpt"]').remove();
+      if (!ch.mine) $('choice').querySelector('option[value="mine"]').remove();
+      if (st.lockedTopic) { LOCKED = st.lockedTopic; $('focusPill').hidden = true; }
     } catch (e) { if (e.status === 401) return needLogin(); }
-    try { var p = await api('GET', '/api/builder/projects'); $('proj').innerHTML = '<option value="">None</option>' + p.projects.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>'; }).join(''); } catch (e) { /* optional */ }
+    try { var p = await api('GET', '/api/builder/projects'); $('proj').innerHTML = '<option value="">Choose...</option>' + p.projects.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.name) + '</option>'; }).join(''); } catch (e) { /* optional */ }
+    try { var sv = JSON.parse(localStorage.getItem('darkness_copilot_focus') || 'null'); if (sv && !LOCKED) { $('focus').value = sv.focus || 'open'; $('topic').value = sv.topic || ''; if (sv.proj && $('proj').querySelector('option[value="' + String(sv.proj).replace(/"/g, '') + '"]')) $('proj').value = sv.proj; if (sv.choice && $('choice').querySelector('option[value="' + sv.choice + '"]')) $('choice').value = sv.choice; } } catch (e) { /* optional */ }
+    syncFocus(false);
     await loadList();
     var want = params.get('c'); if (want) open(want);
     input.focus();

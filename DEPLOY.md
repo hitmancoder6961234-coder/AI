@@ -99,7 +99,7 @@ Pulls `main`, links `.env`, runs `docker compose up -d --build`. The app binds t
 
 ## Verified vs. not verified
 
-Verified by automated tests on the real server (63 unit tests, 46 end-to-end checks) and in Edge: strict-mode
+Verified by automated tests on the real server (65 unit tests, 49 end-to-end checks) and in Edge: strict-mode
 isolation, ownership checks, export/erase, rate limits, the code-execution gate, log redaction, the agent over SSE,
 the SSRF guard, vault encryption, every document type round-tripping (DOCX, PDF, PPTX, XLSX, ODT, RTF, HTML, MD, TXT,
 CSV, JSON in; most of them back out), your original API at `/classic-api`, the full Project Studio flow with a scripted

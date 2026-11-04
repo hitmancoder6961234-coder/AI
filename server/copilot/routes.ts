@@ -10,22 +10,30 @@
  *   DELETE /api/copilot/conversations            delete all
  *   POST   /api/copilot/chat                     stream an answer (Server-Sent Events)
  *
- * chat body: { conversationId?, message, regenerate?, editMessageId?, projectId?, webSearch?, page? }
+ * chat body: { conversationId?, message, regenerate?, editMessageId?, projectId?, webSearch?, page?,
+ *              model?: "auto"|"gpt"|"mine", scope?: {mode: "open"|"topic"|"project", topic?} }
  * events:    meta {conversationId, userMessageId, assistantMessageId, title}
- *            sources [{title,url}]   notice {text}   token {t}   done {messageId, title}   error {message}
+ *            sources [{title,url}]   notice {text}   (meta also carries the scope that was applied)   token {t}   done {messageId, title}   error {message}
  */
 import crypto from "crypto";
 import type { Express, Request, Response } from "express";
 import type { DatabaseSync } from "node:sqlite";
 import { type ChatMsg, type LLM, streamText } from "../agent/providers.js";
 import { searchWeb } from "../agent/tools.js";
-import { buildMessages, titleFrom } from "./prompts.js";
+import { buildMessages, parseScope, titleFrom, type CopilotScope } from "./prompts.js";
 
 export interface CopilotDeps {
   db: DatabaseSync;
   getUserId: (req: Request) => string | null;
-  /** null when no model is configured for this user or on the server. */
-  getLLM: (userId: string) => LLM | null;
+  /**
+   * null when no model is available. `choice`: "gpt" = OpenAI GPT through the server's OPENAI_API_KEY, "mine" = the model
+   * the user configured, "auto" (default) = GPT if the server has a key, else the user's model, else any server provider.
+   */
+  getLLM: (userId: string, choice?: "auto" | "gpt" | "mine") => LLM | null;
+  /** Which choices can work for this user right now (drives the model picker). */
+  choices?: (userId: string) => { gpt: boolean; mine: boolean };
+  /** Operator-locked topic (COPILOT_LOCK_TOPIC): users cannot widen it. */
+  lockedTopic?: string;
   /** Owner-checked project excerpts for a question; null when the project is not the user's. */
   projectContext: (userId: string, projectId: string, query: string) => Promise<{ name: string; text: string } | null>;
 }
@@ -50,6 +58,11 @@ export function initCopilotTables(db: DatabaseSync): void {
     );
     CREATE INDEX IF NOT EXISTS idx_copilot_msg_conv ON copilot_messages(conversation_id, seq);
   `);
+  try {
+    db.exec("ALTER TABLE copilot_conversations ADD COLUMN scope TEXT");
+  } catch {
+    /* column already exists */
+  }
 }
 
 export function eraseCopilotUser(db: DatabaseSync, userId: string): Record<string, number> {
@@ -84,7 +97,7 @@ export function registerCopilotRoutes(app: Express, deps: CopilotDeps): void {
     const uid = need(req, res);
     if (!uid) return;
     const llm = deps.getLLM(uid);
-    res.json({ model: llm ? `${llm.provider} / ${llm.model}` : null, streaming: Boolean(llm?.stream), webSearch: true });
+    res.json({ model: llm ? `${llm.provider} / ${llm.model}` : null, streaming: Boolean(llm?.stream), webSearch: true, choices: deps.choices?.(uid) || { gpt: false, mine: false }, lockedTopic: deps.lockedTopic || null });
   });
 
   app.get("/api/copilot/conversations", (req, res) => {
@@ -108,7 +121,9 @@ export function registerCopilotRoutes(app: Express, deps: CopilotDeps): void {
     if (!uid) return;
     const c = ownConv(req.params.id, uid);
     if (!c) return res.status(404).json({ error: "Conversation not found" });
-    res.json({ conversation: { id: c.id, title: c.title, createdAt: c.created_at, updatedAt: c.updated_at }, messages: messagesOf(c.id) });
+    let scope: unknown = null;
+    try { scope = c.scope ? JSON.parse(c.scope) : null; } catch { /* ignore */ }
+    res.json({ conversation: { id: c.id, title: c.title, createdAt: c.created_at, updatedAt: c.updated_at, scope }, messages: messagesOf(c.id) });
   });
 
   app.patch("/api/copilot/conversations/:id", (req, res) => {
@@ -148,8 +163,19 @@ export function registerCopilotRoutes(app: Express, deps: CopilotDeps): void {
     if (!regenerate && !text) return res.status(400).json({ error: "message is required" });
     if (text.length > MAX_MESSAGE) return res.status(413).json({ error: `Messages are limited to ${MAX_MESSAGE} characters` });
 
-    const llm = deps.getLLM(uid);
-    if (!llm) return res.status(503).json({ error: "No AI model is configured. Add one in the Model page, or set a provider key (for example GEMINI_API_KEY) on the server.", code: "NO_MODEL" });
+    const choice = body.model === "gpt" || body.model === "mine" ? body.model : "auto";
+    const llm = deps.getLLM(uid, choice);
+    if (!llm) {
+      const msg = choice === "gpt" ? "GPT is not available: set OPENAI_API_KEY on the server (an OpenAI API key, not a ChatGPT subscription)."
+        : choice === "mine" ? "You have not configured a model of your own. Add one in the Model page, or pick GPT."
+        : "No AI model is configured. Set OPENAI_API_KEY on the server to use GPT, add your own model in the Model page, or set another provider key (for example GEMINI_API_KEY).";
+      return res.status(503).json({ error: msg, code: "NO_MODEL" });
+    }
+
+    // what the Copilot may talk about: an operator lock wins, otherwise the user's Focus setting
+    const reqScope: any = body.scope && typeof body.scope === "object" ? body.scope : {};
+    if (reqScope.mode === "topic" && typeof reqScope.topic === "string" && reqScope.topic.trim().length > 0 && reqScope.topic.trim().length < 3) return res.status(400).json({ error: "The focus topic needs at least 3 characters." });
+    if (reqScope.mode === "project" && !(typeof body.projectId === "string" && body.projectId)) return res.status(400).json({ error: "Pick a project to focus on." });
     if ((streams.get(uid) || 0) >= MAX_STREAMS_PER_USER) return res.status(429).json({ error: "Too many answers are being written at once. Wait a moment.", code: "COPILOT_BUSY" });
 
     // conversation
@@ -202,14 +228,22 @@ export function registerCopilotRoutes(app: Express, deps: CopilotDeps): void {
 
     let answer = "";
     let sources: Array<{ title: string; url: string }> | undefined;
+    let scope: CopilotScope = { mode: "open" };
     try {
       // optional context: the user's own project, and/or the public web
       let projectName: string | undefined;
       let projectContext: string | undefined;
       if (typeof body.projectId === "string" && body.projectId) {
-        const pc = await deps.projectContext(uid, body.projectId, userText).catch(() => null);
-        if (pc) { projectName = pc.name; projectContext = pc.text; } else send("notice", { text: "That project could not be used as context." });
+        // short follow-ups ("explain more") carry no keywords, so search with the previous question too
+        const prevUser = messagesOf(conv.id).filter((m) => m.role === "user").slice(-3, -1).map((m) => m.content).join(" ");
+        const pc = await deps.projectContext(uid, body.projectId, `${prevUser} ${userText}`.trim().slice(-1500)).catch(() => null);
+        if (pc) { projectName = pc.name; projectContext = pc.text; }
+        else if (reqScope.mode === "project") throw new Error("That project could not be found, so there is nothing to focus on.");
+        else send("notice", { text: "That project could not be used as context." });
       }
+      scope = deps.lockedTopic ? parseScope({ mode: "topic", topic: deps.lockedTopic }) : parseScope(reqScope, projectName);
+      if (!deps.lockedTopic) db.prepare("UPDATE copilot_conversations SET scope = ? WHERE id = ? AND user_id = ?").run(JSON.stringify({ mode: scope.mode, topic: "topic" in scope ? scope.topic : undefined, projectId: scope.mode === "project" ? body.projectId : undefined }), conv.id, uid);
+      send("scope", { mode: scope.mode, locked: Boolean(deps.lockedTopic) });
       let webResults: Array<{ title: string; url: string; snippet: string }> | undefined;
       if (body.webSearch === true) {
         try {
@@ -223,7 +257,7 @@ export function registerCopilotRoutes(app: Express, deps: CopilotDeps): void {
       }
 
       const history: ChatMsg[] = messagesOf(conv.id).map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: m.content }));
-      const messages = buildMessages(history, { today: new Date().toISOString().slice(0, 10), page: typeof body.page === "string" ? body.page.slice(0, 60) : undefined, projectName, projectContext, webResults });
+      const messages = buildMessages(history, { today: new Date().toISOString().slice(0, 10), page: typeof body.page === "string" ? body.page.slice(0, 60) : undefined, projectName, projectContext, webResults, scope });
       for await (const piece of streamText(llm, messages, { signal: ac.signal, temperature: 0.7, maxTokens: 4096 })) {
         answer += piece;
         send("token", { t: piece });

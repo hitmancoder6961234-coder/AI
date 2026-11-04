@@ -1108,6 +1108,30 @@ async function startServer() {
       return null;
     }
   };
+  // The Copilot can talk to OpenAI's GPT directly: the server's OPENAI_API_KEY plus COPILOT_MODEL (default gpt-4o-mini).
+  const gptLLM = (): LLM | null => {
+    const key = process.env.OPENAI_API_KEY;
+    if (!key) return null;
+    try {
+      return createLLMFromConfig({ provider: "openai", apiKey: key, baseUrl: process.env.OPENAI_BASE_URL || (process.env.AGENT_PROVIDER === "openai" ? process.env.AGENT_BASE_URL : undefined) || undefined, model: process.env.COPILOT_MODEL || "gpt-4o-mini" });
+    } catch {
+      return null;
+    }
+  };
+  const ownModelLLM = (userId: string): LLM | null => {
+    const m = resolveModelConfig(null, userId);
+    if (!(m && m.enabled && m.apiKey && m.modelName)) return null;
+    try {
+      return createLLMFromConfig({ provider: m.provider, apiKey: m.apiKey, baseUrl: m.baseUrl || undefined, model: m.modelName });
+    } catch {
+      return null;
+    }
+  };
+  const copilotLLM = (userId: string, choice: "auto" | "gpt" | "mine" = "auto"): LLM | null => {
+    if (choice === "gpt") return gptLLM();
+    if (choice === "mine") return ownModelLLM(userId);
+    return gptLLM() || ownModelLLM(userId) || tryLLMForUser(userId);
+  };
   const llmInfoForUser = (userId: string) => {
     const llm = tryLLMForUser(userId);
     return { active: llm ? `${llm.provider} / ${llm.model}` : null, providers: availableProviders() };
@@ -1148,7 +1172,9 @@ async function startServer() {
   registerCopilotRoutes(app, {
     db: sqliteDb,
     getUserId: privacyUserId,
-    getLLM: tryLLMForUser,
+    getLLM: copilotLLM,
+    choices: (uid) => ({ gpt: Boolean(gptLLM()), mine: Boolean(ownModelLLM(uid)) }),
+    lockedTopic: (process.env.COPILOT_LOCK_TOPIC || "").trim().slice(0, 200) || undefined,
     projectContext: async (uid, pid, query) => {
       const p: any = projects.get(pid);
       if (!p || !isUserOwner(p.user_id, uid)) return null;

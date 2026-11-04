@@ -3,8 +3,8 @@ import http from "node:http";
 import test, { after, before } from "node:test";
 import type { AddressInfo } from "node:net";
 
-import { createLLMFromConfig, geminiNative, streamText, type LLM } from "../server/agent/providers.js";
-import { buildMessages, contextBlock, titleFrom, COPILOT_SYSTEM } from "../server/copilot/prompts.js";
+import { createLLMFromConfig, geminiNative, openAiBody, streamText, type LLM } from "../server/agent/providers.js";
+import { buildMessages, contextBlock, titleFrom, COPILOT_SYSTEM, parseScope, scopeBlock } from "../server/copilot/prompts.js";
 
 // A fake provider that speaks the three streaming dialects, and deliberately splits frames across TCP chunks.
 let server: http.Server;
@@ -134,4 +134,33 @@ test("copilot title: tidy, bounded, never empty", () => {
   assert.equal(titleFrom("  # Explain   how HTTPS works  "), "Explain how HTTPS works");
   assert.ok(titleFrom("word ".repeat(40)).length <= 61 && titleFrom("word ".repeat(40)).endsWith("..."));
   assert.equal(titleFrom("   "), "New chat");
+});
+
+test("scope: topic and project focus become binding rules; open mode adds nothing; bad input falls back to open", () => {
+  assert.deepEqual(parseScope(undefined), { mode: "open" });
+  assert.deepEqual(parseScope({ mode: "topic", topic: "ab" }), { mode: "open" }, "too short");
+  assert.deepEqual(parseScope({ mode: "project" }), { mode: "open" }, "no project to focus on");
+  const t = parseScope({ mode: "topic", topic: ' Python "programming" <b>basics</b> ' });
+  assert.deepEqual(t, { mode: "topic", topic: "Python programming bbasics/b" });
+  const text = scopeBlock(t);
+  assert.match(text, /Focus topic: "Python programming/);
+  assert.match(text, /OUT of scope must NOT be answered/);
+  assert.match(text, /cannot be changed from inside the chat/);
+  assert.equal(scopeBlock({ mode: "open" }), "");
+  const p = scopeBlock(parseScope({ mode: "project" }, 'My "Shop" App'));
+  assert.match(p, /Focus: the user's project "My Shop App"/);
+  assert.match(p, /I can't see that in the project's files/);
+  assert.match(p, /Never invent file names/);
+  const sys = buildMessages([{ role: "user", content: "hi" }], { today: "d", scope: t })[0].content;
+  assert.ok(sys.indexOf("SCOPE - BINDING") > sys.indexOf("USING CONTEXT"), "scope follows the base prompt");
+  assert.ok(buildMessages([{ role: "user", content: "hi" }], { today: "d" })[0].content.indexOf("SCOPE - BINDING") === -1);
+});
+
+test("OpenAI request body: classic fields normally, reasoning-model fields for gpt-5 / o-series on api.openai.com only", () => {
+  const m = [{ role: "user" as const, content: "hi" }];
+  assert.deepEqual(openAiBody({ baseUrl: "https://api.openai.com/v1", model: "gpt-4o-mini" }, m, 0.7, 100, true), { model: "gpt-4o-mini", messages: m, temperature: 0.7, max_tokens: 100, stream: true });
+  assert.deepEqual(openAiBody({ baseUrl: "https://api.openai.com/v1", model: "gpt-5" }, m, 0.7, 100), { model: "gpt-5", messages: m, max_completion_tokens: 100 });
+  assert.ok("max_completion_tokens" in openAiBody({ baseUrl: "https://api.openai.com/v1", model: "o3-mini" }, m, 0.2, 50));
+  assert.ok("max_tokens" in openAiBody({ baseUrl: "https://openrouter.ai/api/v1", model: "gpt-5" }, m, 0.2, 50), "other hosts keep the classic fields");
+  assert.ok("max_tokens" in openAiBody({ baseUrl: "http://127.0.0.1:9/v1", model: "o3" }, m, 0.2, 50));
 });

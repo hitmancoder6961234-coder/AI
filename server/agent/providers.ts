@@ -121,6 +121,19 @@ export async function* streamText(llm: LLM, messages: ChatMsg[], opts: CompleteO
 
 // --- adapters --------------------------------------------------------------------------------
 
+/**
+ * OpenAI's reasoning models (o1/o3/o4 and gpt-5) reject `max_tokens` and any temperature but the default, and need
+ * `max_completion_tokens` instead. Everything else - and every other OpenAI-compatible host - keeps the classic fields.
+ */
+export function openAiBody(cfg: { baseUrl: string; model: string }, messages: ChatMsg[], temperature: number, maxTokens: number, stream = false): Record<string, unknown> {
+  const reasoning = /(^|\/)api\.openai\.com/.test(cfg.baseUrl.replace(/^https?:\/\//, "")) && /^(o\d|gpt-5)/i.test(cfg.model);
+  const body: Record<string, unknown> = reasoning
+    ? { model: cfg.model, messages, max_completion_tokens: maxTokens }
+    : { model: cfg.model, messages, temperature, max_tokens: maxTokens };
+  if (stream) body.stream = true;
+  return body;
+}
+
 function openAiCompatible(cfg: LLMConfig & { baseUrl: string }): LLM {
   const baseUrl = cfg.baseUrl.replace(/\/+$/, "");
   return {
@@ -130,7 +143,7 @@ function openAiCompatible(cfg: LLMConfig & { baseUrl: string }): LLM {
       const json = await postJson(
         `${baseUrl}/chat/completions`,
         { authorization: `Bearer ${cfg.apiKey}` },
-        { model: cfg.model, messages, temperature: opts.temperature ?? 0.2, max_tokens: opts.maxTokens ?? 4096 },
+        openAiBody({ baseUrl, model: cfg.model }, messages, opts.temperature ?? 0.2, opts.maxTokens ?? 4096),
         opts.signal
       );
       const out = json?.choices?.[0]?.message?.content;
@@ -138,7 +151,7 @@ function openAiCompatible(cfg: LLMConfig & { baseUrl: string }): LLM {
       return out;
     },
     async *stream(messages, opts = {}) {
-      for await (const data of postSse(`${baseUrl}/chat/completions`, { authorization: `Bearer ${cfg.apiKey}` }, { model: cfg.model, messages, temperature: opts.temperature ?? 0.7, max_tokens: opts.maxTokens ?? 4096, stream: true }, opts.signal)) {
+      for await (const data of postSse(`${baseUrl}/chat/completions`, { authorization: `Bearer ${cfg.apiKey}` }, openAiBody({ baseUrl, model: cfg.model }, messages, opts.temperature ?? 0.7, opts.maxTokens ?? 4096, true), opts.signal)) {
         if (data === "[DONE]") return;
         let j: any;
         try {

@@ -50,7 +50,10 @@ const mock = http.createServer((req, res) => {
     else if (task.includes("Turn each idea into an image-generator prompt")) content = JSON.stringify({ images: [] });
     else if (msgs[0].content.includes("professional translator")) content = "TRANSLATED";
     else if (msgs[0].content.includes("DARKNESS")) content = "Hello from the model.";
-    else if (msgs[0].content.includes("Darkness Copilot")) content = "Hello **world** from Copilot." + (msgs[0].content.includes("<project_context name=") ? " [project-context-seen]" : "");
+    else if (msgs[0].content.includes("Darkness Copilot")) {
+      const sys = msgs[0].content;
+      content = "Hello **world** from Copilot." + (sys.includes("<project_context name=") ? " [project-context-seen]" : "") + (/Focus topic: "([^"]+)"/.exec(sys) ? ` [topic:${/Focus topic: "([^"]+)"/.exec(sys)[1]}]` : "") + (sys.includes("Focus: the user's project") ? " [scope-project]" : "") + (parsed.model === "gpt-test-model" ? " [gpt]" : "");
+    }
     else {
       const sawObservation = msgs.some((m) => m.role === "user" && m.content.includes("<observation"));
       content = sawObservation
@@ -81,6 +84,7 @@ function boot(extraEnv = {}) {
       AGENT_PROVIDER: "openai",
       AGENT_BASE_URL: `http://127.0.0.1:${MOCK_PORT}/v1`,
       OPENAI_API_KEY: "test-key-not-real",
+      COPILOT_MODEL: "gpt-test-model",
       RATE_LIMIT_AUTH_PER_15MIN: "12",
       ...extraEnv,
     },
@@ -430,13 +434,13 @@ try {
     assert.equal(ev[0].ev, "meta");
     const tokens = ev.filter((e) => e.ev === "token").map((e) => e.d.t);
     assert.ok(tokens.length >= 3, "several separate token events, not one blob: " + tokens.length);
-    assert.equal(tokens.join(""), "Hello **world** from Copilot.");
+    assert.equal(tokens.join(""), "Hello **world** from Copilot. [gpt]"); // Auto uses GPT when the server has an OpenAI key
     assert.equal(ev.at(-1).ev, "done");
     cpConv = ev[0].d.conversationId; cpUserMsg = ev[0].d.userMessageId;
     assert.equal(ev[0].d.title, "Hello there, who are you?");
     const full = await j(await get(`/api/copilot/conversations/${cpConv}`, tokB));
     assert.deepEqual(full.messages.map((m) => m.role), ["user", "assistant"]);
-    assert.equal(full.messages[1].content, "Hello **world** from Copilot.");
+    assert.equal(full.messages[1].content, "Hello **world** from Copilot. [gpt]");
     assert.ok(JSON.stringify(await j(await get("/api/copilot/conversations", tokB))).includes(cpConv));
   });
   await check("regenerate replaces the last answer; edit rewrites the conversation from that message", async () => {
@@ -457,6 +461,34 @@ try {
     const other = await sseEvents(await postJson("/api/copilot/chat", { message: "What does it do?", projectId: pidB }, tokC));
     assert.ok(other.some((e) => e.ev === "notice"), "another user's project is refused");
     assert.ok(!other.filter((e) => e.ev === "token").map((e) => e.d.t).join("").includes("project-context-seen"));
+  });
+  await check("Focus: a topic scope reaches the model as binding rules and is remembered with the conversation", async () => {
+    const ev = await sseEvents(await postJson("/api/copilot/chat", { message: "Tell me about cooking pasta", scope: { mode: "topic", topic: 'Python "programming"' } }, tokB));
+    const text = ev.filter((e) => e.ev === "token").map((e) => e.d.t).join("");
+    assert.ok(text.includes("[topic:Python programming]"), "the (sanitised) topic is in the system prompt: " + text);
+    assert.ok(ev.some((e) => e.ev === "scope" && e.d.mode === "topic"));
+    const conv = await j(await get(`/api/copilot/conversations/${ev[0].d.conversationId}`, tokB));
+    assert.equal(conv.conversation.scope.mode, "topic");
+    assert.equal(conv.conversation.scope.topic, "Python programming");
+    const open = (await sseEvents(await postJson("/api/copilot/chat", { message: "hi" }, tokB))).filter((e) => e.ev === "token").map((e) => e.d.t).join("");
+    assert.ok(!open.includes("[topic:") && !open.includes("[scope-project]"), "open mode adds no restriction");
+  });
+  await check("Focus: a project scope needs a project the user owns, otherwise nothing is answered", async () => {
+    const ok = (await sseEvents(await postJson("/api/copilot/chat", { message: "How does it work?", scope: { mode: "project" }, projectId: pidB }, tokB))).filter((e) => e.ev === "token").map((e) => e.d.t).join("");
+    assert.ok(ok.includes("[scope-project]") && ok.includes("[project-context-seen]"), ok);
+    const other = await sseEvents(await postJson("/api/copilot/chat", { message: "How does it work?", scope: { mode: "project" }, projectId: pidB }, tokC));
+    assert.ok(other.some((e) => e.ev === "error"), "someone else's project is refused");
+    assert.equal(other.filter((e) => e.ev === "token").length, 0, "and no ungrounded answer is produced");
+    assert.equal((await postJson("/api/copilot/chat", { message: "x", scope: { mode: "project" } }, tokB)).status, 400);
+    assert.equal((await postJson("/api/copilot/chat", { message: "x", scope: { mode: "topic", topic: "ab" } }, tokB)).status, 400);
+  });
+  await check("GPT can be chosen directly; asking for a model the user has not set up is a clear error", async () => {
+    const st = await j(await get("/api/copilot/status", tokB));
+    assert.equal(st.choices.gpt, true); assert.equal(st.choices.mine, false);
+    const gpt = (await sseEvents(await postJson("/api/copilot/chat", { message: "hi", model: "gpt" }, tokB))).filter((e) => e.ev === "token").map((e) => e.d.t).join("");
+    assert.ok(gpt.includes("[gpt]"), "request went out for the GPT model: " + gpt);
+    const mine = await postJson("/api/copilot/chat", { message: "hi", model: "mine" }, tokB);
+    assert.equal(mine.status, 503); assert.equal((await j(mine)).code, "NO_MODEL");
   });
   await check("conversations are private; input is validated", async () => {
     assert.equal((await get(`/api/copilot/conversations/${cpConv}`, tokC)).status, 404);

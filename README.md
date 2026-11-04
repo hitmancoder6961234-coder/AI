@@ -30,8 +30,8 @@ still works in **offline mode** (content derived from your project's structure, 
 *Model* or set a provider key for deeper writing.
 
 ```bash
-npm test                    # 63 unit tests
-npm run build && npm run smoke   # 46 end-to-end checks against the real server
+npm test                    # 65 unit tests
+npm run build && npm run smoke   # 49 end-to-end checks against the real server
 ```
 
 ## Copilot
@@ -42,7 +42,8 @@ Open **Copilot** in the sidebar, press **Ctrl+/** anywhere, or go to `/copilot.h
 * **Conversations** - saved per user, auto-titled, renameable, deletable; **Stop**, **Regenerate** and **Edit** a message.
 * **Context, only when you ask** - *Search the web* adds numbered results the model cites as [1]; *Project* adds excerpts from one of **your** projects (ownership-checked).
 * **Behaviour** - the prompt in [`server/copilot/prompts.ts`](server/copilot/prompts.ts): answer first, clean Markdown, complete code, honest about uncertainty, never claims to browse or see files unless context was supplied.
-* It uses your own model from the Model page, or the server's provider key.
+* **Focus (answers only about what you choose)** - set **Focus** above the message box to *One topic* (type it) or *My project*. The Copilot then answers only questions about that topic or project and politely declines everything else, whatever the chat says afterwards. In project mode it answers only from the project's files and says "I can't see that in the project's files" instead of guessing. The setting is remembered per conversation. Operators can lock all chats to one topic with `COPILOT_LOCK_TOPIC`.
+* **GPT directly** - set `OPENAI_API_KEY` (an OpenAI API key; a ChatGPT subscription has none) and optionally `COPILOT_MODEL` (default `gpt-4o-mini`; `gpt-4o`, `gpt-5` and the o-series work too). *Auto* then uses GPT; if you also configured a model of your own, a **Model** picker appears (Auto / GPT / My model). Without an OpenAI key it uses your own model from the Model page or any other server provider key.
 
 ## Project Studio
 
