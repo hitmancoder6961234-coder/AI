@@ -387,10 +387,10 @@ window.Darkness.pages["document-studio"] = async function renderDocumentStudio()
           
           <!-- Mode Tabs (Studio Toggle) -->
           <div style="display: none !important; gap: 4px; background: var(--surface-muted); padding: 4px; border-radius: 8px;">
-            <button class="btn btn--sm" id="tabDocStudio" style="flex: 1; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; background: var(--surface); color: var(--accent); box-shadow: var(--shadow-sm); border: none;">
+            <button class="btn btn--sm" id="tabDocStudio" style="flex: 1; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; background: var(--surface); color: var(--accent-text, var(--accent)); box-shadow: var(--shadow-sm); border: none;">
               📄 Document Studio
             </button>
-            <button class="btn btn--sm" id="tabPresStudio" style="flex: 1; font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px; background: transparent; color: var(--ink-muted); border: none;" onclick="location.hash='#/presentation-studio'">
+            <button class="btn btn--sm" id="tabPresStudio" style="flex: 1; font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px; background: transparent; color: var(--ink-muted); border: none;" data-act="goto-hash" data-hash="#/presentation-studio">
               📊 Presentation
             </button>
           </div>
@@ -415,7 +415,7 @@ window.Darkness.pages["document-studio"] = async function renderDocumentStudio()
                 <span id="aiEditModeBadge" style="font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--ink-muted); text-transform: uppercase;">OFF</span>
               </div>
               <label style="position: relative; display: inline-flex; align-items: center; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="toggleAiEditMode" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent);" />
+                <input type="checkbox" id="toggleAiEditMode" aria-label="AI Edit Mode" style="cursor: pointer; width: 15px; height: 15px; accent-color: var(--accent);" />
               </label>
             </div>
 
@@ -434,7 +434,7 @@ window.Darkness.pages["document-studio"] = async function renderDocumentStudio()
 
               <div id="aiCreationStatusContainer" style="display: none; background: rgba(79,70,229,0.05); border: 1px solid rgba(79,70,229,0.15); border-radius: 8px; padding: 10px; flex-direction: column; gap: 6px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
-                  <strong id="aiStatusTitle" style="color: var(--accent); display: flex; align-items: center; gap: 6px;">
+                  <strong id="aiStatusTitle" style="color: var(--accent-text, var(--accent)); display: flex; align-items: center; gap: 6px;">
                     <span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid var(--accent); border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span>
                     AI Generation...
                   </strong>
@@ -461,7 +461,7 @@ window.Darkness.pages["document-studio"] = async function renderDocumentStudio()
               </div>
 
               <div class="studio-chat-input-pill">
-                <textarea id="aiDocCreatorPrompt" class="studio-chat-textarea" rows="1" placeholder="Ask to write..."></textarea>
+                <textarea id="aiDocCreatorPrompt" class="studio-chat-textarea" rows="1" aria-label="Ask the AI to write or edit the document" placeholder="Ask to write..."></textarea>
                 <button id="btnAiDocGenerate" type="button" style="background: var(--accent); color: white;" title="Send Request">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 15 22 11 13 2 9 22 2"/><line x1="22" y1="2" x2="11" y2="13"/></svg>
                 </button>
@@ -528,7 +528,7 @@ window.Darkness.pages["document-studio"] = async function renderDocumentStudio()
 
                 <div class="studio-actions-menu" id="studioActionsDropdown">
                   <button class="studio-dropdown-item" id="btnPdfExport" type="button">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent);"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-text, var(--accent));"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
                     <div>
                       <div style="font-weight: 600; font-size: 12.5px; color: var(--ink);">Export as PDF</div>
                       <div style="font-size: 10px; color: var(--ink-muted);">Standard vector print PDF</div>
@@ -2045,7 +2045,7 @@ window.Darkness.pages["document-studio"] = async function renderDocumentStudio()
         ">
           <div style="font-weight: 700; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 6px; font-size: 8.5px; display: flex; justify-content: space-between; align-items: center; color: #0f172a; flex-shrink: 0;">
             <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 105px;">${window.Darkness.utils.escapeHtml(docTitle || "Document")}</span>
-            <span style="background: ${isActive ? "var(--accent)" : "rgba(79,70,229,0.1)"}; color: ${isActive ? "#ffffff" : "var(--accent)"}; padding: 1px 5px; border-radius: 3px; font-size: 8px; font-weight: 700;">Page ${idx + 1}</span>
+            <span style="background: ${isActive ? "var(--accent)" : "rgba(79,70,229,0.1)"}; color: ${isActive ? "var(--accent-ink)" : "var(--accent-text, var(--accent))"}; padding: 1px 5px; border-radius: 3px; font-size: 8px; font-weight: 700;">Page ${idx + 1}</span>
           </div>
           <div class="mini-page-content-preview" style="
             flex: 1; 

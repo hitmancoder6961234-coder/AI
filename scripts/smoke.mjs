@@ -72,6 +72,50 @@ const mock = http.createServer((req, res) => {
 });
 await new Promise((r) => mock.listen(MOCK_PORT, "127.0.0.1", r));
 
+// --- a misbehaving provider: used by the "provider stability" checks through the REAL chat route ----------------
+const STUB_PORT = MOCK_PORT + 1;
+const stubHits = {};
+const stubOpen = new Set(); // sockets of requests the stub deliberately leaves hanging; they must be closed by the server
+const sseTokens = (res, text) => { for (const piece of text.match(/.{1,5}/gs) || []) res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: piece } }] })}` + "\n\n"); };
+const stub = http.createServer((req, res) => {
+  let body = "";
+  req.on("data", (c) => (body += c));
+  req.on("end", () => {
+    let parsed = {};
+    try { parsed = JSON.parse(body); } catch {}
+    const mode = parsed.model || "";
+    const n = (stubHits[mode] = (stubHits[mode] || 0) + 1);
+    const watch = () => { stubOpen.add(req.socket); req.socket.once("close", () => stubOpen.delete(req.socket)); };
+    const stream = () => res.writeHead(200, { "content-type": "text/event-stream" });
+    if (mode === "stub-agent") {
+      const msgs = parsed.messages || [], lastMsg = String((msgs[msgs.length - 1] || {}).content || "");
+      const isPlanner = /You are a planner/.test(String((msgs[0] || {}).content || ""));
+      res.writeHead(200, { "content-type": "application/json" });
+      const out = isPlanner ? { plan: [{ title: "Save the preference", tool: "remember" }, { title: "Confirm" }] }
+        : /<observation tool="remember"/.test(lastMsg) ? { thought: "done", final: "Saved.", done: [1, 2] }
+        : { thought: "save it", tool: "remember", args: { content: "SMOKE-AGENT I prefer examples in Python", category: "preference" }, done: [1] };
+      return res.end(JSON.stringify({ choices: [{ message: { content: JSON.stringify(out) } }] }));
+    }
+    if (mode === "stub-ok" && parsed.stream === false) { res.writeHead(200, { "content-type": "application/json" }); return res.end(JSON.stringify({ choices: [{ message: { role: "assistant", content: "Plain answer from the stub provider." } }] })); }
+    if (mode === "stub-ok") { stream(); sseTokens(res, "Hello from the stub provider."); res.write("data: [DONE]" + "\n\n"); return res.end(); }
+    if (mode === "stub-flaky") {
+      if (n === 1) { res.writeHead(503, { "content-type": "application/json" }); return res.end(JSON.stringify({ error: { message: "model is overloaded" } })); }
+      stream(); sseTokens(res, "Recovered after a retry."); res.write("data: [DONE]" + "\n\n"); return res.end();
+    }
+    if (mode === "stub-denied") { res.writeHead(401, { "content-type": "application/json" }); return res.end(JSON.stringify({ error: { message: "Invalid API key provided: " + (req.headers.authorization || "") } })); }
+    if (mode === "stub-hang") { watch(); return; }
+    if (mode === "stub-stall") { watch(); stream(); sseTokens(res, "Partial answer. "); return; }
+    if (mode === "stub-endless") {
+      watch(); stream();
+      const t = setInterval(() => res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: "tick " } }] })}` + "\n\n"), 80);
+      res.on("close", () => clearInterval(t));
+      return;
+    }
+    res.writeHead(404); res.end();
+  });
+});
+await new Promise((r) => stub.listen(STUB_PORT, "127.0.0.1", r));
+
 // --- boot the app ---------------------------------------------------------------------------------
 const logs = [];
 function boot(extraEnv = {}) {
@@ -81,11 +125,18 @@ function boot(extraEnv = {}) {
       NODE_ENV: "production",
       PORT: String(APP_PORT),
       DARKNESS_STORAGE_ROOT: dataDir,
+      DARKNESS_DB_PATH: path.join(dataDir, "smoke.db"), // known path: the artifact-access check inserts a row directly
+      DARKNESS_UPLOAD_TMP: path.join(dataDir, "upload-tmp"),
       AGENT_PROVIDER: "openai",
       AGENT_BASE_URL: `http://127.0.0.1:${MOCK_PORT}/v1`,
       OPENAI_API_KEY: "test-key-not-real",
       COPILOT_MODEL: "gpt-test-model",
-      RATE_LIMIT_AUTH_PER_15MIN: "12",
+      RATE_LIMIT_AUTH_PER_15MIN: "60",
+      RATE_LIMIT_AI_PER_MIN: "300", // the run sends well over 40 chat-type requests in a minute from one address (the default limit is not what these checks test)
+      PROVIDER_HEADERS_TIMEOUT_MS: "800",
+      PROVIDER_STREAM_IDLE_MS: "700",
+      PROVIDER_RETRY_BASE_MS: "20",
+      PROVIDER_RETRY_MAX_MS: "100",
       ...extraEnv,
     },
     stdio: ["ignore", "pipe", "pipe"],
@@ -102,13 +153,13 @@ const legacy = boot({ PRIVACY_STRICT: "false" });
 let server = legacy;
 
 async function waitUp() {
-  for (let i = 0; i < 80; i++) {
+  for (let i = 0; i < 360; i++) {
     try {
       if ((await fetch(`${base}/api/health`)).ok) return;
     } catch {}
     await new Promise((r) => setTimeout(r, 250));
   }
-  throw new Error("server did not start:\n" + logs.join("").slice(-1500));
+  throw new Error("server did not start within 90 s (port " + APP_PORT + "):\n" + logs.join("").slice(-1500));
 }
 
 const j = async (res) => res.json().catch(() => ({}));
@@ -142,10 +193,45 @@ try {
     const r = await get("/api/health");
     assert.equal(r.headers.get("x-content-type-options"), "nosniff");
     assert.equal(r.headers.get("referrer-policy"), "no-referrer");
-    assert.ok(r.headers.get("content-security-policy-report-only"));
+    assert.ok(r.headers.get("content-security-policy"), "the Content-Security-Policy is enforced by default");
+    assert.equal(r.headers.get("content-security-policy-report-only"), null, "...not merely reported");
     assert.ok(r.headers.get("strict-transport-security"));
     assert.equal(r.headers.get("x-powered-by"), null);
     assert.match(r.headers.get("cache-control") || "", /no-store/);
+  });
+  await check("CSP: enforced on the app and on /classic (with Google Sign-In only there), no inline script/eval, reports collected", async () => {
+    const dir = (policy, name) => (policy.split("; ").find((d) => d.startsWith(name + " ")) || "").split(" ").slice(1);
+    const app = (await get("/")).headers.get("content-security-policy") || "";
+    assert.deepEqual(dir(app, "script-src").filter((v) => v !== "'report-sample'"), ["'self'"]);
+    assert.deepEqual(dir(app, "script-src-attr"), ["'none'"]);
+    assert.ok(!/unsafe-eval/.test(app) && !app.includes("accounts.google.com") && !/\shttps:(\s|;|$)/.test(app));
+    assert.ok(dir(app, "report-uri").includes("/api/csp-report"));
+    const classic = (await fetch(base + "/classic/", { redirect: "manual" })).headers.get("content-security-policy") || "";
+    assert.ok(dir(classic, "script-src").includes("https://accounts.google.com/gsi/client") && !/unsafe-eval/.test(classic));
+    // reports: public (browsers send them without credentials), tiny, always 204, nothing echoed, GET refused
+    const rep = await fetch(base + "/api/csp-report", { method: "POST", headers: { "content-type": "application/csp-report" }, body: JSON.stringify({ "csp-report": { "document-uri": base + "/?t=SMOKE_SECRET", "effective-directive": "script-src-elem", "blocked-uri": "inline" } }) });
+    assert.equal(rep.status, 204);
+    assert.equal((await fetch(base + "/api/csp-report", { method: "POST", headers: { "content-type": "application/json" }, body: "{broken" })).status, 204);
+    assert.equal((await fetch(base + "/api/csp-report")).status, 405);
+    assert.equal((await fetch(base + "/api/csp-report", { method: "POST", headers: { "content-type": "application/csp-report" }, body: "x".repeat(40_000) })).status, 413);
+  });
+  await check("the UI's own pages and vendored assets are served from this origin", async () => {
+    const html = await (await get("/")).text();
+    assert.ok(!/https?:\/\/(cdn\.jsdelivr|cdnjs\.cloudflare|fonts\.googleapis|fonts\.gstatic|unpkg)/.test(html), "no CDN reference in the main page");
+    assert.ok(!/<script(?![^>]*\ssrc=)[^>]*>\s*\S/i.test(html) && !/<style[\s>]/i.test(html), "no inline script/style in the main page");
+    for (const f of ["/vendor/mermaid/mermaid.min.js", "/vendor/html2pdf/html2pdf.bundle.min.js", "/vendor/fonts/inter/inter.css", "/boot-sidebar.js", "/copilot-launcher.css", "/copilot-page.js", "/copilot-page.css", "/agent-page.js", "/agent-page.css"]) {
+      const r = await get(f);
+      assert.equal(r.status, 200, f);
+      assert.ok(!(r.headers.get("content-type") || "").includes("text/html"), f + " must not fall back to the SPA page");
+    }
+    // the PDF-export stylesheet is bundled into the main CSS (it used to be an injected <style>); every rule is scoped to the export host
+    const bundle = (html.match(/href="(\/assets\/[^"]+\.css)"/) || [])[1];
+    assert.ok(bundle, "main stylesheet link found");
+    assert.ok((await (await get(bundle)).text()).includes("#darkness-pdf-export-host"), "PDF export styles are part of the stylesheet bundle");
+    for (const f of ["/copilot.html", "/agent.html"]) {
+      const t = await (await get(f)).text();
+      assert.ok(!/<script(?![^>]*\ssrc=)[^>]*>\s*\S/i.test(t) && !/<style[\s>]/i.test(t), f + " has no inline script/style");
+    }
   });
   await check("debug route list is closed", async () => assert.equal((await get("/api/debug/routes")).status, 404));
   await check("code execution (terminals / run / preview proxy) is disabled by default", async () => {
@@ -191,6 +277,48 @@ try {
     const cc = await post("/api/auth/signup", { email: `carol-${crypto.randomUUID().slice(0, 6)}@example.com`, password: pw, name: "Carol" });
     tokC = (await j(cc)).token;
     assert.ok(tokA && tokB && tokA !== tokB);
+  });
+  console.log("\nsign-in errors (every failure has a code the screen can act on)");
+  const codeOf = async (r) => (await j(r));
+  await check("validation errors are structured: code + the field to highlight", async () => {
+    for (const [body, field] of [[{}, "email"], [{ email: "   ", password: "x" }, "email"], [{ email: "not-an-email", password: "x" }, "email"], [{ email: { $ne: 1 }, password: "x" }, "email"], [{ email: "a@b.co", password: "" }, "password"], [{ email: "a@b.co", password: 12345 }, "password"], [{ email: "a@b.co", password: "x".repeat(2000) }, "password"], [{ email: "a..b@c.co", password: "x" }, "email"]]) {
+      const r = await post("/api/auth/login", body);
+      const d = await codeOf(r);
+      assert.equal(r.status, 400, JSON.stringify(body).slice(0, 60));
+      assert.equal(d.code, "VALIDATION_ERROR"); assert.equal(d.field, field, JSON.stringify(body).slice(0, 60));
+    }
+    const weak = await post("/api/auth/signup", { email: "weak-user@example.com", password: "password123" });
+    assert.equal(weak.status, 400); assert.equal((await codeOf(weak)).code, "WEAK_PASSWORD");
+    const dup = await post("/api/auth/signup", { email: emailA, password: pw });
+    assert.equal(dup.status, 409); const dd = await codeOf(dup); assert.equal(dd.code, "EMAIL_TAKEN"); assert.equal(dd.field, "email");
+    const nm = await post("/api/auth/signup", { email: `name-${crypto.randomUUID().slice(0, 6)}@example.com`, password: pw, name: "<b>Zed</b>\u0001" });
+    assert.equal(nm.status, 201); assert.equal((await codeOf(nm)).user.name, "bZed/b", "markup and control characters are stripped from names");
+  });
+  await check("wrong passwords count down, then the account pauses with Retry-After; a right password resets the count", async () => {
+    const email = `guard-${crypto.randomUUID().slice(0, 6)}@example.com`;
+    assert.equal((await post("/api/auth/signup", { email, password: pw, name: "Guard" })).status, 201);
+    const wrong = async () => post("/api/auth/login", { email, password: "definitely-wrong" });
+    let r = await wrong(); let d = await codeOf(r);
+    assert.equal(r.status, 401); assert.equal(d.code, "INVALID_CREDENTIALS"); assert.equal(d.attemptsLeft, 4);
+    d = await codeOf(await wrong()); assert.equal(d.attemptsLeft, 3);
+    assert.equal((await post("/api/auth/login", { email, password: pw })).status, 200, "the right password still works and resets the count");
+    d = await codeOf(await wrong()); assert.equal(d.attemptsLeft, 4, "count restarted after a successful sign-in");
+    for (let i = 0; i < 3; i++) assert.equal((await wrong()).status, 401);
+    r = await wrong(); d = await codeOf(r);
+    assert.equal(r.status, 429); assert.equal(d.code, "ACCOUNT_LOCKED"); assert.ok(d.retryAfter > 0 && d.retryAfter <= 60, "first lock is about a minute: " + d.retryAfter);
+    assert.ok(Number(r.headers.get("retry-after")) > 0);
+    const during = await post("/api/auth/login", { email, password: pw });
+    assert.equal(during.status, 429, "even the right password is refused while the account is paused");
+    assert.equal((await codeOf(during)).code, "ACCOUNT_LOCKED");
+    // someone else on the same address is not blocked by this account's pause
+    assert.equal((await post("/api/auth/login", { email: emailB, password: pw })).status, 200);
+  });
+  await check("an unknown e-mail and a wrong password look identical (no account enumeration)", async () => {
+    const ghost = await post("/api/auth/login", { email: "nobody-here@example.com", password: "whatever-pass" });
+    const real = await post("/api/auth/login", { email: emailB, password: "not-his-password" });
+    assert.equal(ghost.status, 401); assert.equal(real.status, 401);
+    const a = await codeOf(ghost), b = await codeOf(real);
+    assert.equal(a.error, b.error); assert.equal(a.code, b.code);
   });
   await check("signed-in users see themselves", async () => {
     const me = await j(await get("/api/auth/me", tokA));
@@ -250,10 +378,15 @@ try {
   });
 
   console.log("\nabuse resistance");
-  await check("login attempts are rate limited", async () => {
-    let limited = false;
-    for (let i = 0; i < 20 && !limited; i++) limited = (await post("/api/auth/login", { email: emailA, password: "wrong-password" })).status === 429;
-    assert.ok(limited, "expected a 429 within 20 attempts");
+  await check("login attempts from one address are rate limited (different accounts, so only the IP limiter can trip)", async () => {
+    let limited = null;
+    for (let i = 0; i < 90 && !limited; i++) {
+      const r = await post("/api/auth/login", { email: `flood-${i}@example.com`, password: "wrong-password" });
+      if (r.status === 429) limited = r;
+    }
+    assert.ok(limited, "expected a 429 within 90 attempts");
+    assert.equal((await j(limited)).code, "RATE_LIMITED");
+    assert.ok(Number(limited.headers.get("retry-after")) > 0, "Retry-After tells the client how long to wait");
   });
 
   console.log("\ndocuments (upload + export of every type)");
@@ -308,6 +441,58 @@ try {
     assert.equal(Buffer.from(await conv.arrayBuffer()).subarray(0, 5).toString(), "%PDF-");
     assert.equal((await fetch(base + "/api/documents/extract", { method: "POST", body: formData("a.txt", Buffer.from("x")) })).status, 401);
   });
+  await check("uploads are checked by their real content: a fake PDF, a disguised program and binary-in-text are refused; real files work", async () => {
+    const auth = { authorization: `Bearer ${tokB}` };
+    const up = (name, body, route = "/api/documents/extract", field = "files") => fetch(base + route, { method: "POST", headers: auth, body: formData(name, body, field) });
+    const pe = Buffer.alloc(256); pe.write("MZ", 0); pe.writeUInt32LE(0x80, 0x3c); pe.write("PE\0\0", 0x80, "latin1");
+    const refused = [
+      ["fake.pdf", Buffer.from("<html>not a pdf</html>"), "INVALID_FILE_SIGNATURE"],
+      ["photo.png", pe, "EXECUTABLE_CONTENT"],
+      ["setup.exe", pe, "EXECUTABLE_CONTENT"],
+      ["notes.txt", Buffer.concat([Buffer.from("text"), Buffer.from([0, 1, 2, 0])]), "BINARY_IN_TEXT_FILE"],
+    ];
+    for (const [name, body, code] of refused) {
+      const r = await up(name, body);
+      assert.equal(r.status, 415, name);
+      assert.equal((await r.json()).error, code, name);
+    }
+    assert.equal((await up("fake.docx", Buffer.from("plain text"), "/classic-api/api/upload", "file")).status, 415, "the original app's upload is checked too");
+    const pdf = Buffer.from(await (await postJson("/api/documents/export", { title: "Real", markdown: "# Real\ntext", format: "pdf" }, tokB)).arrayBuffer());
+    assert.equal((await up("real.pdf", pdf)).status, 200, "a real PDF is accepted");
+    // no temp file is left behind by any of the above
+    const tmp = path.join(dataDir, "upload-tmp", "req");
+    await new Promise((r) => setTimeout(r, 300));
+    assert.deepEqual(fs.existsSync(tmp) ? fs.readdirSync(tmp) : [], [], "upload temp folder is empty");
+  });
+  await check("chunked ZIP upload works end to end; a malicious uploadId and out-of-range chunks are refused; nothing is left on disk", async () => {
+    const zip = Buffer.from(await (await postJson("/api/documents/export", { title: "Deck", markdown: "# Deck\n## One\n- a\n- b", format: "pptx" }, tokB)).arrayBuffer()); // a pptx is a ZIP
+    const half = Math.ceil(zip.length / 2);
+    const chunk = (id, i, total, body, token = tokB) => {
+      const fd = new FormData();
+      fd.append("file", new Blob([body]), "deck.zip");
+      fd.append("chunkIndex", String(i)); fd.append("totalChunks", String(total)); fd.append("uploadId", id); fd.append("name", "Chunked project");
+      return fetch(base + "/api/projects/upload-zip/chunk", { method: "POST", headers: token ? { authorization: `Bearer ${token}` } : {}, body: fd });
+    };
+    assert.equal((await chunk("up_1700000000099_smoke0001", 0, 2, zip, null)).status, 401, "needs a session");
+    for (const bad of ["../../evil", "..\\..\\evil", "a/b", "short"]) {
+      const r = await chunk(bad, 0, 2, zip.subarray(0, half));
+      assert.equal(r.status, 400, bad);
+      assert.equal((await r.json()).error, "INVALID_UPLOAD_ID");
+    }
+    assert.equal((await chunk("up_1700000000099_smoke0002", 5, 2, zip.subarray(0, half))).status, 400, "chunk index out of range");
+    const id = "up_1700000000099_smoke0003";
+    const first = await chunk(id, 0, 2, zip.subarray(0, half));
+    assert.equal(first.status, 200);
+    assert.equal((await first.json()).status, "uploading");
+    const last = await chunk(id, 1, 2, zip.subarray(half));
+    const done = await last.json();
+    assert.equal(last.status, 200, JSON.stringify(done).slice(0, 200));
+    assert.notEqual(done.status, "uploading", "the last chunk completes the upload");
+    const left = path.join(dataDir, "upload-tmp");
+    await new Promise((r) => setTimeout(r, 300));
+    const walk = (d) => (fs.existsSync(d) ? fs.readdirSync(d, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(d, e.name)) : [path.join(d, e.name)])) : []);
+    assert.deepEqual(walk(left), [], "no upload files remain after a completed chunked upload");
+  });
 
   console.log("\nthe original Darkness app, now inside the unified server");
   await check("original API: health is public; everything else needs a session", async () => {
@@ -351,8 +536,22 @@ try {
     const page = await fetch(base + "/classic/", { headers: { authorization: `Bearer ${tokB}`, cookie: cookieB } });
     assert.equal(page.status, 200);
     const html = await page.text();
-    assert.ok(html.includes("darkness-api-url") && html.includes("/classic-api"), "backend url injected");
-    assert.ok(html.length > 200_000, "the full original app is served");
+    assert.ok(!/<script(?![^>]*\ssrc=)[^>]*>/i.test(html) && !/<style[\s>]/i.test(html), "no inline script or style (the CSP forbids them)");
+    assert.ok(html.includes('src="boot.js"') && html.includes('src="app.js"') && html.includes('href="app.css"'), "page references its script/style files");
+    const boot = await fetch(base + "/classic/boot.js");
+    assert.equal(boot.status, 200);
+    assert.match(boot.headers.get("content-type") || "", /javascript/);
+    const bootText = await boot.text();
+    assert.ok(bootText.includes("darkness-api-url") && bootText.includes("/classic-api"), "backend url set by boot.js");
+    const appJs = await fetch(base + "/classic/app.js");
+    assert.equal(appJs.status, 200);
+    assert.ok((await appJs.text()).length > 100_000, "the full original app script is served");
+    const appCss = await fetch(base + "/classic/app.css");
+    assert.equal(appCss.status, 200);
+    assert.match(appCss.headers.get("content-type") || "", /text\/css/);
+    assert.ok((await appCss.text()).length > 50_000);
+    assert.equal((await fetch(base + "/classic/app-9.js")).status, 404, "unknown asset names are not served");
+    assert.ok(!(await (await fetch(base + "/classic/..%2fpackage.json")).text()).includes('"dependencies"'), "no path traversal out of /classic");
     const sw = await (await fetch(base + "/classic/sw.js")).text();
     assert.ok(sw.includes("includes('/api/')") && !sw.includes("startsWith('/api/')"), "service worker no longer caches API responses");
   });
@@ -560,14 +759,31 @@ try {
     assert.ok(!all.includes(emailA) && !all.includes(emailB), "e-mail leaked into logs");
     assert.ok(!all.includes(tokA) && !all.includes(tokB), "session token leaked into logs");
     assert.ok(!all.includes("test-key-not-real"), "API key leaked into logs");
+    assert.ok(!all.includes("SMOKE_SECRET"), "CSP report query strings must be stripped before logging");
   });
 } finally {
   server.kill();
   legacy.kill();
-  mock.close();
+  // Both fake providers must be closed, with their connections: a listening server keeps the process alive after the last check,
+  // so the run used to print its result and then hang until an outer timeout killed it (a CI job would have timed out).
+  for (const s of [mock, stub]) { s.close(); s.closeAllConnections?.(); }
+  for (const sock of stubOpen) sock.destroy();
   // let the server release its database file before deleting the temp directory (Windows locks open files)
   await new Promise((done) => { server.once("exit", done); setTimeout(done, 3000); });
   try { fs.rmSync(dataDir, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 }); } catch { /* temp dir cleanup is best effort */ }
+}
+
+if (process.env.SMOKE_LOG_LEVELS) {
+  // SMOKE_LOG_LEVELS=error,warn node scripts/smoke.mjs  ->  prints those server log lines in full (production log review)
+  for (const line of logs.join("").split("\n")) { try { const j = JSON.parse(line); if (process.env.SMOKE_LOG_LEVELS.split(",").includes(j.level)) console.log("LOGLINE " + line.slice(0, 400)); } catch { /* not JSON */ } }
+}
+if (process.env.SMOKE_LOG_SUMMARY) {
+  // Production log review aid: SMOKE_LOG_SUMMARY=1 node scripts/smoke.mjs  ->  how many log lines of each level/event the server wrote
+  const counts = {};
+  for (const line of logs.join("").split("\n")) {
+    try { const j = JSON.parse(line); const k = `${j.level} ${j.event || j.msg || "(no event)"}`; counts[k] = (counts[k] || 0) + 1; } catch { const k = "unstructured " + line.slice(0, 60); if (line.trim()) counts[k] = (counts[k] || 0) + 1; }
+  }
+  console.log("\nserver log summary:\n" + Object.entries(counts).sort((a, b) => b[1] - a[1]).map(([k, n]) => `  ${String(n).padStart(5)}  ${k}`).join("\n"));
 }
 
 console.log(`\n${passed} passed, ${failures.length} failed`);
@@ -575,3 +791,5 @@ if (failures.length) {
   console.log("failed:", failures.join(" | "));
   process.exit(1);
 }
+// Exit explicitly: a stray handle must never turn a green run into a hang.
+process.exit(0);

@@ -250,7 +250,7 @@ window.Darkness = window.Darkness || {};
       </div>
     </div>
     <div class="code-file-card__actions">
-      <button class="code-file-card__open-btn" type="button" data-code-action="expand" data-cell-id="${cellId}" onclick="event.preventDefault(); event.stopPropagation(); window.Darkness.codeViewer.openWorkspace('${cellId}', 'code', this); return false;" title="Open code in resizable side panel (Click to view or drag left to resize)" aria-label="View code">
+      <button class="code-file-card__open-btn" type="button" data-code-action="expand" data-cell-id="${cellId}" title="Open code in resizable side panel (Click to view or drag left to resize)" aria-label="View code">
         ${ICONS.expand}
         <span>View</span>
       </button>
@@ -270,7 +270,7 @@ window.Darkness = window.Darkness || {};
     </div>
   </div>
   ${isVeryLongFile ? `
-  <div class="code-file-card__preview-bar" onclick="event.preventDefault(); event.stopPropagation(); window.Darkness.codeViewer.openWorkspace('${cellId}', 'code', this); return false;" title="Click to view full code in right side panel">
+  <div class="code-file-card__preview-bar" data-code-action="expand" data-cell-id="${cellId}" title="Click to view full code in right side panel">
     <span class="code-file-card__preview-text">Showing snippet (${linesCount} lines)</span>
     <span class="code-file-card__view-link">Open in Resizable Side Panel (${linesCount} lines) →</span>
   </div>` : ""}

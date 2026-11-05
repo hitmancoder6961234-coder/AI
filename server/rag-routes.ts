@@ -37,6 +37,7 @@ import {
   FILE_TOO_LARGE_PAYLOAD,
   isFileTooLarge,
   sharedMulter,
+  uploaders,
   wrapUploadMiddleware,
 } from "./upload-config.js";
 
@@ -87,7 +88,7 @@ export function registerRagRoutes(
   });
 
   // 2. Upload Document(s) to Knowledge Base
-  app.post("/api/projects/:pid/rag/upload", wrapUploadMiddleware(sharedMulter.array("files", 20)), async (req, res) => {
+  app.post("/api/projects/:pid/rag/upload", wrapUploadMiddleware(uploaders.documents.array("files", 20), "documents"), async (req, res) => {
     const pid = String(req.params.pid);
     const user = await getUser(req);
     let proj = getProject(pid);
@@ -478,7 +479,7 @@ export function registerRagRoutes(
     }
   });
 
-  app.post("/api/knowledge/rag/upload", wrapUploadMiddleware(sharedMulter.array("files", 20)), async (req, res) => {
+  app.post("/api/knowledge/rag/upload", wrapUploadMiddleware(uploaders.documents.array("files", 20), "documents"), async (req, res) => {
     try {
       const user = await getUser(req);
       let pid = String(req.body?.projectId || `knowledge_${user.id}`);

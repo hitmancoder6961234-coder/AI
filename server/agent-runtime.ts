@@ -36,6 +36,7 @@ import {
   buildFormattedOpenAiHistory,
 } from "./model-registry-engine.js";
 import { saveMessage, getProjectAnalysis, getWorkspaceFile } from "./db.js";
+import { fetchWithPolicy, iterateWithIdleTimeout } from "./provider-http.js";
 import { isSupabaseConfigured, syncMessageToSupabase } from "./supabase.js";
 
 
@@ -535,6 +536,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
       sendSSE({ content: text });
     });
 
+    let viaCompatibleProvider = false;
     try {
       if (modelConfig.provider && modelConfig.provider !== "gemini" && modelConfig.baseUrl) {
         // OpenAI-compatible endpoint
@@ -542,69 +544,63 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (modelConfig.apiKey) headers["Authorization"] = `Bearer ${modelConfig.apiKey}`;
 
-        const fetchRes = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            model: activeModelId,
-            messages: [
-              { role: "system", content: systemInstruction },
-              ...buildFormattedOpenAiHistory(effectiveHistory),
-              { role: "user", content: promptText },
-            ],
-            max_tokens: modelConfig.maxOutputTokens || 8192,
-            temperature: modelConfig.defaultTemperature ?? 0.3,
-            stream: true,
-          }),
-          signal: signal || AbortSignal.timeout(60000),
-        });
+        // The old call used `signal || AbortSignal.timeout(60000)`: when the caller supplied a signal there was NO timeout at all.
+        // Now: time-to-first-byte timeout, retries for transient failures before any text, an idle timeout, and cancellation.
+        // A failure is reported to the user with the provider's own message. It used to be swallowed and the question was then
+        // silently sent to Gemini with the server's key: the user saw an unrelated Google error, and their prompt had gone to a
+        // different provider than the one they chose.
+        viaCompatibleProvider = true;
+        let fetchRes: Response | null = null;
+        try {
+          fetchRes = await fetchWithPolicy(`${baseUrl}/chat/completions`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              model: activeModelId,
+              messages: [
+                { role: "system", content: systemInstruction },
+                ...buildFormattedOpenAiHistory(effectiveHistory),
+                { role: "user", content: promptText },
+              ],
+              max_tokens: modelConfig.maxOutputTokens || 8192,
+              temperature: modelConfig.defaultTemperature ?? 0.3,
+              stream: true,
+            }),
+          }, { label: "model provider", stream: true, signal });
+        } catch (provErr: any) {
+          console.warn(`[Agent] provider request failed (${provErr?.kind || "error"}): ${String(provErr?.message || provErr).slice(0, 200)}`);
+          throw provErr;
+        }
 
-        if (fetchRes.ok && fetchRes.body) {
-          const reader = fetchRes.body.getReader();
+        if (fetchRes && fetchRes.body) {
           const decoder = new TextDecoder();
           let sseBuffer = "";
-          while (true) {
-            const { done, value } = await reader.read();
-            if (value) {
-              sseBuffer += decoder.decode(value, { stream: true });
-              const lines = sseBuffer.split("\n");
-              sseBuffer = lines.pop() || "";
-              for (const rawLine of lines) {
-                const line = rawLine.trim();
-                if (!line || line === "data:" || line === "data: [DONE]") continue;
-                if (line.startsWith("data:")) {
-                  try {
-                    const data = JSON.parse(line.slice(5).trim());
-                    const text = data.choices?.[0]?.delta?.content;
-                    if (text) {
-                      assistantResponse += text;
-                      filter.push(text);
-                    }
-                  } catch (e) {}
+          const consume = (rawLine: string) => {
+            const line = rawLine.trim();
+            if (!line || line === "data:" || line === "data: [DONE]") return;
+            if (line.startsWith("data:")) {
+              try {
+                const data = JSON.parse(line.slice(5).trim());
+                const text = data.choices?.[0]?.delta?.content;
+                if (text) {
+                  assistantResponse += text;
+                  filter.push(text);
                 }
-              }
+              } catch (e) {}
             }
-            if (done) {
-              if (sseBuffer) {
-                const line = sseBuffer.trim();
-                if (line.startsWith("data:") && line !== "data: [DONE]") {
-                  try {
-                    const data = JSON.parse(line.slice(5).trim());
-                    const text = data.choices?.[0]?.delta?.content;
-                    if (text) {
-                      assistantResponse += text;
-                      filter.push(text);
-                    }
-                  } catch (e) {}
-                }
-              }
-              break;
-            }
+          };
+          for await (const value of iterateWithIdleTimeout(fetchRes.body, { signal, label: "model provider" })) {
+            sseBuffer += decoder.decode(value, { stream: true });
+            const lines = sseBuffer.split("\n");
+            sseBuffer = lines.pop() || "";
+            for (const rawLine of lines) consume(rawLine);
           }
+          if (sseBuffer) consume(sseBuffer);
         }
+        if (!assistantResponse) throw new Error("The model provider returned an empty answer.");
       }
 
-      if (!assistantResponse) {
+      if (!assistantResponse && !viaCompatibleProvider) {
         // Strict alternating history resolution for conversational follow-ups
         let geminiContents: any = promptText;
         if (effectiveHistory && effectiveHistory.length > 0) {

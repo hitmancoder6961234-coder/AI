@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import { looksBinary } from "./upload-validation.js";
 import type { FileItem } from "./server.js";
 import fs from "fs";
 import os from "os";
@@ -23,11 +24,13 @@ import {
 import { analyzeFileDiagnostics } from "./project-diagnostics.js";
 import { extractDocumentText } from "./rag-engine.js";
 import { storageManager } from "./storage-manager.js";
+import { acceptChunk, discardChunks } from "./upload-chunks.js";
 import {
   MAX_UPLOAD_SIZE_BYTES,
   FILE_TOO_LARGE_PAYLOAD,
   isFileTooLarge,
   sharedMulter,
+  uploaders,
   wrapUploadMiddleware,
 } from "./upload-config.js";
 import {
@@ -324,7 +327,7 @@ export function registerProjectAndFileRoutes(
     res.json(userFiles);
   });
 
-  app.post("/api/files/upload", wrapUploadMiddleware(sharedMulter.any()), async (req, res) => {
+  app.post("/api/files/upload", wrapUploadMiddleware(uploaders.folder.any(), "folder"), async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     try {
       const user = resolveUser(req) || initialUser;
@@ -479,17 +482,7 @@ export function registerProjectAndFileRoutes(
   // -------------------------------------------------------------------------
   // Project Uploads (ZIP & Multiple Files / Folders)
   // -------------------------------------------------------------------------
-  async function cleanUpUploadParts(uploadId: string, totChunks: number) {
-    const maxToClean = Math.max(totChunks || 0, 100);
-    for (let i = 0; i < maxToClean; i++) {
-      const p = path.join(os.tmpdir(), `upload_${uploadId}_${i}.part`);
-      await fs.promises.unlink(p).catch(() => {});
-    }
-    const mergedZipPath = path.join(os.tmpdir(), `upload_${uploadId}.zip`);
-    await fs.promises.unlink(mergedZipPath).catch(() => {});
-  }
-
-  app.post("/api/projects/upload-zip/chunk", wrapUploadMiddleware(sharedMulter.any()), async (req, res) => {
+  app.post("/api/projects/upload-zip/chunk", wrapUploadMiddleware(uploaders.archive.any(), "archive"), async (req, res) => {
     const user = resolveUser(req) || initialUser;
     const reqFiles = (req.files as Express.Multer.File[]) || [];
     const chunkFile = req.file || reqFiles.find((f) => f.fieldname === "file") || reqFiles[0];
@@ -507,69 +500,31 @@ export function registerProjectAndFileRoutes(
     const totChunks = Number(totalChunks);
     const upId = String(uploadId);
 
-    const cSize = chunkFile.size || chunkFile.buffer?.length || 0;
+    const cSize = chunkFile.size || 0;
     if (isFileTooLarge(cSize)) {
-      await cleanUpUploadParts(uploadId, totChunks);
+      await discardChunks(user.id, upId);
       return res.status(413).json(FILE_TOO_LARGE_PAYLOAD);
     }
 
     try {
-      // 1. Write chunk to a temporary part file
-      const tempPartPath = path.join(os.tmpdir(), `upload_${uploadId}_${cIdx}.part`);
-      await fs.promises.writeFile(tempPartPath, chunkFile.buffer);
-
-      // 2. Check if all chunks have been uploaded
-      let allChunksUploaded = true;
-      const partPaths: string[] = [];
-      let totalPartBytes = 0;
-
-      for (let i = 0; i < totChunks; i++) {
-        const p = path.join(os.tmpdir(), `upload_${uploadId}_${i}.part`);
-        partPaths.push(p);
-        if (fs.existsSync(p)) {
-          try {
-            const st = await fs.promises.stat(p);
-            totalPartBytes += st.size;
-          } catch {}
-        } else {
-          allChunksUploaded = false;
-        }
+      // 1. Store this chunk in the caller's OWN upload folder (strictly validated id, bounded chunk numbers, size checked as
+      //    parts arrive). When the last chunk arrives the parts are joined by streaming and the result must be a real ZIP.
+      const chunk = await acceptChunk({ userKey: user.id, uploadId: upId, index: cIdx, total: totChunks, tmpPath: chunkFile.path, maxBytes: MAX_UPLOAD_SIZE_BYTES });
+      if (chunk.status === "error") {
+        return res.status(chunk.http).json(chunk.http === 413 ? FILE_TOO_LARGE_PAYLOAD : { error: chunk.code, message: chunk.message });
       }
-
-      if (isFileTooLarge(totalPartBytes)) {
-        await cleanUpUploadParts(uploadId, totChunks);
-        return res.status(413).json(FILE_TOO_LARGE_PAYLOAD);
-      }
-
-      if (!allChunksUploaded) {
+      if (chunk.status === "uploading") {
         // More chunks remaining
         return res.json({ success: true, status: "uploading", chunkIndex: cIdx });
       }
 
-      // 3. All chunks are present! Merge them into a single zip file on disk
-      const mergedZipPath = path.join(os.tmpdir(), `upload_${uploadId}.zip`);
-      const writeStream = fs.createWriteStream(mergedZipPath);
-
-      for (const partPath of partPaths) {
-        if (fs.existsSync(partPath)) {
-          const data = await fs.promises.readFile(partPath);
-          writeStream.write(data);
-          // Clean up part file immediately to free disk space
-          await fs.promises.unlink(partPath).catch(() => {});
-        }
+      // 2. Read the joined archive (the extractor needs it whole) and remove the upload folder straight away
+      let zipBuffer: Buffer;
+      try {
+        zipBuffer = await fs.promises.readFile(chunk.zipPath);
+      } finally {
+        await discardChunks(user.id, upId);
       }
-      writeStream.end();
-
-      // Wait for writeStream to finish writing to disk
-      await new Promise<void>((resolve, reject) => {
-        writeStream.on("finish", resolve);
-        writeStream.on("error", reject);
-      });
-
-      // 4. Read the merged zip file into a buffer
-      const zipBuffer = await fs.promises.readFile(mergedZipPath);
-      // Clean up merged zip file immediately
-      await fs.promises.unlink(mergedZipPath).catch(() => {});
 
       if (isFileTooLarge(zipBuffer.length)) {
         return res.status(413).json(FILE_TOO_LARGE_PAYLOAD);
@@ -736,7 +691,7 @@ export function registerProjectAndFileRoutes(
     }
   });
 
-  app.post("/api/projects/upload-zip", wrapUploadMiddleware(sharedMulter.any()), async (req, res) => {
+  app.post("/api/projects/upload-zip", wrapUploadMiddleware(uploaders.archive.any(), "archive"), async (req, res) => {
     const user = resolveUser(req) || initialUser;
     const reqFiles = (req.files as Express.Multer.File[]) || [];
     const zipFile = req.file || reqFiles.find((f) => f.fieldname === "file") || reqFiles[0];
@@ -915,7 +870,7 @@ export function registerProjectAndFileRoutes(
     }
   });
 
-  app.post("/api/projects/upload-files", wrapUploadMiddleware(sharedMulter.array("files")), async (req, res) => {
+  app.post("/api/projects/upload-files", wrapUploadMiddleware(uploaders.folder.array("files"), "folder"), async (req, res) => {
     const user = resolveUser(req) || initialUser;
     let reqFiles = (req.files as Express.Multer.File[]) || [];
 
@@ -1243,8 +1198,12 @@ export function registerProjectAndFileRoutes(
         if (diskFiles && diskFiles.length > 0) {
           const now = Date.now();
           const batchToInsert = diskFiles.map(df => {
-            const diskContent = readProjectFileFromDisk(pid, df.relativePath, df.isBinary);
-            const contentStr = typeof diskContent === "string" ? diskContent : (df.isBinary ? null : diskContent?.toString("utf-8") || null);
+            // listProjectDiskFiles returns { path, size }. This used to read relativePath / isBinary / hash, which do not exist, so
+            // the auto-sync always threw inside the surrounding try and silently imported nothing.
+            const raw = readProjectFileFromDisk(pid, df.path, true);
+            const buf = Buffer.isBuffer(raw) ? raw : null;
+            const isBinary = buf ? looksBinary(buf) : false;
+            const contentStr = buf && !isBinary ? buf.toString("utf-8") : null;
             return {
               id: `file_${pid}_${Math.random().toString(36).substring(2, 9)}`,
               project_id: pid,

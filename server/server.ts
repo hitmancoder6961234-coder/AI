@@ -147,7 +147,7 @@ import {
   registerPrivacyRoutes,
 } from "./security/privacy.js";
 import { exportUserData, eraseUserData } from "./security/user-data.js";
-import { aivenStatus, eraseMirroredUser, initAiven } from "./security/aiven.js";
+import { aivenConfigured, aivenStatus, eraseMirroredUser, initAiven } from "./security/aiven.js";
 import { registerAgentRoutes } from "./agent/routes.js";
 import { availableProviders, createLLM, createLLMFromConfig, type LLM } from "./agent/providers.js";
 import { registerDocumentRoutes } from "./documents/routes.js";
@@ -155,9 +155,23 @@ import { registerClassicApi, eraseClassicUser } from "./classic/legacy-api.js";
 import { registerClassicPages } from "./classic/serve.js";
 import { registerStudioRoutes, eraseStudioUser } from "./studio/routes.js";
 import { registerCopilotRoutes, eraseCopilotUser } from "./copilot/routes.js";
+import { registerAccountRoutes } from "./account/routes.js";
+import { csrfOriginGuard } from "./security/csrf.js";
+import { cspReportRoutes } from "./security/csp.js";
+import { ensureUploadDirs, startUploadSweeper, UPLOAD_TMP_ROOT } from "./upload-temp.js";
+import "./upload-validation.js";
+import { registerDocumentExportRoutes } from "./document-export-routes.js";
+import { countModelKeys, keyAad, migrateModelKeys, revealSecret } from "./security/secret-store.js";
+import { vaultEnabled } from "./security/vault.js";
+import { jsonErrorHandler, rebindRequestContext, requestContext } from "./observability/request-context.js";
+import { installConsoleRequestId, logger } from "./observability/logger.js";
+import { evaluateReadiness, isDraining, livenessHandler, markDraining, readinessHandler, type HealthCheck } from "./observability/health.js";
+import { fetchWithPolicy, iterateWithIdleTimeout } from "./provider-http.js";
+import { EMAIL_RE, LoginGuard, isCommonPassword } from "./security/login-guard.js";
 import type { StudioEngine } from "./studio/pipeline.js";
 import { extractDocumentText } from "./rag-engine.js";
 import { db as sqliteDb } from "./db.js";
+import { bodyParsers, bodyTooLargeHandler } from "./body-limits.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const SESSION_COOKIE = "darkness_session";
@@ -516,7 +530,7 @@ export function mapDbRowToModelItem(row: any, fallbackUserId: string): ModelItem
     name: row.name || cleanId,
     provider: prov,
     baseUrl: row.base_url || row.baseUrl || "",
-    apiKey: row.api_secret || row.api_key || row.apiKey || "",
+    apiKey: revealSecret(row.api_secret || row.api_key || row.apiKey || "", keyAad("cloud", row.user_id || fallbackUserId, cleanId), keyAad("cloud", fallbackUserId, cleanId)),
     modelName: mName,
     modelType: row.model_type || row.modelType || "text",
     capabilities: { ...specs.capabilities, ...caps } as any,
@@ -934,6 +948,17 @@ const upload = sharedMulter;
 async function startServer() {
   const app = express();
 
+  // Request ids first: every response header, error body and log line below carries one.
+  app.use(requestContext());
+
+  // Upload temp files live in one private folder: clear what a crashed run left behind, then sweep abandoned uploads regularly.
+  startUploadSweeper();
+
+  // Cookies must be parsed BEFORE the privacy middleware: its strict auth gate reads req.cookies. Mounted after it (as it used
+  // to be), req.cookies was still undefined there, so a request carrying only the HttpOnly session cookie got a 401 on every
+  // API route and the app only worked through the Bearer copy of the token kept in localStorage.
+  app.use(cookieParser());
+
   // Privacy & hardening first: headers, rate limits, log redaction, strict auth gate.
   applyPrivacyMiddleware(app, {
     cookieName: SESSION_COOKIE,
@@ -950,6 +975,11 @@ async function startServer() {
       return Boolean(u);
     },
   });
+
+  installConsoleRequestId();
+
+  // CSP violation reports: registered before the large global JSON parser so this public endpoint only ever reads a tiny body.
+  cspReportRoutes(app);
 
   // Instance identity for debugging multi-instance issues
   const instanceId = crypto.randomUUID();
@@ -986,8 +1016,15 @@ async function startServer() {
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
   }));
   app.use(cookieParser());
-  app.use(express.json({ limit: MAX_UPLOAD_SIZE_BYTES }));
-  app.use(express.urlencoded({ extended: true, limit: MAX_UPLOAD_SIZE_BYTES }));
+  // A state-changing request that relies on the session cookie alone must come from this site (CSRF); Bearer callers are unaffected.
+  app.use(csrfOriginGuard(SESSION_COOKIE, () => [
+    ...(process.env.CORS_ORIGINS || "").split(/[\s,]+/).filter(Boolean),
+    ...(process.env.NODE_ENV === "production" ? [] : allowedOrigins),
+  ]));
+  // Body-size limits per route (server/body-limits.ts): 1 MB by default, 25 MB for model requests, 100 MB only for the routes that carry file or
+  // export content. This used to be a single 100 MB limit on every route.
+  app.use(bodyParsers());
+  app.use(rebindRequestContext()); // body parsing continues from the socket's context, which drops the request id
 
   // Central upload configuration endpoint
   app.get("/api/config/upload-limits", (_req, res) => {
@@ -1147,6 +1184,39 @@ async function startServer() {
       const hits = searchKnowledge(pid, query, 6);
       return { name: p.name, text: hits.length ? assembleContext(hits.slice(0, 6)).slice(0, 12000) : "(no matching excerpts were found in this project)" };
     },
+  });
+
+  registerAccountRoutes(app, {
+    db: sqliteDb,
+    getUserId: privacyUserId,
+    getToken: (req) => req.cookies?.[SESSION_COOKIE] || (req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.substring(7).trim() : null),
+    getUser: (uid) => {
+      const u = users.get(uid);
+      if (u) return { id: u.id, email: u.email, name: u.name, created_at: u.created_at };
+      const row = dbGetUser(uid);
+      return row ? { id: row.id, email: row.email, name: row.name, created_at: row.created_at } : null;
+    },
+    setName: (uid, name) => {
+      const u = users.get(uid);
+      if (u) u.name = name;
+      const row = dbGetUser(uid);
+      if (row) dbSaveUser({ id: row.id, email: row.email, name, password: undefined, active_model_id: row.active_model_id, created_at: row.created_at });
+    },
+    changePassword: (uid, current, next) => {
+      const u = users.get(uid);
+      const stored = u?.password || dbGetUser(uid)?.password || "";
+      if (!stored || !verifyPassword(current, stored)) return false;
+      const hash = hashPassword(next);
+      if (u) u.password = hash;
+      const row = dbGetUser(uid);
+      if (row) dbSaveUser({ id: row.id, email: row.email, name: row.name, password: hash, active_model_id: row.active_model_id, created_at: row.created_at });
+      return true;
+    },
+    dropSession: (token) => {
+      sessions.delete(token);
+      dbDeleteSession(token);
+    },
+    strict: PRIVACY_STRICT,
   });
 
   registerStudioRoutes(app, {
@@ -1383,16 +1453,39 @@ async function startServer() {
   // -------------------------------------------------------------------------
   // Health & Storage Management
   // -------------------------------------------------------------------------
-  app.get("/api/health", async (_req, res) => {
-    const supabaseHealth = isSupabaseConfigured() ? await verifySupabaseConnection() : { configured: false };
-    res.json({
-      status: "ok",
-      service: "darkness",
-      supabase: supabaseHealth,
-      geminiKeyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
-      googleKeyLength: process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.length : 0,
-    });
-  });
+  // Liveness: "the process is up". Cheap and dependency-free, so an orchestrator never restarts a healthy instance because a
+  // database or provider is slow. (It used to call Supabase and report the LENGTH of the Gemini/Google API keys; it no longer does.)
+  const startedAtMs = Date.now();
+  app.get(["/api/health", "/api/healthz"], livenessHandler("darkness", startedAtMs));
+
+  // Readiness: "should this instance receive traffic?" 200 ready / 200 degraded (an optional service is down) / 503 not_ready
+  // (database, storage, disk space or upload temp folder failing) / 503 draining (shutting down). Details go to the log, not the response.
+  const minFreeBytes = (parseInt(process.env.READINESS_MIN_FREE_MB || "", 10) || 100) * 1024 * 1024;
+  const healthChecks: HealthCheck[] = [
+    { name: "database", required: true, run: () => { sqliteDb.prepare("SELECT 1 FROM sqlite_master LIMIT 1").get(); } },
+    {
+      name: "storage",
+      required: true,
+      run: () => {
+        const root = storageManager.getStorageRoot();
+        fs.accessSync(root, fs.constants.W_OK);
+        const st = (fs as any).statfsSync ? (fs as any).statfsSync(root) : null;
+        if (st) {
+          const free = Number(st.bavail) * Number(st.bsize);
+          if (free < minFreeBytes) throw new Error("low disk space");
+          return `${Math.round(free / 1048576)} MB free`;
+        }
+      },
+    },
+    { name: "uploads", required: true, run: () => { ensureUploadDirs(); fs.accessSync(UPLOAD_TMP_ROOT, fs.constants.W_OK); } },
+  ];
+  if (isSupabaseConfigured()) {
+    healthChecks.push({ name: "supabase", required: false, cacheMs: 30_000, timeoutMs: 4000, run: async () => { const r = await verifySupabaseConnection(); if (r.supabaseConnection !== "PASS") throw new Error("supabase " + r.supabaseConnection); } });
+  }
+  if (aivenConfigured()) {
+    healthChecks.push({ name: "mirror", required: false, cacheMs: 15_000, run: () => { if (aivenStatus().state !== "ready") throw new Error("mirror not ready"); } });
+  }
+  app.get(["/api/ready", "/api/readyz"], readinessHandler({ service: "darkness", checks: healthChecks, isDraining }));
 
   app.get("/api/supabase/status", async (_req, res) => {
     const health = await verifySupabaseConnection();
@@ -1462,6 +1555,36 @@ async function startServer() {
   // -------------------------------------------------------------------------
   // Auth API
   // -------------------------------------------------------------------------
+  // ---- sign-in hardening: structured validation errors, guess throttling, constant-ish timing ----------------
+  const intOr = (v: string | undefined, d: number) => (v && Number.isFinite(parseInt(v, 10)) && parseInt(v, 10) > 0 ? parseInt(v, 10) : d);
+  const loginGuard = new LoginGuard({ maxFails: intOr(process.env.LOGIN_MAX_FAILS, 5), baseLockMs: intOr(process.env.LOGIN_LOCK_SECONDS, 60) * 1000 });
+  const emailGuard = new LoginGuard({ maxFails: 25, baseLockMs: 30_000, maxLockMs: 5 * 60_000 });
+
+  // Verified against when the e-mail is unknown, so "no such account" costs the same time as "wrong password".
+  const DUMMY_HASH = hashPassword(crypto.randomBytes(12).toString("hex"));
+  const waitText = (s: number) => (s >= 90 ? `${Math.ceil(s / 60)} minutes` : `${s} seconds`);
+  const authError = (res: express.Response, status: number, code: string, error: string, extra: Record<string, unknown> = {}) => res.status(status).json({ error, code, ...extra });
+  /** Shared checks for sign-in and sign-up. Returns the cleaned values or a ready-to-send error. */
+  const checkAuthBody = (body: any, signup: boolean): { email: string; password: string; name: string } | { status: number; code: string; error: string; field: string } => {
+    const bad = (field: string, error: string, code = "VALIDATION_ERROR") => ({ status: 400, code, error, field });
+    if (!body || typeof body !== "object") return bad("email", "Email and password are required");
+    const { email, password, name } = body;
+    if (typeof email !== "string" || !email.trim()) return bad("email", "Enter your email address");
+    if (typeof password !== "string" || !password) return bad("password", "Enter your password");
+    const cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail.length > 254 || !EMAIL_RE.test(cleanEmail) || cleanEmail.includes("..")) return bad("email", "Please provide a valid email address");
+    if (password.length > 1024) return bad("password", "That password is too long (1024 characters at most)");
+    let cleanName = "";
+    if (signup) {
+      const minPasswordLength = PRIVACY_STRICT ? 8 : 4;
+      if (password.length < minPasswordLength) return bad("password", `Please provide a valid email and a password of at least ${minPasswordLength} characters`, "WEAK_PASSWORD");
+      if (PRIVACY_STRICT && isCommonPassword(password)) return bad("password", "That password is on the list of the most common ones. Choose something less guessable.", "WEAK_PASSWORD");
+      if (name !== undefined && name !== null && typeof name !== "string") return bad("name", "Name must be text");
+      cleanName = String(name || "").replace(/[\u0000-\u001f\u007f<>]/g, "").trim().slice(0, 80);
+    }
+    return { email: cleanEmail, password, name: cleanName };
+  };
+
   app.get("/api/auth/me", async (req, res) => {
     console.log("[API] Auth Me called, path:", req.path);
     let user = (await resolveUserAsync(req)) || resolveUser(req);
@@ -1485,15 +1608,9 @@ async function startServer() {
 
   app.post("/api/auth/signup", async (req, res) => {
     console.log("[AUTH] Signup started");
-    const { email, password, name } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-    const cleanEmail = String(email).trim().toLowerCase();
-    const minPasswordLength = PRIVACY_STRICT ? 8 : 4;
-    if (!cleanEmail.includes("@") || String(password).length < minPasswordLength) {
-      return res.status(400).json({ error: `Please provide a valid email and a password of at least ${minPasswordLength} characters` });
-    }
+    const input = checkAuthBody(req.body, true);
+    if ("status" in input) return authError(res, input.status, input.code, input.error, { field: input.field });
+    const { email: cleanEmail, password, name } = input;
 
     let existing = null;
     try {
@@ -1508,12 +1625,12 @@ async function startServer() {
       return res.status(503).json({ error: "Database service temporarily unavailable", code: "DATABASE_UNAVAILABLE" });
     }
     if (existing) {
-      return res.status(409).json({ error: "An account with this email already exists" });
+      return authError(res, 409, "EMAIL_TAKEN", "An account with this email already exists", { field: "email" });
     }
 
     let id: string = crypto.randomUUID();
     const hashedPassword = hashPassword(String(password));
-    const userName = String(name || cleanEmail.split("@")[0]).trim();
+    const userName = name || cleanEmail.split("@")[0];
     const now = Date.now();
 
     // If Supabase is configured, create the canonical account in Supabase Auth first
@@ -1566,11 +1683,17 @@ async function startServer() {
 
   app.post("/api/auth/login", async (req, res) => {
     console.log("[AUTH] Login started");
-    const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required", code: "INVALID_CREDENTIALS" });
+    const input = checkAuthBody(req.body, false);
+    if ("status" in input) return authError(res, input.status, input.code, input.error, { field: input.field });
+    const { email: cleanEmail, password } = input;
+
+    // refuse early while this account/address is cooling down after too many wrong passwords
+    const guardKey = `${req.ip || "?"}|${cleanEmail}`;
+    const lock = [loginGuard.check(guardKey), emailGuard.check(cleanEmail)].find((g) => g.locked);
+    if (lock && lock.locked) {
+      res.setHeader("Retry-After", String(lock.retryAfter));
+      return authError(res, 429, "ACCOUNT_LOCKED", `Too many failed sign-in attempts. Please wait ${waitText(lock.retryAfter)} and try again.`, { retryAfter: lock.retryAfter });
     }
-    const cleanEmail = String(email).trim().toLowerCase();
 
     let matched: User | null = null;
     for (const u of users.values()) {
@@ -1619,7 +1742,8 @@ async function startServer() {
 
     let passwordValid = false;
     let isAutoRepairNeeded = false;
-    if (matched && (matched.password === "hashedpassword123" || matched.password === "password123")) {
+    // Legacy demo accounts only exist in the old open mode; in strict mode a stored placeholder never authenticates anyone.
+    if (!PRIVACY_STRICT && matched && (matched.password === "hashedpassword123" || matched.password === "password123")) {
       isAutoRepairNeeded = true;
     }
 
@@ -1654,6 +1778,8 @@ async function startServer() {
       passwordValid = true;
     } else if (matched && matched.password) {
       passwordValid = verifyPassword(String(password), matched.password);
+    } else {
+      verifyPassword(String(password), DUMMY_HASH); // unknown e-mail: spend the same time, answer the same way
     }
 
     // If local verification failed or user wasn't in local DB, attempt Supabase Auth direct authentication
@@ -1687,8 +1813,17 @@ async function startServer() {
     }
 
     if (!matched || !passwordValid) {
-      return res.status(401).json({ error: "Invalid email or password", code: "INVALID_CREDENTIALS" });
+      const a = loginGuard.fail(guardKey);
+      const b = emailGuard.fail(cleanEmail);
+      const locked = a.locked ? a : b.locked ? b : null;
+      if (locked && locked.locked) {
+        res.setHeader("Retry-After", String(locked.retryAfter));
+        return authError(res, 429, "ACCOUNT_LOCKED", `Too many failed sign-in attempts. Please wait ${waitText(locked.retryAfter)} and try again.`, { retryAfter: locked.retryAfter });
+      }
+      return authError(res, 401, "INVALID_CREDENTIALS", "Invalid email or password", { attemptsLeft: a.attemptsLeft });
     }
+    loginGuard.success(guardKey);
+    emailGuard.success(cleanEmail);
 
     const token = `sess_${Date.now()}_${crypto.randomBytes(16).toString("hex")}`;
     const expiresAt = Date.now() + 30 * 24 * 3600 * 1000;
@@ -2223,7 +2358,9 @@ async function startServer() {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (m.apiKey) headers["Authorization"] = `Bearer ${m.apiKey}`;
 
-      let response = await fetch(`${effectiveBaseUrl.replace(/\/$/, "")}/models`, { method: "GET", headers });
+      // A connectivity test should answer quickly: one attempt, 20 s, and HTTP statuses are interpreted below.
+      const testPolicy = { label: "model test", timeoutMs: 20_000, maxAttempts: 1, returnErrorResponse: true } as const;
+      let response = await fetchWithPolicy(`${effectiveBaseUrl.replace(/\/$/, "")}/models`, { method: "GET", headers }, testPolicy);
       if (!response.ok) {
         // Fallback: try a tiny chat completions request to verify API connection using configured model name
         const testBody = {
@@ -2231,11 +2368,11 @@ async function startServer() {
           messages: [{ role: "user", content: "ping" }],
           max_tokens: 5,
         };
-        const fallbackRes = await fetch(`${effectiveBaseUrl.replace(/\/$/, "")}/chat/completions`, {
+        const fallbackRes = await fetchWithPolicy(`${effectiveBaseUrl.replace(/\/$/, "")}/chat/completions`, {
           method: "POST",
           headers,
           body: JSON.stringify(testBody)
-        });
+        }, testPolicy);
         if (!fallbackRes.ok) {
           throw new Error(`Models endpoint failed (${response.status}) and fallback completions failed: HTTP ${fallbackRes.status}: ${await fallbackRes.text()}`);
         }
@@ -3902,9 +4039,14 @@ Following the details block, provide your beautiful, structured final textbook r
 
     // Prepare SSE stream
     res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
+    // Open the stream NOW, before the model has said anything. Behind a hosting front door (Vercel's edge proxy) the response must start
+    // within 25 seconds or the visitor gets a 504 although this server is healthy; reasoning models and cold starts routinely take
+    // longer to produce a first token. From here on every outcome, errors included, is an SSE frame (there is no status code left to send).
+    res.flushHeaders();
+    res.write(": stream open\n\n");
 
     const abortController = new AbortController();
     res.on("close", () => {
@@ -4119,8 +4261,14 @@ Following the details block, provide your beautiful, structured final textbook r
     let activeModelId = modelConfig.id;
     conv.model_id = activeModelId;
     res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    // Open the stream NOW, before the model has said anything. Behind a hosting front door (Vercel's edge proxy) the response must start
+    // within 25 seconds or the visitor gets a 504 even though this server is healthy; reasoning models and cold starts routinely take
+    // longer to produce a first token. From here on every outcome, including errors, is reported as an SSE frame (never a status code).
+    res.flushHeaders();
+    res.write(": stream open\n\n");
 
     const abortController = new AbortController();
     res.on("close", () => {
@@ -4239,21 +4387,18 @@ Following the details block, provide your beautiful, structured final textbook r
           top_p: modelConfig.defaultTopP ?? 1.0,
         };
 
-        const response = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
+        // Timeout to first byte, retries for transient failures (only before any text has arrived), an idle timeout while
+        // streaming, and cancellation when the user disconnects. Errors keep the "HTTP <status>: <provider message>" shape.
+        const response = await fetchWithPolicy(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
           method: "POST",
           headers,
           body: JSON.stringify(reqBody),
-          signal: abortController?.signal
-        });
-
-        if (!response.ok) {
-           throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
+        }, { label: "model provider", stream: true, signal: abortController?.signal });
 
         if (response.body) {
            const decoder = new TextDecoder("utf-8");
            let sseBuffer = "";
-           for await (const chunk of response.body) {
+           for await (const chunk of iterateWithIdleTimeout(response.body, { signal: abortController?.signal, label: "model provider" })) {
              sseBuffer += decoder.decode(chunk, { stream: true });
              const lines = sseBuffer.split("\n");
              sseBuffer = lines.pop() || "";
@@ -4831,7 +4976,7 @@ Following the details block, provide your beautiful, structured final textbook r
       const buf = Buffer.from(b64, "base64");
       const mime = asset.mime_type || (asset as any).mimeType || "image/png";
       res.setHeader("Content-Type", mime);
-      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("Cache-Control", "private, max-age=86400"); // user data: never in a shared cache
       return res.send(buf);
     } catch (err) {
       console.error("[Visual Asset Route Error]:", err);
@@ -6174,402 +6319,8 @@ ${vq.answer}
 
   // A. WORD DOCUMENT STUDIO ENDPOINTS
 
-  // 1. Import DOCX via Mammoth
-  app.post("/api/document/import-docx", upload.single("file"), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-      const mammoth = await import("mammoth");
-      const result = await mammoth.convertToHtml({ buffer: req.file.buffer });
-      res.json({
-        html: result.value,
-        warnings: result.messages.map(m => m.message)
-      });
-    } catch (err: any) {
-      console.error("DOCX import error:", err);
-      res.status(500).json({ error: err.message || "Failed to import DOCX" });
-    }
-  });
-
-  // 2. Export DOCX via Docx Library
-  app.post("/api/document/export-docx", async (req, res) => {
-    try {
-      const { title, orientation, marginSize } = req.body || {};
-      const contentHtml = req.body?.contentHtml || req.body?.html || "";
-      const docx = await import("docx");
-
-      const children: any[] = [];
-
-      // Cover Page Title
-      children.push(
-        new docx.Paragraph({
-          text: title || "Untitled Document",
-          heading: docx.HeadingLevel.TITLE,
-          alignment: docx.AlignmentType.CENTER,
-          spacing: { before: 800, after: 600 }
-        })
-      );
-
-      // Helper to clean HTML text
-      const cleanTextTags = (htmlStr: string): string => {
-        return htmlStr
-          .replace(/<[^>]*>/g, "")
-          .replace(/&nbsp;/g, " ")
-          .replace(/&amp;/g, "&")
-          .replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">")
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .trim();
-      };
-
-      // Extract top-level elements cleanly (including tables, headings, paragraphs, and explicit page breaks)
-      let processed = (contentHtml || "")
-        .replace(/<div[^>]*page-break-after:\s*always[^>]*><\/div>/gi, "\n[PAGE_BREAK]\n")
-        .replace(/<br\s*\/?>/gi, "\n");
-
-      // Regex split on top-level block elements (h1-h3, p, lists, tables, explicit page breaks)
-      const blockRegex = /(<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>|<p[^>]*>[\s\S]*?<\/p>|<ul[^>]*>[\s\S]*?<\/ul>|<ol[^>]*>[\s\S]*?<\/ol>|<table[^>]*>[\s\S]*?<\/table>|\[PAGE_BREAK\])/gi;
-      
-      let match;
-      let lastIndex = 0;
-      const blocks: string[] = [];
-
-      while ((match = blockRegex.exec(processed)) !== null) {
-        const textBefore = processed.substring(lastIndex, match.index).trim();
-        if (textBefore) {
-          blocks.push(textBefore);
-        }
-        blocks.push(match[1]);
-        lastIndex = blockRegex.lastIndex;
-      }
-      const remainingText = processed.substring(lastIndex).trim();
-      if (remainingText) {
-        blocks.push(remainingText);
-      }
-
-      for (const block of blocks) {
-        const trimmedBlock = block.trim();
-        if (!trimmedBlock) continue;
-
-        if (trimmedBlock === "[PAGE_BREAK]") {
-          children.push(
-            new docx.Paragraph({
-              children: [new docx.PageBreak()]
-            })
-          );
-          continue;
-        }
-
-        // H1
-        const h1Match = trimmedBlock.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-        if (h1Match) {
-          children.push(
-            new docx.Paragraph({
-              text: cleanTextTags(h1Match[1]),
-              heading: docx.HeadingLevel.HEADING_1,
-              keepNext: true,
-              keepLines: true,
-              spacing: { before: 240, after: 120 }
-            })
-          );
-          continue;
-        }
-
-        // H2
-        const h2Match = trimmedBlock.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
-        if (h2Match) {
-          children.push(
-            new docx.Paragraph({
-              text: cleanTextTags(h2Match[1]),
-              heading: docx.HeadingLevel.HEADING_2,
-              keepNext: true,
-              keepLines: true,
-              spacing: { before: 180, after: 80 }
-            })
-          );
-          continue;
-        }
-
-        // H3
-        const h3Match = trimmedBlock.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
-        if (h3Match) {
-          children.push(
-            new docx.Paragraph({
-              text: cleanTextTags(h3Match[1]),
-              heading: docx.HeadingLevel.HEADING_3,
-              keepNext: true,
-              keepLines: true,
-              spacing: { before: 140, after: 60 }
-            })
-          );
-          continue;
-        }
-
-        // Lists
-        const listMatch = trimmedBlock.match(/<(ul|ol)[^>]*>([\s\S]*?)<\/\1>/i);
-        if (listMatch) {
-          const listContent = listMatch[2];
-          const liRegex = /<li[^>]*>([\s\S]*?)<\/li>/gi;
-          let liMatch;
-          while ((liMatch = liRegex.exec(listContent)) !== null) {
-            children.push(
-              new docx.Paragraph({
-                text: cleanTextTags(liMatch[1]),
-                bullet: { level: 0 },
-                keepLines: true,
-                spacing: { after: 100 }
-              })
-            );
-          }
-          continue;
-        }
-
-        // Tables
-        const tableMatch = trimmedBlock.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
-        if (tableMatch) {
-          const tableContent = tableMatch[1];
-          const rows: any[] = [];
-          const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-          let trMatch;
-
-          while ((trMatch = trRegex.exec(tableContent)) !== null) {
-            const rowContent = trMatch[1];
-            const cells: any[] = [];
-            const tdRegex = /<(td|th)[^>]*>([\s\S]*?)<\/\1>/gi;
-            let tdMatch;
-
-            while ((tdMatch = tdRegex.exec(rowContent)) !== null) {
-              const isHeader = tdMatch[1].toLowerCase() === "th";
-              cells.push(
-                new docx.TableCell({
-                  children: [
-                    new docx.Paragraph({
-                      text: cleanTextTags(tdMatch[2]),
-                      keepLines: true,
-                      spacing: { before: 100, after: 100 }
-                    })
-                  ],
-                  shading: isHeader ? { fill: "F3F4F6" } : undefined
-                })
-              );
-            }
-
-            if (cells.length > 0) {
-              rows.push(
-                new docx.TableRow({
-                  children: cells,
-                  cantSplit: true // Prevent row from splitting across pages
-                })
-              );
-            }
-          }
-
-          if (rows.length > 0) {
-            children.push(
-              new docx.Table({
-                rows,
-                width: {
-                  size: 100,
-                  type: docx.WidthType.PERCENTAGE
-                }
-              })
-            );
-          }
-          continue;
-        }
-
-        // Images in DOCX
-        const imgMatch = trimmedBlock.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
-        if (imgMatch) {
-          const imgSrc = imgMatch[1];
-          let imageBuffer: Buffer | null = null;
-          try {
-            if (imgSrc.startsWith("data:image/")) {
-              const base64Data = imgSrc.replace(/^data:image\/\w+;base64,/, "");
-              imageBuffer = Buffer.from(base64Data, "base64");
-            } else if (imgSrc.startsWith("/uploads/") || imgSrc.startsWith("uploads/")) {
-              const cleanPath = imgSrc.startsWith("/") ? imgSrc.slice(1) : imgSrc;
-              const fullPath = path.join(process.cwd(), "web", "public", cleanPath);
-              if (fs.existsSync(fullPath)) {
-                imageBuffer = fs.readFileSync(fullPath);
-              }
-            }
-          } catch (imgErr) {
-            console.warn("Failed to process DOCX image:", imgErr);
-          }
-
-          if (imageBuffer) {
-            children.push(
-              new docx.Paragraph({
-                children: [
-                  new docx.ImageRun({
-                    data: imageBuffer,
-                    transformation: {
-                      width: 480,
-                      height: 270
-                    }
-                  })
-                ],
-                alignment: docx.AlignmentType.CENTER,
-                spacing: { before: 200, after: 200 }
-              })
-            );
-            continue;
-          }
-        }
-
-        // Default Paragraph
-        const pMatch = trimmedBlock.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-        const textContent = pMatch ? pMatch[1] : trimmedBlock;
-        const cleanText = cleanTextTags(textContent);
-        if (cleanText) {
-          children.push(
-            new docx.Paragraph({
-              text: cleanText,
-              keepLines: true,
-              spacing: { after: 140 }
-            })
-          );
-        }
-      }
-
-      // Determine correct twips dimensions to prevent MS Word corruption on landscape
-      let width = 11906; // standard A4 width
-      let height = 16838; // standard A4 height
-      if (orientation === "landscape") {
-        width = 16838;
-        height = 11906;
-      }
-
-      const doc = new docx.Document({
-        sections: [{
-          properties: {
-            page: {
-              size: {
-                orientation: orientation === "landscape" ? docx.PageOrientation.LANDSCAPE : docx.PageOrientation.PORTRAIT,
-                width,
-                height
-              },
-              margins: {
-                top: marginSize === "wide" ? 2000 : marginSize === "narrow" ? 800 : 1440,
-                bottom: marginSize === "wide" ? 2000 : marginSize === "narrow" ? 800 : 1440,
-                left: marginSize === "wide" ? 2000 : marginSize === "narrow" ? 800 : 1440,
-                right: marginSize === "wide" ? 2000 : marginSize === "narrow" ? 800 : 1440,
-              }
-            }
-          },
-          children: children
-        }]
-      });
-
-      const buffer = await docx.Packer.toBuffer(doc);
-      res.setHeader("Content-Disposition", `attachment; filename="${(title || "document").toLowerCase().replace(/[^a-z0-9]/g, "_")}.docx"`);
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-      res.send(buffer);
-    } catch (err: any) {
-      console.error("DOCX export error:", err);
-      res.status(500).json({ error: err.message || "Failed to export DOCX" });
-    }
-  });
-
-  // 3. Export PDF via Puppeteer PDF Generation
-  app.post("/api/document/export-pdf", async (req, res) => {
-    try {
-      const { title, orientation, marginSize } = req.body || {};
-      const contentHtml = req.body?.contentHtml || req.body?.html || "";
-      const puppeteer = await import("puppeteer");
-      
-      const padding = marginSize === "wide" ? "2.5cm 3cm" : marginSize === "narrow" ? "1cm 1.2cm" : "1.8cm 2cm";
-
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${title || "Document"}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-            @page {
-              size: ${orientation === "landscape" ? "A4 landscape" : "A4 portrait"};
-              margin: 0;
-            }
-            body {
-              font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-              color: #111827;
-              background: #ffffff;
-              margin: 0;
-              padding: ${padding};
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-              font-size: 15px;
-              line-height: 1.6;
-            }
-            h1 { font-size: 24px; font-weight: 700; margin-top: 24px; margin-bottom: 12px; color: #111827; page-break-after: avoid; break-after: avoid; }
-            h2 { font-size: 18px; font-weight: 700; margin-top: 18px; margin-bottom: 8px; color: #1f2937; page-break-after: avoid; break-after: avoid; }
-            h3 { font-size: 15px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; color: #374151; page-break-after: avoid; break-after: avoid; }
-            p { margin-top: 0; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
-            ul, ol { margin-top: 0; margin-bottom: 12px; padding-left: 20px; }
-            li { margin-bottom: 4px; page-break-inside: avoid; break-inside: avoid; }
-            table { width: 100%; border-collapse: collapse; margin: 16px 0; page-break-inside: auto; break-inside: auto; }
-            tr { page-break-inside: avoid; break-inside: avoid; }
-            th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
-            th { background-color: #f3f4f6; font-weight: 600; }
-            img { max-width: 100%; height: auto; border-radius: 4px; page-break-inside: avoid; break-inside: avoid; }
-            .no-print {
-              page-break-after: always;
-              break-after: page;
-              height: 0;
-              margin: 0;
-              padding: 0;
-              border: none;
-              visibility: hidden;
-            }
-            .message__content--code-explanation {
-              border-left: 4px solid #4f46e5;
-              padding: 12px;
-              margin: 12px 0;
-              background: #f9fafb;
-              border-radius: 4px;
-            }
-          </style>
-        </head>
-        <body>
-          ${contentHtml || ""}
-        </body>
-        </html>
-      `;
-
-      const browser = await puppeteer.default.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
-      });
-      const page = await browser.newPage();
-      
-      // Use 'load' and set a lower timeout to prevent hanging on slow network requests (like fonts or external images)
-      try {
-        await page.setContent(html, { waitUntil: "load", timeout: 8000 });
-      } catch (timeoutErr) {
-        console.warn("Puppeteer content loading timed out (partial assets might not load), continuing to PDF export anyway", timeoutErr);
-      }
-      
-      const buffer = await page.pdf({
-        format: "A4",
-        landscape: orientation === "landscape",
-        printBackground: true
-      });
-
-      await browser.close();
-
-      res.setHeader("Content-Disposition", `attachment; filename="${(title || "document").toLowerCase().replace(/[^a-z0-9]/g, "_")}.pdf"`);
-      res.setHeader("Content-Type", "application/pdf");
-      res.send(buffer);
-    } catch (err: any) {
-      console.error("PDF export error:", err);
-      res.status(500).json({ error: err.message || "Failed to export PDF" });
-    }
-  });
+  // Word document import / export (DOCX, PDF): ./document-export-routes.ts
+  registerDocumentExportRoutes(app);
 
   // -------------------------------------------------------------------------
   // Server-Side Diagnostic Telemetry Logger for /api/chat & /api/studio/chat
@@ -8309,7 +8060,9 @@ Do NOT reuse, merge, or carry over any content, facts, figures, or titles from p
   // -------------------------------------------------------------------------
   // Authoritative Error Handling (Payload Too Large 413)
   // -------------------------------------------------------------------------
+  app.use(bodyTooLargeHandler);
   app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // (a JSON / form body over its route's limit is answered by bodyTooLargeHandler, registered just before this one)
     if (
       err &&
       (err.code === "LIMIT_FILE_SIZE" ||
@@ -8347,11 +8100,52 @@ Do NOT reuse, merge, or carry over any content, facts, figures, or titles from p
     });
   }
 
+  // Anything that reached here unhandled: a JSON answer with the request id, never a stack trace or HTML.
+  app.use(jsonErrorHandler());
+
   console.log("[Boot] Hydrating Darkness database and cloud persistence...");
   await initAiven();
+
+  // Provider keys at rest (docs: SECURITY.md "Provider API keys"). Counts only are ever logged. A conversion happens only when the operator
+  // asks for it with SECRETS_MIGRATE=encrypt|rotate (then unsets it): a consistent snapshot is written first and nothing is changed if any value fails.
+  try {
+    const mode = (process.env.SECRETS_MIGRATE || "").trim().toLowerCase();
+    if (mode === "encrypt" || mode === "rotate") {
+      const dir = path.join(storageManager.getStorageRoot(), "backups");
+      fs.mkdirSync(dir, { recursive: true });
+      const backupPath = path.join(dir, `pre-secrets-${mode}-${new Date().toISOString().replace(/[:.]/g, "-")}.db`);
+      const r = migrateModelKeys(sqliteDb, mode, { backupPath });
+      logger.info("secrets_migrated", { mode, examined: r.examined, changed: r.changed, skipped: r.skipped, failed: r.failed, backup: path.basename(backupPath) });
+    }
+    const counts = countModelKeys(sqliteDb);
+    logger.info("secrets_status", { ...counts, encryption: vaultEnabled() ? "on" : "off" });
+    if (counts.plaintext > 0) logger.warn("secrets_plaintext", { plaintext: counts.plaintext, hint: vaultEnabled() ? "start once with SECRETS_MIGRATE=encrypt to seal them" : "set PRIVACY_ENCRYPTION_KEY to encrypt provider keys at rest" });
+    if (counts.unreadable > 0) logger.error("secrets_unreadable", { unreadable: counts.unreadable, hint: "PRIVACY_ENCRYPTION_KEY (and _PREVIOUS after a rotation) must be able to open every sealed key" });
+  } catch (err: any) {
+    logger.error("secrets_migration_failed", { error: String(err?.message || err).slice(0, 200) });
+  }
+
   await hydrateFromDatabase();
 
-  app.listen(PORT, "0.0.0.0", async () => {
+  // Graceful shutdown: on SIGTERM (a deploy, a scale-down) readiness flips to "draining" so the load balancer stops sending
+  // traffic, running project processes are stopped (no orphans), and in-flight requests get SHUTDOWN_GRACE_MS to finish.
+  let httpServer: ReturnType<typeof app.listen> | undefined;
+  const shutdown = (signal: string) => {
+    if (isDraining()) return;
+    markDraining();
+    const graceMs = parseInt(process.env.SHUTDOWN_GRACE_MS || "", 10) || 10_000;
+    logger.warn("shutdown_started", { signal, graceMs });
+    for (const pid of new Set([...activeSessions.values()].map((s) => s.projectId))) {
+      try { stopProject(pid); } catch { /* best effort */ }
+    }
+    httpServer?.close(() => { logger.info("shutdown_complete"); process.exit(0); });
+    httpServer?.closeIdleConnections?.();
+    setTimeout(() => { logger.warn("shutdown_forced", { reason: "grace period elapsed" }); process.exit(0); }, graceMs).unref();
+  };
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT", () => shutdown("SIGINT"));
+
+  httpServer = app.listen(PORT, "0.0.0.0", async () => {
     console.log(`Darkness server listening on http://0.0.0.0:${PORT}`);
     if (isSupabaseConfigured()) {
       console.log("[Supabase] Environment credentials loaded.");

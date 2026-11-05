@@ -2,6 +2,7 @@ import "./env-loader.js";
 import crypto from "crypto";
 import path from "path";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { keyAad, protectSecret, revealSecret } from "./security/secret-store.js";
 
 /**
  * Ensures any identifier is formatted as a valid UUID.
@@ -950,7 +951,8 @@ export async function syncModelToSupabase(model: any): Promise<{ success: boolea
       temperature: Number(model.defaultTemperature ?? model.temperature ?? model.default_temperature ?? 0.7),
       top_p: Number(model.defaultTopP ?? model.top_p ?? model.default_top_p ?? 1.0),
       base_url: model.baseUrl || model.base_url || "",
-      api_secret: model.apiKey || model.api_secret || model.api_key || "",
+      // sealed (when PRIVACY_ENCRYPTION_KEY is set) before it leaves this server: the cloud copy never holds a plaintext key
+      api_secret: protectSecret(model.apiKey || model.api_secret || model.api_key || "", keyAad("cloud", uid, cleanId)) || "",
       enabled: model.enabled !== false && model.enabled !== 0 ? 1 : 0,
       status: model.status || "available",
       is_user: model.isUser || model.is_user ? 1 : 0,
@@ -1631,7 +1633,7 @@ export async function hydrateAllFromSupabase(dbAdapters: {
               name: m.name,
               provider: m.provider,
               baseUrl: m.base_url || "",
-              apiKey: m.api_secret || m.api_key || "",
+              apiKey: revealSecret(m.api_secret || m.api_key || "", keyAad("cloud", modelUserId, cleanModelId), keyAad("cloud", m.user_id, cleanModelId)),
               modelName: m.provider_model_id || m.model_name || m.id,
               modelType: m.model_type || "text",
               capabilities: caps || {},

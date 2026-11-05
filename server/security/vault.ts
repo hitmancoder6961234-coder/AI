@@ -14,6 +14,7 @@ const ALGO = "aes-256-gcm";
 const PREFIX = "v1";
 
 let cachedKey: Buffer | null | undefined;
+let cachedPrev: Buffer | null | undefined;
 
 function loadKey(): Buffer | null {
   if (cachedKey !== undefined) return cachedKey;
@@ -30,6 +31,16 @@ function loadKey(): Buffer | null {
   }
   cachedKey = key;
   return cachedKey;
+}
+
+/** The key used before the last rotation (PRIVACY_ENCRYPTION_KEY_PREVIOUS): only ever used to READ values sealed with it. */
+function loadPreviousKey(): Buffer | null {
+  if (cachedPrev !== undefined) return cachedPrev;
+  const raw = (process.env.PRIVACY_ENCRYPTION_KEY_PREVIOUS || "").trim();
+  if (!raw) return (cachedPrev = null);
+  const key = Buffer.from(raw, "base64");
+  if (key.length !== 32) throw new Error("PRIVACY_ENCRYPTION_KEY_PREVIOUS must decode to exactly 32 bytes (base64).");
+  return (cachedPrev = key);
 }
 
 export function vaultEnabled(): boolean {
@@ -61,13 +72,24 @@ export function open(sealed: string, aad = ""): string {
   const iv = Buffer.from(parts[1], "base64url");
   const tag = Buffer.from(parts[2], "base64url");
   const ct = Buffer.from(parts[3], "base64url");
-  const decipher = crypto.createDecipheriv(ALGO, key, iv);
-  if (aad) decipher.setAAD(Buffer.from(aad, "utf8"));
-  decipher.setAuthTag(tag);
-  return Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
+  const attempt = (k: Buffer) => {
+    const decipher = crypto.createDecipheriv(ALGO, k, iv);
+    if (aad) decipher.setAAD(Buffer.from(aad, "utf8"));
+    decipher.setAuthTag(tag);
+    return Buffer.concat([decipher.update(ct), decipher.final()]).toString("utf8");
+  };
+  try {
+    return attempt(key);
+  } catch (err) {
+    // key rotation: values sealed before the rotation are still readable while the previous key is configured
+    const prev = loadPreviousKey();
+    if (prev) return attempt(prev);
+    throw err;
+  }
 }
 
 /** Test hook: forget the cached key so a new env value is read. */
 export function _resetVaultForTests(): void {
   cachedKey = undefined;
+  cachedPrev = undefined;
 }

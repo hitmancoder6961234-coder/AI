@@ -17,6 +17,8 @@ import type { Express, NextFunction, Request, RequestHandler, Response } from "e
 /** Secure by default: only an explicit PRIVACY_STRICT=false turns it off (local hacking only). */
 export const PRIVACY_STRICT: boolean = (process.env.PRIVACY_STRICT || "true").toLowerCase() !== "false";
 
+import { applyCspHeaders } from "./csp.js";
+import { redact } from "./redact.js";
 const isProd = process.env.NODE_ENV === "production";
 
 function intEnv(name: string, fallback: number): number {
@@ -28,24 +30,8 @@ function intEnv(name: string, fallback: number): number {
 // Log redaction
 // ---------------------------------------------------------------------------
 
-const REDACTIONS: Array<[RegExp, string]> = [
-  [/Bearer\s+[A-Za-z0-9._~+/=-]{8,}/gi, "Bearer [redacted]"],
-  [/\bsess_[0-9]+_[a-f0-9]{16,}\b/gi, "[session]"],
-  [/\bAIza[0-9A-Za-z_-]{20,}\b/g, "[api-key]"],
-  [/\bsk-(?:ant-|or-|proj-)?[A-Za-z0-9_-]{16,}\b/g, "[api-key]"],
-  [/\bgsk_[A-Za-z0-9]{16,}\b/g, "[api-key]"],
-  [/\bgh[pousr]_[A-Za-z0-9]{20,}\b/g, "[api-key]"],
-  [/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{5,}\b/g, "[jwt]"],
-  [/(["']?(?:password|passwd|secret|api[_-]?key|token)["']?\s*[:=]\s*)(["'])[^"']*\2/gi, "$1$2[redacted]$2"],
-  [/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, "[email]"],
-  [/\b(?:\d{1,3}\.){3}\d{1,3}\b/g, "[ip]"],
-];
-
-export function redact(input: string): string {
-  let out = input;
-  for (const [re, sub] of REDACTIONS) out = out.replace(re, sub);
-  return out;
-}
+// redact() lives in ./redact.ts (a dependency-free leaf); it is re-exported here for existing callers.
+export { redact };
 
 let consolePatched = false;
 
@@ -73,45 +59,9 @@ export function installLogRedaction(): void {
 // Security headers
 // ---------------------------------------------------------------------------
 
-const CDN_SCRIPT = "https://cdn.jsdelivr.net https://cdnjs.cloudflare.com";
-const CDN_STYLE = "https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com";
-
-function buildCsp(): string {
-  const extraConnect = (process.env.CSP_CONNECT_EXTRA || "").split(/[\s,]+/).filter(Boolean).join(" ");
-  return [
-    "default-src 'self'",
-    // The shipped UI relies on inline bootstrap snippets and Mermaid/KaTeX from CDNs.
-    `script-src 'self' 'unsafe-inline' 'unsafe-eval' ${CDN_SCRIPT}`,
-    `style-src 'self' 'unsafe-inline' ${CDN_STYLE}`,
-    "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com https://cdn.jsdelivr.net",
-    "img-src 'self' data: blob: https:",
-    `connect-src 'self' ${extraConnect}`.trim(),
-    "frame-src 'self' blob: data:",
-    "worker-src 'self' blob:",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'self'",
-  ].join("; ");
-}
-
-/** The original Darkness app loads Google Sign-In and assorted CDN libraries, so its policy is broader than the new UI's. */
-const CSP_CLASSIC = [
-  "default-src 'self' https: data: blob:",
-  "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:",
-  "style-src 'self' 'unsafe-inline' https:",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data: https:",
-  "connect-src 'self' https:",
-  "frame-src 'self' https://accounts.google.com blob: data:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "frame-ancestors 'self'",
-].join("; ");
+// The Content-Security-Policy itself (and its violation reporting) lives in ./csp.ts.
 
 function securityHeaders(): RequestHandler {
-  const mode = (process.env.PRIVACY_CSP || "report-only").toLowerCase(); // enforce | report-only | off
-  const csp = buildCsp();
   return (req, res, next) => {
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.setHeader("X-Frame-Options", "SAMEORIGIN");
@@ -125,9 +75,7 @@ function securityHeaders(): RequestHandler {
       "camera=(), geolocation=(), payment=(), usb=(), interest-cohort=(), browsing-topics=(), microphone=(self)"
     );
     if (isProd) res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-    const policy = req.path.startsWith("/classic") ? CSP_CLASSIC : csp;
-    if (mode === "enforce") res.setHeader("Content-Security-Policy", policy);
-    else if (mode !== "off") res.setHeader("Content-Security-Policy-Report-Only", policy);
+    applyCspHeaders(req, res); // enforce | report-only | off (PRIVACY_CSP), per surface
     if (isApiPath(req.path)) {
       res.setHeader("Cache-Control", "no-store, max-age=0");
       res.setHeader("Pragma", "no-cache");
@@ -182,6 +130,8 @@ export function rateLimit(opts: { windowMs: number; max: number; name: string })
 /** API paths that must work before a user has signed in. */
 const PUBLIC_API = [
   /^\/api\/health$/,
+  /^\/api\/(?:healthz|ready|readyz)$/,
+  /^\/api\/csp-report$/, // browsers report CSP violations without credentials
   /^\/api\/debug\/ping$/,
   /^\/api\/config\//,
   /^\/api\/auth\//,

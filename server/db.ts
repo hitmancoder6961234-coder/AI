@@ -4,6 +4,7 @@ import path from "path";
 import crypto from "crypto";
 import { storageManager } from "./storage-manager.js";
 import { aivenConfigured, mirrorMessage } from "./security/aiven.js";
+import { keyAad, protectSecret, revealSecret } from "./security/secret-store.js";
 import {
   syncProjectToSupabase,
   deleteProjectFromSupabase,
@@ -65,6 +66,17 @@ export function safeParam(val: any): string | number | bigint | Uint8Array | nul
   }
 }
 
+/**
+ * Describe a failed statement WITHOUT any bound values. Parameters carry user prompts, document text and e-mail
+ * addresses, and a generic log redactor cannot make an arbitrary array/object safe, so the values are never printed at
+ * all. Only a short normalised statement, the error name/code and its message are logged.
+ */
+export function describeSqlFailure(sql: string, err: any): string {
+  const label = String(sql || "").replace(/\s+/g, " ").trim().slice(0, 120);
+  const code = err?.code || err?.errcode || "";
+  return `[SQLite Error] ${err?.name || "Error"}${code ? ` (${code})` : ""}: ${String(err?.message || err).slice(0, 300)} | query: ${label}`;
+}
+
 // Global wrap on db.prepare to guarantee no SQLite parameter binding crashes
 const originalPrepare = db.prepare.bind(db);
 (db as any).prepare = function (sql: string) {
@@ -80,7 +92,7 @@ const originalPrepare = db.prepare.bind(db);
     try {
       return origRun(...cleanArgs);
     } catch (err: any) {
-      console.error(`[SQLite Error] in query: ${sql}\nParams:`, cleanArgs, "\nError:", err);
+      console.error(describeSqlFailure(sql, err));
       throw err;
     }
   };
@@ -90,7 +102,7 @@ const originalPrepare = db.prepare.bind(db);
     try {
       return origGet(...cleanArgs);
     } catch (err: any) {
-      console.error(`[SQLite Error] in query: ${sql}\nParams:`, cleanArgs, "\nError:", err);
+      console.error(describeSqlFailure(sql, err));
       throw err;
     }
   };
@@ -100,7 +112,7 @@ const originalPrepare = db.prepare.bind(db);
     try {
       return origAll(...cleanArgs);
     } catch (err: any) {
-      console.error(`[SQLite Error] in query: ${sql}\nParams:`, cleanArgs, "\nError:", err);
+      console.error(describeSqlFailure(sql, err));
       throw err;
     }
   };
@@ -112,6 +124,8 @@ const originalPrepare = db.prepare.bind(db);
 db.exec("PRAGMA journal_mode = WAL;");
 db.exec("PRAGMA foreign_keys = ON;");
 db.exec("PRAGMA synchronous = NORMAL;");
+// deleted rows (a removed model's API key, an erased account) are overwritten with zeros instead of lingering in free pages
+db.exec("PRAGMA secure_delete = ON;");
 
 /**
  * Execute a function within an ACID transaction
@@ -2037,6 +2051,7 @@ export function dbGetModels(userId?: string): any[] {
   return rows
     .map((r) => ({
       ...r,
+      api_key: revealSecret(r.api_key, keyAad("db", r.user_id, r.id)) || null,
       id: r.id && r.id.includes(":::") ? r.id.split(":::").pop()! : r.id,
     }))
     .filter((r) => !dbIsModelDeleted(r.id, userId || r.user_id));
@@ -2056,6 +2071,7 @@ export function dbGetModel(id: string, userId?: string): any {
   if (!row) return null;
   const item = {
     ...row,
+    api_key: revealSecret(row.api_key, keyAad("db", row.user_id, row.id)) || null,
     id: row.id && row.id.includes(":::") ? row.id.split(":::").pop()! : row.id,
   };
   if (dbIsModelDeleted(item.id, userId || item.user_id)) return null;
@@ -2080,7 +2096,8 @@ export function dbSaveModel(model: any) {
       name = excluded.name,
       provider = excluded.provider,
       base_url = excluded.base_url,
-      api_key = excluded.api_key,
+      -- an empty key never erases a stored one: a server started without the vault key reads sealed keys as empty and must not write that back
+      api_key = CASE WHEN excluded.api_key IS NULL OR excluded.api_key = '' THEN models.api_key ELSE excluded.api_key END,
       model_name = excluded.model_name,
       model_type = excluded.model_type,
       capabilities = excluded.capabilities,
@@ -2095,7 +2112,7 @@ export function dbSaveModel(model: any) {
   `);
   
   ((...args) => { try { return stmt.run(...args); } catch(e) { console.error("SQL ERROR in:", (stmt as any).source || (stmt as any).sql || "dbSaveModel"); throw e; } })(
-    cleanId, validUserId, model.name || cleanId, model.provider || "custom", model.baseUrl || model.base_url || null, model.apiKey || model.api_key || model.api_secret || null,
+    cleanId, validUserId, model.name || cleanId, model.provider || "custom", model.baseUrl || model.base_url || null, protectSecret(model.apiKey || model.api_key || model.api_secret || null, keyAad("db", validUserId, cleanId)),
     model.modelName || model.model_name || model.provider_model_id || cleanId, model.modelType || model.model_type || "text",
     typeof model.capabilities === 'string' ? model.capabilities : JSON.stringify(model.capabilities || {}),
     model.contextWindow || model.context_window || 0, model.maxOutputTokens || model.max_output_tokens || 0,
@@ -2112,7 +2129,15 @@ export function dbDeleteModel(id: string, userId?: string) {
   // 1. Record tombstone
   dbRecordDeletedModel(cleanId, userId || "user_default");
 
-  // 2. Delete from SQLite
+  // 2. Delete from SQLite (the key is blanked first, and secure_delete zeroes the freed pages)
+  try {
+    if (userId) {
+      const vu = toValidUuid(userId)!;
+      db.prepare("UPDATE models SET api_key = NULL WHERE (id = ? OR id = ? OR id = ?) AND (user_id = ? OR user_id = ?)").run(cleanId, rawId, `${vu}:::${cleanId}`, vu, userId);
+    } else {
+      db.prepare("UPDATE models SET api_key = NULL WHERE id = ? OR id = ?").run(cleanId, rawId);
+    }
+  } catch { /* the delete below is what matters */ }
   if (userId) {
     const validUserId = toValidUuid(userId)!;
     db.prepare("DELETE FROM models WHERE (id = ? OR id = ? OR id = ?) AND (user_id = ? OR user_id = ?)").run(cleanId, rawId, `${validUserId}:::${cleanId}`, validUserId, userId);

@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { abortableSleep, defaults as providerDefaults, withIdleTimeout } from "./provider-http.js";
 
 export const DEFAULT_GEMINI_MODEL = "gemini-3.1-flash-lite";
 
@@ -294,6 +295,8 @@ export async function streamGeminiWithResilience(options: GeminiStreamOptions): 
   const maxAttempts = 3;
   let lastError: any = null;
   let hasStreamed = false;
+  // One controller per attempt: aborting it really cancels the HTTP request (a timeout by itself only stops us waiting for it).
+  let attemptCtl: AbortController | undefined;
 
   let ai = new GoogleGenAI({
     apiKey: currentApiKey,
@@ -321,6 +324,9 @@ export async function streamGeminiWithResilience(options: GeminiStreamOptions): 
         }
       }
 
+      attemptCtl = new AbortController();
+      streamConfig.abortSignal = options.abortSignal ? AbortSignal.any([attemptCtl.signal, options.abortSignal]) : attemptCtl.signal;
+
       const streamPromise = ai.models.generateContentStream({
         model: candidateModel,
         contents: normalizedContents,
@@ -333,7 +339,8 @@ export async function streamGeminiWithResilience(options: GeminiStreamOptions): 
         `Connection to model '${candidateModel}' timed out after ${initialTimeoutMs}ms`
       );
 
-      for await (const chunk of responseStream) {
+      // a model that goes silent mid-answer is cut off after the idle limit instead of holding the request open
+      for await (const chunk of withIdleTimeout(responseStream, providerDefaults().streamIdleMs, () => attemptCtl?.abort(), "Gemini")) {
         if (options.abortSignal?.aborted) {
           throw new Error("AbortError");
         }
@@ -363,6 +370,7 @@ export async function streamGeminiWithResilience(options: GeminiStreamOptions): 
 
       return { modelUsed: candidateModel };
     } catch (err: any) {
+      attemptCtl?.abort(); // release the request and its connection whatever went wrong
       lastError = err;
 
       if (options.abortSignal?.aborted || err.message === "AbortError" || err.name === "AbortError") {
@@ -434,7 +442,7 @@ export async function streamGeminiWithResilience(options: GeminiStreamOptions): 
         const errStr = String(err?.message || err).toLowerCase();
         const isRateLimitOrOverload = errStr.includes("429") || errStr.includes("quota") || errStr.includes("overloaded") || errStr.includes("prefill") || errStr.includes("503");
         const delay = isRateLimitOrOverload ? 600 * attempt : 350 * Math.pow(1.4, attempt);
-        await new Promise((r) => setTimeout(r, delay));
+        await abortableSleep(delay, options.abortSignal); // stops at once if the user cancelled while we were waiting
         continue;
       }
 
@@ -487,6 +495,7 @@ export async function generateGeminiWithResilience(
 
   const maxAttempts = 3;
   let lastError: any = null;
+  let attemptCtl: AbortController | undefined;
 
   let ai = new GoogleGenAI({
     apiKey: currentApiKey,
@@ -507,6 +516,9 @@ export async function generateGeminiWithResilience(
       if (systemInstruction) {
         genConfig.systemInstruction = systemInstruction;
       }
+
+      attemptCtl = new AbortController();
+      genConfig.abortSignal = options.abortSignal ? AbortSignal.any([attemptCtl.signal, options.abortSignal]) : attemptCtl.signal;
 
       const callPromise = ai.models.generateContent({
         model: candidateModel,
@@ -532,6 +544,7 @@ export async function generateGeminiWithResilience(
         response,
       };
     } catch (err: any) {
+      attemptCtl?.abort(); // a timed-out call is really cancelled, not left running
       lastError = err;
 
       if (options.abortSignal?.aborted || err.message === "AbortError" || err.name === "AbortError") {
@@ -596,7 +609,7 @@ export async function generateGeminiWithResilience(
         const errStr = String(err?.message || err).toLowerCase();
         const isRateLimitOrOverload = errStr.includes("429") || errStr.includes("quota") || errStr.includes("overloaded") || errStr.includes("prefill") || errStr.includes("503");
         const delay = isRateLimitOrOverload ? 600 * attempt : 350 * Math.pow(1.4, attempt);
-        await new Promise((r) => setTimeout(r, delay));
+        await abortableSleep(delay, options.abortSignal);
         continue;
       }
 

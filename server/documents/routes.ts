@@ -10,7 +10,7 @@ import AdmZip from "adm-zip";
 import multer from "multer";
 import path from "path";
 import type { Express, Request, Response } from "express";
-import { MAX_UPLOAD_SIZE_BYTES, MAX_UPLOAD_SIZE_MB } from "../upload-config.js";
+import { MAX_UPLOAD_SIZE_MB, uploaders, wrapUploadMiddleware } from "../upload-config.js";
 import { UPLOAD_ACCEPT } from "./extract.js";
 import { EXPORT_FORMATS, FORMAT_INFO, exportDocument, isExportFormat, safeFilename, type ExportFormat } from "./export.js";
 import { type Block, type DocModel, markdownToDoc } from "./model.js";
@@ -21,7 +21,7 @@ export interface DocumentRouteDeps {
   extractText: (filename: string, buf: Buffer) => Promise<{ text: string; error?: string }>;
 }
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_UPLOAD_SIZE_BYTES, files: 20 } });
+const upload = uploaders.documents;
 const MAX_MARKDOWN = 4_000_000;
 
 function sendFile(res: Response, f: { buffer: Buffer; mime: string; filename: string }) {
@@ -71,7 +71,7 @@ export function registerDocumentRoutes(app: Express, deps: DocumentRouteDeps): v
     });
   });
 
-  app.post("/api/documents/extract", upload.array("files", 20), async (req, res) => {
+  app.post("/api/documents/extract", wrapUploadMiddleware(upload.array("files", 20), "documents"), async (req, res) => {
     if (!need(req, res)) return;
     const files = (req.files as Express.Multer.File[]) || [];
     if (!files.length) return res.status(400).json({ error: "No files uploaded" });
@@ -109,7 +109,7 @@ export function registerDocumentRoutes(app: Express, deps: DocumentRouteDeps): v
     }
   });
 
-  app.post("/api/documents/convert", upload.single("file"), async (req, res) => {
+  app.post("/api/documents/convert", wrapUploadMiddleware(uploaders.single.single("file"), "single"), async (req, res) => {
     if (!need(req, res)) return;
     const f = req.file;
     const to = String(req.query.to || req.body?.to || "");

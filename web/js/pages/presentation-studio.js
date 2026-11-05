@@ -99,10 +99,10 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
           
           <!-- Mode Tabs (Studio Toggle) -->
           <div style="display: none !important; gap: 4px; background: var(--surface-muted); padding: 4px; border-radius: 8px;">
-            <button class="btn btn--sm" id="tabDocStudio" style="flex: 1; font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px; background: transparent; color: var(--ink-muted); border: none;" onclick="location.hash='#/document-studio'">
+            <button class="btn btn--sm" id="tabDocStudio" style="flex: 1; font-size: 12px; font-weight: 500; padding: 6px 12px; border-radius: 6px; background: transparent; color: var(--ink-muted); border: none;" data-act="goto-hash" data-hash="#/document-studio">
               📄 Document
             </button>
-            <button class="btn btn--sm" id="tabPresStudio" style="flex: 1; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; background: var(--surface); color: #f43f5e; box-shadow: var(--shadow-sm); border: none;">
+            <button class="btn btn--sm" id="tabPresStudio" style="flex: 1; font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 6px; background: var(--surface); color: var(--studio-rose-text, #e11d48); box-shadow: var(--shadow-sm); border: none;">
               📊 Presentation Studio
             </button>
           </div>
@@ -127,7 +127,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
                 <span id="aiEditModeBadge" style="font-size: 9.5px; font-weight: 700; padding: 1px 6px; border-radius: 10px; background: var(--surface); border: 1px solid var(--line); color: var(--ink-muted); text-transform: uppercase;">OFF</span>
               </div>
               <label style="position: relative; display: inline-flex; align-items: center; cursor: pointer; margin: 0;">
-                <input type="checkbox" id="toggleAiEditMode" style="cursor: pointer; width: 15px; height: 15px; accent-color: #f43f5e;" />
+                <input type="checkbox" id="toggleAiEditMode" aria-label="AI Edit Mode" style="cursor: pointer; width: 15px; height: 15px; accent-color: #e11d48;" />
               </label>
             </div>
 
@@ -146,8 +146,8 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
 
               <div id="aiCreationStatusContainer" style="display: none; background: rgba(244,63,94,0.05); border: 1px solid rgba(244,63,94,0.15); border-radius: 8px; padding: 10px; flex-direction: column; gap: 6px;">
                 <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px;">
-                  <strong id="aiStatusTitle" style="color: #f43f5e; display: flex; align-items: center; gap: 6px;">
-                    <span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #f43f5e; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span>
+                  <strong id="aiStatusTitle" style="color: var(--studio-rose-text, #e11d48); display: flex; align-items: center; gap: 6px;">
+                    <span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #e11d48; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span>
                     Synthesizing Presentation...
                   </strong>
                   <span id="aiStepProgress" style="color: var(--ink-muted); font-weight: 500;">Drafting...</span>
@@ -172,8 +172,8 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
               </div>
 
               <div class="studio-chat-input-pill studio-chat-input-pill--pres">
-                <textarea id="aiPresCreatorPrompt" class="studio-chat-textarea" rows="1" placeholder="Ask to write..."></textarea>
-                <button id="btnAiPresGenerate" type="button" style="background: #f43f5e; color: white;" title="Send Request">
+                <textarea id="aiPresCreatorPrompt" class="studio-chat-textarea" rows="1" aria-label="Ask the AI to write or edit the presentation" placeholder="Ask to write..."></textarea>
+                <button id="btnAiPresGenerate" type="button" style="background: #e11d48; color: white;" title="Send Request">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 2 15 22 11 13 2 9 22 2"/><line x1="22" y1="2" x2="11" y2="13"/></svg>
                 </button>
               </div>
@@ -188,7 +188,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
           <!-- Workspace Control Toolbar (Single Level 48px Header) -->
           <header class="workspace-nav">
             <div class="studio-header-title-box">
-              <button class="studio-top-left-nav-btn" id="btnToggleSideNavTop" title="Toggle Slides Overview (Panel)" style="color: #f43f5e; border-color: #f43f5e;" type="button">
+              <button class="studio-top-left-nav-btn" id="btnToggleSideNavTop" title="Toggle Slides Overview (Panel)" style="color: var(--studio-rose-text, #e11d48); border-color: #e11d48;" type="button">
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
               </button>
               <span class="studio-header-title" id="headerTitle">Presentation Studio</span>
@@ -224,24 +224,24 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
 
             <!-- Primary Actions on Right -->
             <div class="studio-header-primary-actions">
-              <button class="btn btn--xs btn--primary studio-mobile-toggle-chat" id="btnMobileTogglePresChat" style="background: #f43f5e;" title="Open AI Chat Drawer">
+              <button class="btn btn--xs btn--primary studio-mobile-toggle-chat" id="btnMobileTogglePresChat" style="background: #e11d48 !important; color: #fff !important;" title="Open AI Chat Drawer">
                 💬 <span class="mobile-btn-text">AI Chat</span>
               </button>
               <!-- Presentation Play Mode -->
-              <button class="btn btn--xs btn--outline" id="btnSlideshowStart" style="display: inline-flex; align-items: center; gap: 4px; border-color: #f43f5e; color: #f43f5e; font-weight: 600; padding: 4px 8px;">
+              <button class="btn btn--xs btn--outline" id="btnSlideshowStart" style="display: inline-flex; align-items: center; gap: 4px; border-color: #e11d48; color: var(--studio-rose-text, #e11d48); font-weight: 600; padding: 4px 8px;">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                 <span>Present</span>
               </button>
               <!-- Unified Single Option: Export & Actions Dropdown (Icon Only) -->
               <div class="studio-actions-dropdown-container">
-                <button class="btn btn--sm btn--primary studio-actions-btn" id="btnStudioActionsMenu" style="background: #f43f5e; color: white;" title="Export & Slide Actions" type="button">
+                <button class="btn btn--sm btn--primary studio-actions-btn" id="btnStudioActionsMenu" style="background: #e11d48; color: white;" title="Export & Slide Actions" type="button">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                   <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
                 </button>
 
                 <div class="studio-actions-menu" id="studioActionsDropdown">
                   <button class="studio-dropdown-item" id="btnPptxExport" type="button">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#f43f5e" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#e11d48" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
                     <div>
                       <div style="font-weight: 600; font-size: 12.5px; color: var(--ink);">Export as PowerPoint (.pptx)</div>
                       <div style="font-size: 10px; color: var(--ink-muted);">Standard PPTX slide deck</div>
@@ -422,7 +422,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
       const border = isUser ? "1px solid rgba(244,63,94,0.15)" : "1px solid var(--line)";
       const align = isUser ? "flex-end" : "flex-start";
       const label = isUser ? "You" : "Darkness AI";
-      const color = isUser ? "#f43f5e" : "var(--ink-muted)";
+      const color = isUser ? "var(--studio-rose-text, #e11d48)" : "var(--ink-muted)";
       
       const renderedText = formatStudioChatMessage(msg.text);
 
@@ -437,7 +437,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
             proposalHtml = `
               <div class="proposed-diff-card" style="margin-top: 10px; border: 1px solid rgba(244,63,94,0.35); background: var(--surface); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 11px; font-weight: 700; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.05em;">
+                  <span style="font-size: 11px; font-weight: 700; color: var(--studio-rose-text, #e11d48); text-transform: uppercase; letter-spacing: 0.05em;">
                     🖼️ Proposed Image Replacement: Slide ${prop.slideIndex + 1}
                   </span>
                   <span style="font-size: 10px; background: rgba(234, 179, 8, 0.15); color: #ca8a04; padding: 1px 6px; border-radius: 4px; font-weight: 600;">Pending Review</span>
@@ -447,7 +447,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px;">
                   <button class="btn btn--xs btn--outline btn-discard-pres-edit" data-msg-idx="${index}" style="font-size: 11px; padding: 3px 10px; cursor: pointer;">✕ Discard</button>
-                  <button class="btn btn--xs btn--primary btn-apply-pres-edit" data-msg-idx="${index}" style="font-size: 11px; padding: 3px 12px; background: #f43f5e; border-color: #f43f5e; cursor: pointer; color: white; font-weight: 600;">✓ Apply Image</button>
+                  <button class="btn btn--xs btn--primary btn-apply-pres-edit" data-msg-idx="${index}" style="font-size: 11px; padding: 3px 12px; background: #e11d48; border-color: #e11d48; cursor: pointer; color: white; font-weight: 600;">✓ Apply Image</button>
                 </div>
               </div>
             `;
@@ -455,7 +455,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
             proposalHtml = `
               <div class="proposed-diff-card" style="margin-top: 10px; border: 1px solid rgba(244,63,94,0.35); background: var(--surface); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 11px; font-weight: 700; color: #f43f5e; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 4px;">
+                  <span style="font-size: 11px; font-weight: 700; color: var(--studio-rose-text, #e11d48); text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 4px;">
                     ✨ Proposed Edit: <span style="color: var(--ink-soft); text-transform: capitalize;">Slide ${prop.slideIndex + 1} ${prop.field || "Element"}</span>
                   </span>
                   <span style="font-size: 10px; background: rgba(234, 179, 8, 0.15); color: #ca8a04; padding: 1px 6px; border-radius: 4px; font-weight: 600;">Pending Review</span>
@@ -470,7 +470,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
                 </div>
                 <div style="display: flex; justify-content: flex-end; gap: 6px; margin-top: 4px;">
                   <button class="btn btn--xs btn--outline btn-discard-pres-edit" data-msg-idx="${index}" style="font-size: 11px; padding: 3px 10px; cursor: pointer;">✕ Discard</button>
-                  <button class="btn btn--xs btn--primary btn-apply-pres-edit" data-msg-idx="${index}" style="font-size: 11px; padding: 3px 12px; background: #f43f5e; border-color: #f43f5e; cursor: pointer; color: white; font-weight: 600;">✓ Apply Edit</button>
+                  <button class="btn btn--xs btn--primary btn-apply-pres-edit" data-msg-idx="${index}" style="font-size: 11px; padding: 3px 12px; background: #e11d48; border-color: #e11d48; cursor: pointer; color: white; font-weight: 600;">✓ Apply Edit</button>
                 </div>
               </div>
             `;
@@ -538,23 +538,23 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
     }
 
     if (status === "chatting" || status === "thinking") {
-      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #f43f5e; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Thinking...`;
+      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #e11d48; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Thinking...`;
       progressEl.textContent = "Responding...";
       subtextEl.textContent = subtext || "Darkness AI is drafting a response...";
     } else if (status === "planning") {
-      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #f43f5e; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Thinking/Planning`;
+      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #e11d48; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Thinking/Planning`;
       progressEl.textContent = "Planning...";
       subtextEl.textContent = subtext || "Analyzing presentation outline and organizing next steps.";
     } else if (status === "generating") {
-      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #f43f5e; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Generating Slides`;
+      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #e11d48; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Generating Slides`;
       progressEl.textContent = "Writing...";
       subtextEl.textContent = subtext || "Synthesizing individual slides, notes, and visual layouts.";
     } else if (status === "updating") {
-      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #f43f5e; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Updating Slides`;
+      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #e11d48; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Updating Slides`;
       progressEl.textContent = "Modifying...";
       subtextEl.textContent = subtext || "Applying changes and modifications onto active presentation slides.";
     } else if (status === "exporting") {
-      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #f43f5e; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Exporting File`;
+      titleEl.innerHTML = `<span class="spinner-small" style="width: 12px; height: 12px; border: 2px solid #e11d48; border-top-color: transparent; border-radius: 50%; display: inline-block; animation: spin 0.8s linear infinite;"></span> Exporting File`;
       progressEl.textContent = "Compiling...";
       subtextEl.textContent = subtext || "Packing PowerPoint PPTX format.";
     }
@@ -783,8 +783,8 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
           if (sideBackdrop) sideBackdrop.classList.add("active");
           if (topNavBtn) {
             topNavBtn.style.background = "var(--surface-muted)";
-            topNavBtn.style.borderColor = "#f43f5e";
-            topNavBtn.style.color = "#f43f5e";
+            topNavBtn.style.borderColor = "#e11d48";
+            topNavBtn.style.color = "var(--studio-rose-text, #e11d48)";
           }
         } else {
           sideNav.classList.remove("mobile-open");
@@ -802,8 +802,8 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
           if (floatingBtn) floatingBtn.style.display = "none";
           if (topNavBtn) {
             topNavBtn.style.background = "var(--surface-muted)";
-            topNavBtn.style.borderColor = "#f43f5e";
-            topNavBtn.style.color = "#f43f5e";
+            topNavBtn.style.borderColor = "#e11d48";
+            topNavBtn.style.color = "var(--studio-rose-text, #e11d48)";
           }
         } else {
           sideNav.classList.add("collapsed");
@@ -1220,7 +1220,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
         box.innerHTML = `
           <div style="background: rgba(244, 63, 94, 0.08); border: 1px solid rgba(244, 63, 94, 0.35); border-radius: 6px; padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; font-size: 11.5px;">
             <div style="display: flex; align-items: center; justify-content: space-between;">
-              <span style="font-weight: 700; color: #f43f5e; display: flex; align-items: center; gap: 4px;">
+              <span style="font-weight: 700; color: var(--studio-rose-text, #e11d48); display: flex; align-items: center; gap: 4px;">
                 🎯 Target: <span style="text-transform: capitalize; background: rgba(244, 63, 94, 0.15); padding: 1px 6px; border-radius: 4px;">Slide ${activePresentationSelection.slideIndex + 1} ${activePresentationSelection.field}</span>
               </span>
               <button id="btnClearPresSelection" class="btn btn--xs btn--ghost" style="padding: 1px 5px; font-size: 10.5px; color: var(--ink-muted); cursor: pointer;" title="Clear Selection">✕ Clear</button>
@@ -1253,9 +1253,9 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
         isAiEditMode = e.target.checked;
         if (aiEditModeBadge) {
           aiEditModeBadge.textContent = isAiEditMode ? "ON" : "OFF";
-          aiEditModeBadge.style.background = isAiEditMode ? "#f43f5e" : "var(--surface)";
+          aiEditModeBadge.style.background = isAiEditMode ? "#e11d48" : "var(--surface)";
           aiEditModeBadge.style.color = isAiEditMode ? "#ffffff" : "var(--ink-muted)";
-          aiEditModeBadge.style.borderColor = isAiEditMode ? "#f43f5e" : "var(--line)";
+          aiEditModeBadge.style.borderColor = isAiEditMode ? "#e11d48" : "var(--line)";
         }
         updatePresentationSelectionUi();
         if (window.Darkness.toast) {
@@ -1561,7 +1561,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
           <button class="btn btn--xs btn--ghost" id="showPrevBtn" style="color:#fff;">← Prev</button>
           <span>Use Arrow Keys / Space</span>
           <button class="btn btn--xs btn--ghost" id="showNextBtn" style="color:#fff;">Next →</button>
-          <button class="btn btn--xs btn--outline" id="showExitBtn" style="color:#f43f5e; border-color:#f43f5e;">Exit (Esc)</button>
+          <button class="btn btn--xs btn--outline" id="showExitBtn" style="color:#e11d48; border-color:#e11d48;">Exit (Esc)</button>
         </div>
       `;
 
@@ -1876,7 +1876,7 @@ window.Darkness.pages["presentation-studio"] = async function renderPresentation
         ">
           <div style="font-weight: 700; border-bottom: 1px solid rgba(0,0,0,0.1); padding-bottom: 4px; margin-bottom: 6px; font-size: 9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;">
             <span style="overflow: hidden; text-overflow: ellipsis; max-width: 120px;">${window.Darkness.utils.escapeHtml(slide.title || ("Slide " + (idx + 1)))}</span>
-            <span style="background: ${isActive ? "#f43f5e" : "rgba(244,63,94,0.1)"}; color: ${isActive ? "#ffffff" : "#f43f5e"}; padding: 1px 5px; border-radius: 3px; font-size: 8px; font-weight: 700;">Slide ${idx + 1}</span>
+            <span style="background: ${isActive ? "#e11d48" : "rgba(244,63,94,0.1)"}; color: ${isActive ? "#ffffff" : "#e11d48"}; padding: 1px 5px; border-radius: 3px; font-size: 8px; font-weight: 700;">Slide ${idx + 1}</span>
           </div>
           <div style="flex: 1; overflow: hidden; opacity: 0.85; white-space: normal; text-align: left; font-size: 8.5px; line-height: 1.4; word-break: break-word;">
             ${window.Darkness.utils.escapeHtml(cleanContent.substring(0, 220))}
