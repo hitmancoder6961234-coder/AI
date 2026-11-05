@@ -163,8 +163,14 @@ import { ensureUploadDirs, startUploadSweeper, UPLOAD_TMP_ROOT } from "./upload-
 import "./upload-validation.js";
 import { createArtifactAccess } from "./artifact-access.js";
 import { registerDocumentExportRoutes } from "./document-export-routes.js";
+import { registerConversationLibraryRoutes } from "./conversation-routes.js";
+import { conversationMetaMap } from "./conversation-library.js";
+import { registerCompareRoutes } from "./compare-routes.js";
+import { registerInsightsRoutes } from "./insights-routes.js";
+import { ensureInsightsTables, recordAgentRun } from "./insights.js";
 import { countModelKeys, keyAad, migrateModelKeys, revealSecret } from "./security/secret-store.js";
 import { vaultEnabled } from "./security/vault.js";
+import { createModelCaller } from "./model-compare.js";
 import { jsonErrorHandler, rebindRequestContext, requestContext } from "./observability/request-context.js";
 import { installConsoleRequestId, logger } from "./observability/logger.js";
 import { evaluateReadiness, isDraining, livenessHandler, markDraining, readinessHandler, type HealthCheck } from "./observability/health.js";
@@ -2511,6 +2517,35 @@ async function startServer() {
   // -------------------------------------------------------------------------
   // Conversations API
   // -------------------------------------------------------------------------
+  // Search, tags / folders / pinning and branching. Registered first: "/api/conversations/search" must not be read as a conversation id.
+  registerConversationLibraryRoutes(app, {
+    db: sqliteDb,
+    getUserKey: async (req) => {
+      const u = await resolveUserAsync(req);
+      return u ? toValidUuid(u.id) || null : null;
+    },
+  });
+
+  // Agent workflow stats, per-model usage and system status for the signed-in user (read-only, scoped to them).
+  ensureInsightsTables(sqliteDb);
+  registerInsightsRoutes(app, {
+    db: sqliteDb,
+    getUserKey: async (req) => {
+      const u = await resolveUserAsync(req);
+      return u ? toValidUuid(u.id) || null : null;
+    },
+    readiness: () => evaluateReadiness(healthChecks, isDraining()),
+    vaultEnabled,
+    startedAt: startedAtMs,
+  });
+
+  // Same prompt on 2-3 of the user's configured models, side by side (nothing is saved to a conversation).
+  registerCompareRoutes(app, {
+    getUserId: async (req) => (await resolveUserAsync(req))?.id ?? null,
+    getModel: (uid, mid) => getUserModel(uid, mid),
+    call: createModelCaller({ resolveBaseUrl: getEffectiveBaseUrl }),
+  });
+
   app.get("/api/conversations", async (req, res) => {
     const user = await resolveUserAsync(req);
     if (!user) {
@@ -2558,9 +2593,11 @@ async function startServer() {
     // Compute message counts per conversation
     const msgCounts = getConversationMessageCounts();
 
+    // tags / folder / pinned come from the database in one query (see conversation-library.ts); pinned conversations lead the list
+    const libraryMeta = conversationMetaMap(sqliteDb, toValidUuid(user.id) || user.id);
     const list = Array.from(conversations.values())
       .filter((c) => isUserOwner(c.user_id, user.id))
-      .sort((a, b) => b.updated_at - a.updated_at)
+      .sort((a, b) => Number(libraryMeta.get(b.id)?.pinned || 0) - Number(libraryMeta.get(a.id)?.pinned || 0) || b.updated_at - a.updated_at)
       .map(c => {
         // Build correct content snippet directly from local SQLite
         const dbMsgs = dbListMessages(c.id);
@@ -2569,6 +2606,9 @@ async function startServer() {
           .join(" ");
         return {
           ...c,
+          tags: libraryMeta.get(c.id)?.tags || [],
+          folder: libraryMeta.get(c.id)?.folder || null,
+          pinned: libraryMeta.get(c.id)?.pinned || false,
           message_count: msgCounts.get(c.id) || dbMsgs.filter(m => m.role === 'user' || m.role === 'assistant').length || 0,
           content_snippet: convMsgs.slice(0, 5000),
         };

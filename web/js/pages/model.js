@@ -17,196 +17,476 @@ const MODEL_PROVIDERS = (window.Darkness && window.Darkness.providers && window.
 
 function escapeAttr(s) { return String(s ?? "").replace(/"/g, "&quot;"); }
 
-window.Darkness.pages.model = async function renderModelPage(path) {
-  console.log("[MODEL PAGE] Mount: renderModelPage invoked for path:", path);
+// -------------------------------------------------------------------------------------------------------------------
+// Models page (management view).
+//
+// The list, filters and quick actions work in place: choosing a model, enabling/disabling, testing and deleting update
+// the page immediately (and roll back with a message if the server says no), so nothing re-navigates or flashes. The
+// add / edit dialogs further down are unchanged. Data comes from /api/models, plus /api/usage for "replies in 30 days".
+// -------------------------------------------------------------------------------------------------------------------
+
+let V = null; // the live page, so the dialogs below can ask it to refresh
+
+function modelsFetcher() {
+  const api = window.Darkness.api;
+  return Promise.all([api.get("/api/models"), api.get("/api/usage", { days: 30 }).catch(() => null)]).then((r) => {
+    const raw = r[0];
+    return { models: Array.isArray(raw) ? raw : (raw && raw.models) || [], active: (raw && raw.active) || "", usage: r[1] };
+  });
+}
+window.Darkness.pages.modelData = modelsFetcher;
+
+function hueOf(s) {
+  let h = 0;
+  const str = String(s || "");
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360;
+  return h;
+}
+
+function providerLabel(m) {
+  const p = getProviderConfig(m.provider);
+  return (p && p.label) || m.provider || "Custom";
+}
+
+function ctxLabel(n) {
+  n = Number(n);
+  if (!n) return "Unknown";
+  if (n >= 1000000) return (n % 1000000 === 0 ? n / 1000000 : (n / 1000000).toFixed(1)) + "M tokens";
+  if (n >= 1000) return Math.round(n / 1000) + "k tokens";
+  return n + " tokens";
+}
+
+/** One place that decides what a model's status looks like, from the server status or a test run on this page. */
+function stateOf(m, st) {
+  if (m.enabled === false) return { key: "disabled", label: "Disabled", cls: "muted" };
+  const t = st.tests[m.id];
+  if (t) return t.ok ? { key: "ready", label: "Ready", cls: "ok" } : { key: "attention", label: "Test failed", cls: "bad" };
+  switch (m.status) {
+    // New models are stored as "available" by default, which proves nothing; only trust it once a test has really run.
+    case "available": return m.lastTestedAt ? { key: "ready", label: "Ready", cls: "ok" } : { key: "untested", label: "Not tested", cls: "muted" };
+    case "rate_limit": return { key: "attention", label: "Rate limited", cls: "warn" };
+    case "auth_error": return { key: "attention", label: "Key rejected", cls: "bad" };
+    case "unavailable": return { key: "attention", label: "Unreachable", cls: "bad" };
+    case "config_error": return { key: "attention", label: "Config error", cls: "bad" };
+    default: return { key: "untested", label: "Not tested", cls: "muted" };
+  }
+}
+
+function repliesOf(m, st) {
+  return st.replies.byId[m.id] ?? st.replies.byId[m.modelName] ?? st.replies.byName[String(m.name || "").toLowerCase()] ?? 0;
+}
+
+function buildReplies(usage) {
+  const byId = {};
+  const byName = {};
+  ((usage && usage.models) || []).forEach((u) => {
+    byId[u.id] = u.count;
+    if (u.name) byName[String(u.name).toLowerCase()] = u.count;
+  });
+  return { byId, byName, known: !!usage };
+}
+
+function sortedModels(st) {
+  return st.data.models.slice().sort((a, b) => {
+    if (a.id === st.data.active) return -1;
+    if (b.id === st.data.active) return 1;
+    if ((a.enabled === false) !== (b.enabled === false)) return a.enabled === false ? 1 : -1;
+    return String(a.name || "").localeCompare(String(b.name || ""));
+  });
+}
+
+function capChips(m) {
+  const c = m.capabilities || {};
+  const items = [["text", "Text"], ["vision", "Vision"], ["codeGeneration", "Code"], ["imageGeneration", "Image"], ["fileAnalysis", "Files"], ["streaming", "Streaming"]];
+  const on = items.filter((i) => c[i[0]]);
+  return on.length ? on.map((i) => '<span class="mg-cap">' + i[1] + "</span>").join("") : '<span class="mg-cap mg-cap--none">No capabilities set</span>';
+}
+
+function testedLabel(m, st) {
+  const t = st.tests[m.id];
+  const M = window.Darkness.mg;
+  if (t) return t.ok ? "Passed · " + (t.ms < 1000 ? t.ms + " ms" : (t.ms / 1000).toFixed(1) + " s") : "Failed just now";
+  return m.lastTestedAt ? M.ago(m.lastTestedAt) : "Never";
+}
+
+function shortError(msg) {
+  const s = String(msg || "").replace(/\s+/g, " ").trim();
+  return s.length > 150 ? s.slice(0, 147) + "…" : s;
+}
+
+function modelCard(m, st, i) {
+  const M = window.Darkness.mg;
+  const e = M.esc;
+  const s = stateOf(m, st);
+  const active = m.id === st.data.active;
+  const enabled = m.enabled !== false;
+  const n = repliesOf(m, st);
+  const pct = st.maxReplies ? Math.max(n ? 4 : 0, Math.round((n / st.maxReplies) * 100)) : 0;
+  const prov = providerLabel(m);
+  const t = st.tests[m.id];
+  const err = t && !t.ok ? t.msg : s.key === "attention" && m.lastError ? m.lastError : "";
+  const name = e(m.name || m.id);
+  return (
+    '<article class="mg-card mg-model' + (active ? " is-active" : "") + (enabled ? "" : " is-off") + '" style="--i:' + Math.min(i, 10) + ";--h:" + hueOf(m.provider) + '" data-id="' + e(m.id) + '">' +
+    '<header class="mg-model__top">' +
+      '<span class="mg-model__av" aria-hidden="true">' + e(String(prov).charAt(0).toUpperCase()) + "</span>" +
+      '<div class="mg-model__id"><h3 title="' + name + '">' + name + "</h3><p>" + e(prov) + " · <code>" + e(m.modelName || m.id) + "</code></p></div>" +
+      '<span class="mg-chip mg-chip--' + s.cls + '"><i></i>' + e(s.label) + "</span>" +
+    "</header>" +
+    '<div class="mg-model__caps">' + capChips(m) + "</div>" +
+    '<dl class="mg-model__facts">' +
+      "<div><dt>Context</dt><dd>" + e(ctxLabel(m.contextWindow)) + "</dd></div>" +
+      "<div><dt>Replies · 30 days</dt><dd>" + (st.replies.known ? M.num(n) : "-") + "</dd></div>" +
+      "<div><dt>Last test</dt><dd>" + e(testedLabel(m, st)) + "</dd></div>" +
+    "</dl>" +
+    (st.replies.known ? '<div class="mg-model__bar" role="img" aria-label="' + name + " share of replies" + '"><i style="width:' + pct + '%"></i></div>' : "") +
+    (err ? '<p class="mg-model__err" role="status">' + M.icon("alert", 14) + "<span>" + e(shortError(err)) + "</span></p>" : "") +
+    '<footer class="mg-model__foot">' +
+      '<button class="btn btn--' + (active ? "primary" : "outline") + ' btn--sm" type="button" data-act="use"' + (enabled ? "" : " disabled") + (active ? ' aria-pressed="true"' : ' aria-pressed="false"') + ">" + (active ? "Active" : "Use this model") + "</button>" +
+      '<button class="btn btn--ghost btn--sm" type="button" data-act="test"' + (enabled ? "" : " disabled") + ">Test</button>" +
+      '<button class="mg-switch" type="button" role="switch" data-act="toggle" aria-checked="' + enabled + '" aria-label="' + (enabled ? "Disable " : "Enable ") + name + '" title="' + (enabled ? "Enabled" : "Disabled") + '"><i></i></button>' +
+      '<span class="mg-model__sp"></span>' +
+      '<button class="mg-iconbtn" type="button" data-act="edit" aria-label="Edit ' + name + '" title="Edit">' + M.icon("edit", 16) + "</button>" +
+      '<button class="mg-iconbtn mg-iconbtn--danger" type="button" data-act="del" aria-label="Delete ' + name + '" title="Delete">' + M.icon("trash", 16) + "</button>" +
+    "</footer>" +
+    "</article>"
+  );
+}
+
+function modelStats(st) {
+  const M = window.Darkness.mg;
+  const list = st.data.models;
+  const count = (key) => list.filter((m) => stateOf(m, st).key === key).length;
+  const ready = count("ready");
+  const attention = count("attention");
+  const enabled = list.filter((m) => m.enabled !== false).length;
+  const replies = list.reduce((a, m) => a + repliesOf(m, st), 0);
+  const tile = (i, ico, label, value, foot) =>
+    '<div class="mg-card mg-stat" style="--i:' + i + '"><span class="mg-stat__ico">' + M.icon(ico, 18) + '</span><span class="mg-stat__label">' + label + '</span><span class="mg-stat__value" data-count="' + value + '">' + M.num(value) + '</span><span class="mg-stat__foot"><span class="mg-muted">' + foot + "</span></span></div>";
+  return (
+    tile(0, "cpu", "Models", list.length, enabled + " enabled") +
+    tile(1, "check", "Ready", ready, ready ? "passed a check" : "run a test to confirm") +
+    tile(2, "alert", "Need attention", attention, attention ? "check key or endpoint" : "nothing failing") +
+    tile(3, "chat", "Replies · 30 days", replies, st.replies.known ? "across all models" : "usage unavailable")
+  );
+}
+
+function modelHero(st) {
+  const M = window.Darkness.mg;
+  const e = M.esc;
+  const list = st.data.models;
+  if (!list.length) return "";
+  const m = list.find((x) => x.id === st.data.active);
+  if (!m) {
+    return '<article class="mg-card mg-hero mg-hero--none" style="--i:4">' + M.icon("sparkles", 20) + '<div><strong>No model is selected</strong><p>Pick one below with "Use this model" and chats will be answered by it.</p></div></article>';
+  }
+  const s = stateOf(m, st);
+  const n = repliesOf(m, st);
+  return (
+    '<article class="mg-card mg-hero" style="--i:4;--h:' + hueOf(m.provider) + '" data-id="' + e(m.id) + '">' +
+    '<span class="mg-model__av mg-model__av--lg" aria-hidden="true">' + e(String(providerLabel(m)).charAt(0).toUpperCase()) + "</span>" +
+    '<div class="mg-hero__main"><span class="mg-hero__kicker">Answering your chats now</span><h2>' + e(m.name || m.id) + "</h2>" +
+    "<p>" + e(providerLabel(m)) + " · <code>" + e(m.modelName || m.id) + "</code> · " + e(ctxLabel(m.contextWindow)) + (st.replies.known ? " · " + M.num(n) + " repl" + (n === 1 ? "y" : "ies") + " in 30 days" : "") + "</p></div>" +
+    '<span class="mg-chip mg-chip--' + s.cls + '"><i></i>' + e(s.label) + "</span>" +
+    '<div class="mg-hero__acts"><button class="btn btn--outline btn--sm" type="button" data-act="test">Test</button><button class="btn btn--ghost btn--sm" type="button" data-act="edit">Edit</button></div>' +
+    "</article>"
+  );
+}
+
+function filteredModels(st) {
+  const q = st.q.trim().toLowerCase();
+  return sortedModels(st).filter((m) => {
+    if (st.status !== "all" && stateOf(m, st).key !== st.status) return false;
+    if (st.provider !== "all" && (m.provider || "custom") !== st.provider) return false;
+    if (!q) return true;
+    return [m.name, m.id, m.modelName, m.provider, providerLabel(m)].some((v) => String(v || "").toLowerCase().includes(q));
+  });
+}
+
+function drawGrid(st) {
+  const M = window.Darkness.mg;
+  const grid = st.root.querySelector("#mgmGrid");
+  if (!grid) return;
+  if (!st.data.models.length) {
+    grid.innerHTML = '<div class="mg-card mg-empty mg-empty--wide">' + M.icon("cpu", 30) + "<strong>No models connected yet</strong><p>Add a provider and the models you want to chat with. One API key can power several models.</p>" +
+      '<button class="btn btn--primary" type="button" data-act="add">' + M.icon("plus", 15) + " <span>Add models</span></button></div>";
+    return;
+  }
+  const rows = filteredModels(st);
+  if (!rows.length) {
+    grid.innerHTML = '<div class="mg-card mg-empty mg-empty--wide">' + M.icon("search", 30) + "<strong>No models match</strong><p>Try a different search or filter.</p>" +
+      '<button class="btn btn--outline btn--sm" type="button" data-act="clear">Clear filters</button></div>';
+    return;
+  }
+  const htmls = rows.map((m, i) => modelCard(m, st, i));
+  const cards = Array.from(grid.children);
+  const sameShape = cards.length === rows.length && cards.every((c, i) => c.classList.contains("mg-model") && c.getAttribute("data-id") === rows[i].id);
+
+  // Remember keyboard focus so a redraw never drops it.
+  const ae = document.activeElement;
+  const fc = ae && grid.contains(ae) ? ae.closest("[data-id]") : null;
+  const refocus = fc && ae.getAttribute("data-act") ? [fc.getAttribute("data-id"), ae.getAttribute("data-act")] : null;
+
+  if (sameShape) {
+    // Same cards in the same order: swap only the ones whose content changed, so untouched cards keep hover, focus and clicks.
+    cards.forEach((c, i) => {
+      if (c.__h === htmls[i]) return;
+      const tpl = document.createElement("template");
+      tpl.innerHTML = htmls[i];
+      const n = tpl.content.firstElementChild;
+      n.__h = htmls[i];
+      c.replaceWith(n);
+    });
+  } else {
+    grid.innerHTML = htmls.join("");
+    Array.from(grid.children).forEach((c, i) => { c.__h = htmls[i]; });
+  }
+
+  if (refocus) {
+    const sel = '[data-id="' + (window.CSS && CSS.escape ? CSS.escape(refocus[0]) : refocus[0]) + '"] [data-act="' + refocus[1] + '"]';
+    const t = grid.querySelector(sel);
+    if (t && !t.disabled && document.activeElement !== t) t.focus({ preventScroll: true });
+  }
+}
+
+function drawToolbar(st) {
+  const counts = { all: st.data.models.length, ready: 0, attention: 0, disabled: 0 };
+  st.data.models.forEach((m) => { const k = stateOf(m, st).key; if (counts[k] != null) counts[k]++; });
+  st.root.querySelectorAll("[data-status]").forEach((b) => {
+    const k = b.getAttribute("data-status");
+    const on = k === st.status;
+    b.classList.toggle("is-active", on);
+    b.setAttribute("aria-checked", String(on));
+    const c = b.querySelector("b");
+    if (c) c.textContent = counts[k];
+  });
+  const sel = st.root.querySelector("#mgmProv");
+  if (sel) {
+    const provs = Array.from(new Set(st.data.models.map((m) => m.provider || "custom"))).sort();
+    if (st.provider !== "all" && provs.indexOf(st.provider) < 0) st.provider = "all";
+    const sig = provs.join("|");
+    if (sel.dataset.sig !== sig) {
+      sel.dataset.sig = sig;
+      sel.innerHTML = '<option value="all">All providers</option>' + provs.map((p) => '<option value="' + escapeAttr(p) + '">' + window.Darkness.mg.esc(providerLabel({ provider: p })) + "</option>").join("");
+    }
+    sel.value = st.provider;
+    sel.hidden = provs.length < 2;
+  }
+}
+
+/** Redraw the pieces that depend on the data. The toolbar (and the search box inside it) is never replaced. */
+function drawAll(st) {
+  st.maxReplies = st.data.models.reduce((a, m) => Math.max(a, repliesOf(m, st)), 0);
+  const stats = st.root.querySelector("#mgmStats");
+  const hero = st.root.querySelector("#mgmHero");
+  const M = window.Darkness.mg;
+  // Only touch the DOM when the markup actually changed (keeps hover/focus and any click in progress).
+  if (stats) {
+    const h = modelStats(st);
+    if (stats.__h !== h) { stats.__h = h; stats.innerHTML = h; if (!st.drawn) M.runCounts(stats); }
+  }
+  if (hero) {
+    const h = modelHero(st);
+    if (hero.__h !== h) { hero.__h = h; hero.innerHTML = h; }
+  }
+  drawToolbar(st);
+  drawGrid(st);
+}
+
+function syncSelector(st) {
+  const sel = window.Darkness.modelSelector;
+  if (!sel) return;
+  sel._models = st.data.models;
+  if (st.data.active) sel._active = st.data.active;
+}
+
+function modelsShell(loading) {
+  const M = window.Darkness.mg;
+  return (
+    '<header class="mg-head"><div><h1 class="mg-title">Models</h1><p class="mg-sub">Connect providers, choose which model answers, and check that each one works.</p></div>' +
+    '<div class="mg-actions"><button class="btn btn--outline btn--sm" id="mgmRefresh" type="button" data-act="refresh">' + M.icon("refresh", 15) + " <span>Refresh</span></button>" +
+    '<button class="btn btn--primary btn--sm" type="button" data-act="add">' + M.icon("plus", 15) + " <span>Add models</span></button></div></header>" +
+    '<section class="mg-stats" id="mgmStats">' + (loading ? M.skeleton("stats").replace('<div class="mg-stats">', "").replace(/<\/div>$/, "") : "") + "</section>" +
+    '<div id="mgmHero"></div>' +
+    '<div class="mg-toolbar" role="search">' +
+      '<label class="mg-search">' + M.icon("search", 16) + '<input id="mgmQ" type="search" placeholder="Search models, providers or IDs" aria-label="Search models" autocomplete="off" spellcheck="false"></label>' +
+      '<div class="mg-seg" role="radiogroup" aria-label="Filter by status">' +
+        [["all", "All"], ["ready", "Ready"], ["attention", "Attention"], ["disabled", "Disabled"]].map((p) => '<button type="button" role="radio" class="mg-seg__opt" data-status="' + p[0] + '" aria-checked="false">' + p[1] + " <b>0</b></button>").join("") +
+      "</div>" +
+      '<select class="mg-select" id="mgmProv" aria-label="Filter by provider" hidden></select>' +
+    "</div>" +
+    '<section class="mg-models" id="mgmGrid" aria-live="polite">' + (loading ? M.skeleton("card") + M.skeleton("card") + M.skeleton("card") : "") + "</section>"
+  );
+}
+
+window.Darkness.pages.model = function renderModelPage() {
+  const D = window.Darkness;
+  const M = D.mg;
   const main = document.getElementById("main");
   if (!main) return;
 
-  let models = [];
-  let activeId = null;
-  let loadError = null;
-  try {
-    console.log("[MODEL PAGE] Fetching GET /api/models...");
-    const data = await window.Darkness.api.get("/api/models");
-    console.log("[MODEL PAGE] GET /api/models returned:", data);
-    models = Array.isArray(data) ? data : (data.models || []);
-    activeId = data.active || (window.Darkness.modelSelector && window.Darkness.modelSelector._active);
-    
-    // Sync modelSelector internal cache if present
-    if (window.Darkness.modelSelector) {
-      window.Darkness.modelSelector._models = models;
-      if (activeId) window.Darkness.modelSelector._active = activeId;
-    }
-  } catch (err) {
-    console.error("[MODEL PAGE] Failed to load models from /api/models:", err);
-    loadError = err.message || "Failed to load models";
+  main.innerHTML = '<div class="page mg-page"><div class="page__inner" id="mgModels">' + modelsShell(true) + "</div></div>";
+  const root = document.getElementById("mgModels");
+  const st = { root, data: null, replies: { byId: {}, byName: {}, known: false }, maxReplies: 0, q: "", status: "all", provider: "all", tests: {}, drawn: false };
+  V = st;
+
+  function paint(data, s) {
+    st.data = data;
+    st.replies = buildReplies(data.usage);
+    syncSelector(st);
+    root.classList.toggle("is-repaint", st.drawn);
+    drawAll(st);
+    st.drawn = true;
   }
 
-  const sortedModels = models.slice().sort((a, b) => {
-    if (a.id === activeId) return -1;
-    if (b.id === activeId) return 1;
-    return (a.name || "").localeCompare(b.name || "");
+  function fail(err) {
+    root.innerHTML = M.errorPanel(err && err.message, "mgmRetry");
+    const b = document.getElementById("mgmRetry");
+    if (b) b.addEventListener("click", () => { M.forget("models"); D.pages.model(); });
+  }
+
+  M.swr(root, "models", modelsFetcher, paint, fail, { freshFor: 0 });
+
+  root.addEventListener("click", (ev) => onModelsClick(st, ev));
+  root.addEventListener("input", (ev) => {
+    if (ev.target && ev.target.id === "mgmQ") { st.q = ev.target.value; drawGrid(st); }
   });
-  window.Darkness.pages._modelCache = sortedModels;
-
-  main.innerHTML = [
-    '<div class="page"><div class="page__inner">',
-    '<header class="page__header">',
-    '<div><h1 class="page__title">Model Management</h1>',
-    '<p class="page__subtitle">Configure AI models. Each model is a real, complete provider configuration used by the backend for every request.</p></div>',
-    '<div class="hstack" style="gap:8px;">',
-    '<button class="btn btn--ghost btn--sm" id="refreshModelsBtn" type="button" title="Refresh models" aria-label="Refresh models">',
-    '<svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>',
-    ' Refresh</button>',
-    '<button class="btn btn--primary" id="addModelBtn" type="button">',
-    '<svg class="icon" viewBox="0 0 24 24" style="width:14px;height:14px;"><path d="M12 5v14M5 12h14"/></svg>',
-    ' Add Models</button>',
-    '</div></header>',
-    loadError ? '<div class="alert alert--danger">' + window.Darkness.utils.escapeHtml(loadError) + '</div>' : '',
-    '<section class="model-grid">',
-    sortedModels.length === 0 ? '<div class="empty-state">No models configured. Click "Add Models" to add your first one.</div>' : '',
-    sortedModels.map(modelCardHtml).join(""),
-    '</section>',
-    '</div></div>'
-  ].join("");
-
-  bindModelPageEvents();
+  root.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && ev.target && ev.target.id === "mgmQ" && st.q) { ev.target.value = ""; st.q = ""; drawGrid(st); }
+  });
+  root.addEventListener("change", (ev) => {
+    if (ev.target && ev.target.id === "mgmProv") { st.provider = ev.target.value; drawToolbar(st); drawGrid(st); }
+  });
 };
 
-function statusBadge(model) {
-  const enabled = model.enabled !== false;
-  if (!enabled) return '<span class="tag tag--muted">Disabled</span>';
-  const s = model.status || "untested";
-  if (s === "available") return '<span class="tag tag--ok">Available</span>';
-  if (s === "unavailable") return '<span class="tag tag--danger">Unavailable</span>';
-  if (s === "auth_error") return '<span class="tag tag--danger">Auth Error</span>';
-  if (s === "rate_limit") return '<span class="tag tag--warn">Rate Limited</span>';
-  if (s === "config_error") return '<span class="tag tag--danger">Config Error</span>';
-  return '<span class="tag tag--muted">Untested</span>';
+/** Pull fresh data into the open page (used after the add/edit dialogs and when Refresh is pressed). */
+window.Darkness.pages.modelRefresh = function modelRefresh() {
+  const st = V;
+  const M = window.Darkness.mg;
+  if (!st || !st.root.isConnected) return Promise.resolve();
+  M.forget("models");
+  return M.load("models", modelsFetcher).then(
+    (data) => {
+      if (!st.root.isConnected) return;
+      st.data = data;
+      st.replies = buildReplies(data.usage);
+      syncSelector(st);
+      st.root.classList.add("is-repaint");
+      drawAll(st);
+    },
+    () => window.Darkness.toast.show("Couldn't refresh the list", "danger")
+  );
+};
+
+function modelById(st, id) {
+  return st.data.models.find((m) => m.id === id) || null;
 }
 
-function modelCardHtml(model) {
-  const isActive = model.is_active || model.id === (window.Darkness.modelSelector && window.Darkness.modelSelector._active);
-  const caps = model.capabilities || {};
-  const capTags = [];
-  if (caps.text) capTags.push('<span class="tag tag--xs">Text</span>');
-  if (caps.vision) capTags.push('<span class="tag tag--xs">Vision</span>');
-  if (caps.codeGeneration) capTags.push('<span class="tag tag--xs">Code</span>');
-  if (caps.imageGeneration) capTags.push('<span class="tag tag--xs">Image</span>');
-  if (caps.fileAnalysis) capTags.push('<span class="tag tag--xs">Files</span>');
-  if (caps.streaming) capTags.push('<span class="tag tag--xs">Stream</span>');
+function onModelsClick(st, ev) {
+  const D = window.Darkness;
+  const btn = ev.target.closest && ev.target.closest("[data-act],[data-status]");
+  if (!btn || !st.root.contains(btn)) return;
 
-  const isUserModel = true;
-  const enabled = model.enabled !== false;
-  const lastTested = model.lastTestedAt ? new Date(model.lastTestedAt * 1000).toLocaleString() : null;
-  const lastErr = model.lastError ? '<div class="muted" style="font-size:12px;color:var(--color-danger,#c0392b);margin-top:4px;">' + window.Darkness.utils.escapeHtml(model.lastError) + '</div>' : '';
+  if (btn.hasAttribute("data-status")) {
+    st.status = btn.getAttribute("data-status");
+    drawToolbar(st);
+    drawGrid(st);
+    return;
+  }
+  const act = btn.getAttribute("data-act");
+  const holder = btn.closest("[data-id]");
+  const m = holder ? modelById(st, holder.getAttribute("data-id")) : null;
 
-  const formattedCtx = model.contextWindow
-    ? (Number(model.contextWindow) >= 1000000
-        ? (Number(model.contextWindow) / 1000000).toFixed(Number(model.contextWindow) % 1000000 === 0 ? 0 : 1) + "M"
-        : (Number(model.contextWindow) >= 1000
-            ? Math.round(Number(model.contextWindow) / 1000) + "k"
-            : model.contextWindow)) + " ctx"
-    : "? ctx";
-
-  return '<article class="card model-card ' + (isActive ? "is-active" : "") + ' ' + (enabled ? "" : "is-disabled") + '" data-model-id="' + escapeAttr(model.id) + '">' +
-    '<div class="card__body">' +
-      '<div class="model-card__head">' +
-        '<h3>' + window.Darkness.utils.escapeHtml(model.name) + '</h3>' +
-        '<span class="tag">' + window.Darkness.utils.escapeHtml(model.provider || "custom") + '</span>' +
-        statusBadge(model) +
-      '</div>' +
-      '<div class="model-card__body">' +
-        '<div class="muted">Registry ID: <code>' + window.Darkness.utils.escapeHtml(model.id) + '</code></div>' +
-        '<div class="muted">Provider Model: <code>' + window.Darkness.utils.escapeHtml(model.modelName || model.id) + '</code></div>' +
-        (model.baseUrl ? '<div class="muted">Base URL: <code>' + window.Darkness.utils.escapeHtml(model.baseUrl) + '</code></div>' : '') +
-      '</div>' +
-      '<div class="model-card__meta">' + capTags.join("") + '</div>' +
-      (lastTested ? '<div class="muted" style="font-size:12px;">Last tested: ' + window.Darkness.utils.escapeHtml(lastTested) + '</div>' : '') +
-      lastErr +
-      '<div class="model-card__foot">' +
-        '<span class="muted" title="' + (model.contextWindow ? Number(model.contextWindow).toLocaleString() + ' tokens max context' : '') + '">' + formattedCtx + '</span>' +
-        '<div class="hstack" style="gap:6px;">' +
-          (isUserModel ? '<button class="btn btn--ghost btn--sm" type="button" data-action="toggle-enabled" data-model-id="' + escapeAttr(model.id) + '" title="' + (enabled ? "Disable" : "Enable") + '">' + (enabled ? "Disable" : "Enable") + '</button>' : '') +
-          '<button class="btn btn--' + (isActive ? "primary" : "outline") + ' btn--sm" type="button" data-action="select" data-model-id="' + escapeAttr(model.id) + '"' + (enabled ? "" : " disabled") + '>' + (isActive ? "Active" : "Select") + '</button>' +
-          (isUserModel ? '<button class="btn btn--ghost btn--icon-sm" type="button" data-action="edit" data-model-id="' + escapeAttr(model.id) + '" title="Edit" aria-label="Edit model">' +
-            '<svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>' +
-          '</button>' : '') +
-          (isUserModel ? '<button class="btn btn--ghost btn--icon-sm" type="button" data-action="delete" data-model-id="' + escapeAttr(model.id) + '" title="Delete" aria-label="Delete model">' +
-            '<svg class="icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>' +
-          '</button>' : '') +
-        '</div>' +
-      '</div>' +
-    '</div>' +
-  '</article>';
+  if (act === "add") return openAddModelsModal();
+  if (act === "refresh") {
+    btn.classList.add("is-busy");
+    return D.pages.modelRefresh().finally(() => btn.classList.remove("is-busy"));
+  }
+  if (act === "clear") {
+    st.q = ""; st.status = "all"; st.provider = "all";
+    const q = st.root.querySelector("#mgmQ");
+    if (q) q.value = "";
+    drawToolbar(st);
+    drawGrid(st);
+    return;
+  }
+  if (!m) return;
+  if (act === "use") return useModel(st, m);
+  if (act === "test") return testModel(st, m, btn);
+  if (act === "toggle") return toggleModel(st, m);
+  if (act === "edit") return openModelModal(m);
+  if (act === "del") return confirmDelete(st, m);
 }
 
-function bindModelPageEvents() {
-  document.getElementById("addModelBtn")?.addEventListener("click", () => openAddModelsModal());
-  document.getElementById("refreshModelsBtn")?.addEventListener("click", () => {
-    if (window.Darkness.modelSelector) window.Darkness.modelSelector.load();
-    window.Darkness.app.navigate("#/model");
-  });
+/** Switch the active model: the page updates at once and rolls back if the server refuses. */
+async function useModel(st, m) {
+  const D = window.Darkness;
+  if (m.enabled === false || st.data.active === m.id) return;
+  const before = st.data.active;
+  st.data.active = m.id;
+  drawAll(st);
+  syncSelector(st);
+  const ok = D.modelSelector ? await D.modelSelector.select(m.id) : false;
+  if (!ok) {
+    st.data.active = before;
+    if (D.modelSelector) D.modelSelector._active = before;
+    if (st.root.isConnected) drawAll(st);
+  }
+}
 
-  document.querySelectorAll('[data-action="select"]').forEach(btn => {
-    btn.addEventListener("click", async () => {
-      if (btn.disabled) return;
-      const id = btn.getAttribute("data-model-id");
-      await window.Darkness.modelSelector.select(id);
-      window.Darkness.app.navigate("#/model");
-    });
-  });
-  document.querySelectorAll('[data-action="edit"]').forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-model-id");
-      let model = (window.Darkness.pages._modelCache || []).find(m => m.id === id) ||
-                  (window.Darkness.modelSelector && window.Darkness.modelSelector.getModel(id));
-      if (!model) {
-        try {
-          const res = await window.Darkness.api.get("/api/models/" + encodeURIComponent(id));
-          model = res;
-        } catch (e) {}
-      }
-      openModelModal(model);
-    });
-  });
-  document.querySelectorAll('[data-action="delete"]').forEach(btn => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-model-id");
-      const modalBody = '<div style="font-size: 13.5px; line-height: 1.5; color: var(--ink);">Delete model <strong>' + window.Darkness.utils.escapeHtml(id) + '</strong>? Existing conversations will remain intact.</div>';
-      const modalActions = `
-        <button class="btn btn--outline" type="button" data-modal-close="true">Cancel</button>
-        <button class="btn btn--danger" id="confirmDeleteModelBtn" type="button">Delete Model</button>
-      `;
-      window.Darkness.modal.open('Delete Model?', modalBody, modalActions);
+async function toggleModel(st, m) {
+  const D = window.Darkness;
+  const next = m.enabled === false;
+  m.enabled = next;
+  drawAll(st);
+  try {
+    await D.api.post("/api/models/" + encodeURIComponent(m.id) + "/enable", { enabled: next });
+    D.toast.show((m.name || m.id) + (next ? " enabled" : " disabled"), "success");
+    if (D.modelSelector) D.modelSelector.load();
+  } catch (err) {
+    m.enabled = !next;
+    if (st.root.isConnected) drawAll(st);
+    D.toast.show("Update failed: " + (err.message || ""), "danger");
+  }
+}
 
-      document.getElementById('confirmDeleteModelBtn')?.addEventListener('click', async () => {
-        window.Darkness.modal.close();
-        try {
-          await window.Darkness.api.del("/api/models/" + encodeURIComponent(id));
-          window.Darkness.toast.show("Model deleted", "success");
-          if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
-          window.Darkness.app.navigate("#/model");
-        } catch (err) {
-          window.Darkness.toast.show("Delete failed: " + (err.message || ""), "danger");
-        }
-      }, { once: true });
-    });
-  });
-  document.querySelectorAll('[data-action="toggle-enabled"]').forEach(btn => {
-    btn.addEventListener("click", async () => {
-      const id = btn.getAttribute("data-model-id");
-      const willEnable = btn.textContent.trim() === "Enable";
-      try {
-        await window.Darkness.api.post("/api/models/" + encodeURIComponent(id) + "/enable", { enabled: willEnable });
-        window.Darkness.toast.show(willEnable ? "Model enabled" : "Model disabled", "success");
-        if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
-        window.Darkness.app.navigate("#/model");
-      } catch (err) {
-        window.Darkness.toast.show("Update failed: " + (err.message || ""), "danger");
-      }
-    });
-  });
+async function testModel(st, m, btn) {
+  const D = window.Darkness;
+  const label = btn.textContent;
+  btn.disabled = true;
+  btn.classList.add("is-busy");
+  btn.textContent = "Testing…";
+  const t0 = performance.now();
+  try {
+    await D.api.post("/api/models/test", { id: m.id, name: m.name, provider: m.provider, baseUrl: m.baseUrl, modelName: m.modelName || m.id });
+    st.tests[m.id] = { ok: true, ms: Math.round(performance.now() - t0), at: Date.now() };
+    D.toast.show((m.name || m.id) + " responded", "success");
+  } catch (err) {
+    st.tests[m.id] = { ok: false, ms: 0, at: Date.now(), msg: err && err.message ? err.message : "The provider did not respond" };
+    D.toast.show((m.name || m.id) + " failed its check", "danger");
+  }
+  if (st.root.isConnected) drawAll(st);
+  else { btn.disabled = false; btn.classList.remove("is-busy"); btn.textContent = label; }
+}
+
+function confirmDelete(st, m) {
+  const D = window.Darkness;
+  const body = '<div style="font-size:13.5px;line-height:1.5;color:var(--ink);">Delete <strong>' + D.mg.esc(m.name || m.id) + "</strong>? Existing conversations will remain intact.</div>";
+  D.modal.open("Delete model?", body, '<button class="btn btn--outline" type="button" data-modal-close="true">Cancel</button><button class="btn btn--danger" id="confirmDeleteModelBtn" type="button">Delete model</button>');
+  document.getElementById("confirmDeleteModelBtn")?.addEventListener("click", async () => {
+    D.modal.close();
+    const card = st.root.querySelector('.mg-model[data-id="' + (window.CSS && CSS.escape ? CSS.escape(m.id) : m.id) + '"]');
+    if (card) card.classList.add("is-leaving");
+    try {
+      await D.api.del("/api/models/" + encodeURIComponent(m.id));
+      D.toast.show("Model deleted", "success");
+      if (D.modelSelector) await D.modelSelector.load();
+      await D.pages.modelRefresh();
+    } catch (err) {
+      if (card) card.classList.remove("is-leaving");
+      D.toast.show("Delete failed: " + (err.message || ""), "danger");
+    }
+  }, { once: true });
 }
 
 function getCanonicalProviders() {
@@ -516,7 +796,7 @@ function openModelModal(existing) {
           await window.Darkness.api.post("/api/models/set-active", { model_id: payload.id });
         } catch (e) {}
         if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
-        window.Darkness.app.navigate("#/model");
+        window.Darkness.pages.modelRefresh();
         window.Darkness.modal.close();
         window.Darkness.toast.show("Model verified — status: Available", "success");
       }
@@ -551,7 +831,7 @@ function openModelModal(existing) {
       window.Darkness.toast.show(isEdit ? "Model updated and set active" : "Model added and set active", "success");
       if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
       window.Darkness.modal.close();
-      window.Darkness.app.navigate("#/model");
+      window.Darkness.pages.modelRefresh();
     } catch (err) {
       window.Darkness.toast.show("Save failed: " + (err.message || ""), "danger");
     }
@@ -746,7 +1026,7 @@ function openAddModelsModal() {
       window.Darkness.toast.show(successCount + " model(s) added and set active" + (failCount > 0 ? " (" + failCount + " failed)" : ""), failCount > 0 ? "warning" : "success");
       if (window.Darkness.modelSelector) await window.Darkness.modelSelector.load();
       window.Darkness.modal.close();
-      window.Darkness.app.navigate("#/model");
+      window.Darkness.pages.modelRefresh();
     } else {
       showAddModelsResultNew("Failed to add models:\n" + errors.join("\n"), false);
     }
@@ -756,7 +1036,7 @@ function openAddModelsModal() {
 function createModelMappingHTML(index, mapping, provObj) {
   const removeBtn = index === 0
     ? ''
-    : '<button type="button" class="btn btn--ghost btn--sm" onclick="removeModelMapping(' + index + ')" style="margin-left:auto;">Remove</button>';
+    : '<button type="button" class="btn btn--ghost btn--sm" data-act="remove-model-mapping" data-index="' + index + '" style="margin-left:auto;">Remove</button>';
 
   const placeholderModelName = provObj?.modelIdPlaceholder || "meta-llama/llama-3.3-70b-instruct";
 

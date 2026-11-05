@@ -89,13 +89,36 @@ window.Darkness.uiSidebar = {
     const secondaryNav = document.getElementById("secondaryNav");
     if (!navRoot || !secondaryNav) return;
 
-    const route = window.location.hash || "#/chat";
+    const route = (window.location.hash || "#/chat").split("?")[0];
+    const isOn = (href) =>
+      route === href ||
+      (route === "#/" && href === "#/chat") ||
+      (route.startsWith("#/chat/") && href === "#/chat") ||
+      (route.startsWith("#/project/") && href === "#/project");
     const renderLinks = (list, root) => {
+      // Build the links once; later renders only move the active marker (no flicker, no lost hover state).
+      const signature = list.map((i) => i.href).join("|");
+      if (root.dataset.sig === signature && root.firstElementChild) {
+        root.querySelectorAll(".nav__item").forEach((el) => {
+          const on = isOn(el.getAttribute("href"));
+          el.classList.toggle("is-active", on);
+          if (on) el.setAttribute("aria-current", "page");
+          else el.removeAttribute("aria-current");
+        });
+        return false;
+      }
+      root.dataset.sig = signature;
+      let lastGroup = null;
       root.innerHTML = list.map((item) => {
-        const isDefaultChatRoute = route === "#/" && item.href === "#/chat";
-        const active = route === item.href || isDefaultChatRoute ? "is-active" : "";
+        const active = isOn(item.href) ? "is-active" : "";
         const icon = this._getIcon(item.icon);
+        let heading = "";
+        if (item.group && item.group !== lastGroup) {
+          lastGroup = item.group;
+          heading = '<div class="nav-group__title" role="presentation">' + window.Darkness.utils.escapeHtml(item.group) + "</div>";
+        }
         return (
+          heading +
           '<a class="nav__item ' +
           active +
           '" href="' +
@@ -111,17 +134,44 @@ window.Darkness.uiSidebar = {
           '</span></a>'
         );
       }).join("");
+      return true;
     };
 
-    renderLinks((window.Darkness.data && window.Darkness.data.nav) || [], navRoot);
-    renderLinks((window.Darkness.data && window.Darkness.data.secondaryNav) || [], secondaryNav);
+    const builtMain = renderLinks((window.Darkness.data && window.Darkness.data.nav) || [], navRoot);
+    const builtSecondary = renderLinks((window.Darkness.data && window.Darkness.data.secondaryNav) || [], secondaryNav);
     this._bindSearchEvents();
     this._updateRecent();
 
-    // Wire tooltip on every interactive sidebar element (only shows when rail).
+    // Wire tooltips (rail mode) only when the links were rebuilt.
     const sidebar = document.getElementById("sidebar");
-    if (sidebar && window.Darkness.uiTooltip) {
+    if ((builtMain || builtSecondary) && sidebar && window.Darkness.uiTooltip) {
       window.Darkness.uiTooltip.bindSidebar(sidebar);
+    }
+    if (!this._warmBound && sidebar) {
+      // Start loading a management page's data as soon as the pointer is over its link, so the click paints at once.
+      this._warmBound = true;
+      const warm = (e) => {
+        const a = e.target.closest && e.target.closest("a.nav__item");
+        const D = window.Darkness;
+        if (!a || !D.mg || !D.api) return;
+        const href = a.getAttribute("href");
+        if (href === "#/home") {
+          D.mg.load("overview", () => Promise.all([D.api.get("/api/usage", { days: 14 }), D.api.get("/api/account").catch(() => null)]).then((r) => ({ usage: r[0], account: r[1] }))).catch(() => {});
+        } else if (href === "#/account") {
+          D.mg.load("account", () => Promise.all([D.api.get("/api/account"), D.api.get("/api/account/sessions")]).then((r) => ({ account: r[0], sessions: r[1].sessions || [] }))).catch(() => {});
+        } else if (href === "#/usage") {
+          let d = 14;
+          try {
+            const v = Number(localStorage.getItem("darkness_usage_days"));
+            if ([7, 14, 30, 90].includes(v)) d = v;
+          } catch (x) {}
+          D.mg.load("usage:" + d, () => D.api.get("/api/usage", { days: d })).catch(() => {});
+        } else if (href === "#/model" && D.pages && D.pages.modelData) {
+          if (!D.mg.peek("models")) D.mg.load("models", D.pages.modelData).catch(() => {});
+        }
+      };
+      sidebar.addEventListener("pointerover", warm);
+      sidebar.addEventListener("focusin", warm);
     }
   },
 
@@ -418,11 +468,18 @@ window.Darkness.uiSidebar = {
       folder: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>',
       library: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 6 4 14"/><path d="M12 6v14"/><path d="M8 8v12"/><path d="M4 4v16"/></svg>',
       clock: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+      chart: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M7 16V9M12 16V5M17 16v-4"/></svg>',
+      user: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
       gear: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>',
       cpu: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>',
       project: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>',
       file: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>',
       'file-text': '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
+      wand: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 4-1 1M19 8l-1 1M4 20 17 7l-0-0M21 3l-3 3M5 3v4M3 5h4M19 15v4M17 17h4"/><path d="m14 7 3 3"/></svg>',
+      brain: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>',
+      network: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3M12 12V8"/></svg>',
+      activity: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>',
+      columns: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M12 3v18"/></svg>',
       zap: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>',
       sparkles: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 3v4"/><path d="M21 5h-4"/><path d="M5 17v4"/><path d="M7 19H3"/></svg>',
       bot: '<svg class="icon" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="12" rx="2"/><path d="M12 8V4"/><circle cx="12" cy="3" r="1"/><path d="M8 14h.01"/><path d="M16 14h.01"/></svg>',
