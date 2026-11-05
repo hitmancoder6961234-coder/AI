@@ -75,6 +75,8 @@ export interface AgentContextParams {
   dbCreateArtifact?: (artifact: any) => any; // may be synchronous (the server passes the SQLite helper)
   resolveModelConfig?: (modelId?: string, userId?: string) => any;
   getWorkspaceFile?: (fileId: string) => any;
+  /** The user's relevant memory notes, already formatted and bounded (server/memory.ts); appended to the system instruction as quoted data. */
+  memoryBlock?: string;
 }
 
 export class AgentRuntime {
@@ -532,6 +534,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
 
     // 7. Streaming Model Generation
     // Prepend/Append planning protocols & formatting rules to system instruction
+    if (params.memoryBlock) systemInstruction += params.memoryBlock; // the user's own notes, quoted as data (server/memory.ts)
     systemInstruction += "\n" + CORE_PLANNING_SYSTEM_INSTRUCTION + "\n" + CORE_RESPONSE_CONSTRAINTS;
 
     let assistantResponse = "";

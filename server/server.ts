@@ -167,6 +167,12 @@ import { registerConversationLibraryRoutes } from "./conversation-routes.js";
 import { conversationMetaMap } from "./conversation-library.js";
 import { registerCompareRoutes } from "./compare-routes.js";
 import { registerInsightsRoutes } from "./insights-routes.js";
+import { registerMemoryRoutes } from "./memory-routes.js";
+import { registerPromptRoutes } from "./prompts-routes.js";
+import { ensurePromptTables } from "./prompts.js";
+import { createMemory, ensureMemoryTables, selectRelevantMemories } from "./memory.js";
+import { registerSessionRoutes } from "./agent/session-routes.js";
+import { ensureSessionTables } from "./agent/sessions.js";
 import { ensureInsightsTables, recordAgentRun } from "./insights.js";
 import { countModelKeys, keyAad, migrateModelKeys, revealSecret } from "./security/secret-store.js";
 import { vaultEnabled } from "./security/vault.js";
@@ -1186,15 +1192,34 @@ async function startServer() {
     return { mimeType: String(out.mimeType || "image/png"), base64: String(out.bufferBase64) };
   };
 
+  const agentKnowledgeSearch = async (uid: string, query: string) => {
+    const owned = Array.from(projects.values()).filter((p) => isUserOwner((p as any).user_id, uid)).slice(0, 5);
+    const hits = owned.flatMap((p) => searchKnowledge((p as any).id, query, 4));
+    return hits.length ? assembleContext(hits.slice(0, 8)) : "No matching private documents.";
+  };
+
   registerAgentRoutes(app, {
     getUserId: privacyUserId,
+    recordRun: (r) => { try { recordAgentRun(sqliteDb, { ...r, userId: toValidUuid(r.userId) || r.userId }); } catch (e) { logger.warn("agent_run_record_failed", { err: e }); } },
     getLLM: getLLMForUser,
     llmInfo: llmInfoForUser,
-    knowledgeSearch: async (uid, query) => {
-      const owned = Array.from(projects.values()).filter((p) => isUserOwner((p as any).user_id, uid)).slice(0, 5);
-      const hits = owned.flatMap((p) => searchKnowledge((p as any).id, query, 4));
-      return hits.length ? assembleContext(hits.slice(0, 8)) : "No matching private documents.";
+    knowledgeSearch: agentKnowledgeSearch,
+  });
+
+  // Durable agent runs: checkpoints, pause / resume / cancel, approvals before any tool that changes saved data, and an audit trail.
+  ensureSessionTables(sqliteDb);
+  registerSessionRoutes(app, {
+    db: sqliteDb,
+    getUserId: async (req) => privacyUserId(req),
+    getUserKey: async (req) => { const id = privacyUserId(req); return id ? toValidUuid(id) || null : null; },
+    getLLM: getLLMForUser,
+    knowledgeSearch: agentKnowledgeSearch,
+    // the only agent tool that writes: it is only ever called after the user approved it, and it goes through the memory rules (duplicates, secrets, limits)
+    saveMemoryNote: (userKey, content, category) => {
+      const m = createMemory(sqliteDb, userKey, { content, category, source: "agent" });
+      return `Saved to the user's memory (${m.category}): ${m.content}`;
     },
+    recordRun: (r) => { try { recordAgentRun(sqliteDb, { ...r, userId: toValidUuid(r.userId) || r.userId }); } catch (e) { logger.warn("agent_run_record_failed", { err: e }); } },
   });
 
   registerDocumentRoutes(app, { getUserId: privacyUserId, extractText: extractDocumentText });
@@ -2519,6 +2544,30 @@ async function startServer() {
   // -------------------------------------------------------------------------
   // Search, tags / folders / pinning and branching. Registered first: "/api/conversations/search" must not be read as a conversation id.
   registerConversationLibraryRoutes(app, {
+    db: sqliteDb,
+    getUserKey: async (req) => {
+      const u = await resolveUserAsync(req);
+      return u ? toValidUuid(u.id) || null : null;
+    },
+  });
+
+  // Prompt Studio: the user's prompt library with versions, and test runs on their own models (same guards as the Compare page).
+  ensurePromptTables(sqliteDb);
+  registerPromptRoutes(app, {
+    db: sqliteDb,
+    getUserKey: async (req) => {
+      const u = await resolveUserAsync(req);
+      return u ? toValidUuid(u.id) || null : null;
+    },
+    // models are looked up by the signed-in user's own id (as the Compare page does), the library by the database key
+    getUserId: async (req) => (await resolveUserAsync(req))?.id ?? null,
+    getModel: (uid, mid) => getUserModel(uid, mid),
+    call: createModelCaller({ resolveBaseUrl: getEffectiveBaseUrl }),
+  });
+
+  // User-controlled memory notes (create / edit / delete / pause, scoped to the user).
+  ensureMemoryTables(sqliteDb);
+  registerMemoryRoutes(app, {
     db: sqliteDb,
     getUserKey: async (req) => {
       const u = await resolveUserAsync(req);
@@ -4253,9 +4302,18 @@ Following the details block, provide your beautiful, structured final textbook r
       .sort((a, b) => (a.created_at || 0) - (b.created_at || 0));
     const conversationHistory = priorMsgs.map(m => ({ role: m.role, content: m.content }));
 
+    // The user's own memory notes that are relevant to THIS question (none when memory is off); sent as quoted background data.
+    let memoryBlock = "";
+    try {
+      const pick = selectRelevantMemories(sqliteDb, toValidUuid(user.id) || user.id, String(textMsg || ""));
+      memoryBlock = pick.block;
+      if (pick.memories.length) sendSSE({ memoryUsed: pick.memories.map((m) => ({ id: m.id, content: m.content, category: m.category })) });
+    } catch (e) { logger.warn("memory_select_failed", { err: e }); }
+
     // Delegate to unified AgentRuntime
     try {
       await AgentRuntime.execute({
+        memoryBlock,
         userId: user.id,
         conversationId: cid,
         projectId: project_id || null,
@@ -4326,7 +4384,8 @@ Following the details block, provide your beautiful, structured final textbook r
     const isGreeting = isIdentityOrGreeting(textMsg);
     const think = !!req.body?.think;
     const userName = user?.name || (user?.email ? user.email.split("@")[0] : "");
-    const sysInstruction = buildNaturalAiSystemInstruction(isGreeting, think, userName, textMsg);
+    let sysInstruction = buildNaturalAiSystemInstruction(isGreeting, think, userName, textMsg);
+    try { sysInstruction += selectRelevantMemories(sqliteDb, toValidUuid(user.id) || user.id, String(textMsg || "")).block; } catch (e) { logger.warn("memory_select_failed", { err: e }); }
 
     const modelConfig = resolveModelConfig(conv.model_id || user.active_model_id, user.id);
     if (!modelConfig) {

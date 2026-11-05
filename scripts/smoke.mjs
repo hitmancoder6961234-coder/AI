@@ -1483,6 +1483,11 @@ try {
     assert.ok(out.removed.account >= 1 && out.removed.conversations >= 1);
     assert.equal((await get("/api/conversations", tokA)).status, 401, "old token must die");
     assert.equal((await get("/api/auth/me", tokB)).status, 200, "other users unaffected");
+    const { DatabaseSync } = await import("node:sqlite");
+    const sdb = new DatabaseSync(path.join(dataDir, "smoke.db"), { readOnly: true });
+    assert.equal(sdb.prepare("SELECT COUNT(*) AS n FROM memories WHERE content LIKE 'SMOKE-MEM%'").get().n, 0, "the erased user's memories are gone from the database");
+    assert.ok(out.removed.memories >= 1, "erase reports the memories it removed: " + JSON.stringify(out.removed));
+    sdb.close();
   });
 
   console.log("\nlogs");

@@ -71,6 +71,8 @@ import "../js/pages/history.js";
 import "../js/pages/settings.js";
 import "../js/pages/usage.js";
 import "../js/pages/agents.js";
+import "../js/pages/memory.js";
+import "../js/pages/prompts.js";
 import "../js/pages/system.js";
 import "../js/pages/compare.js";
 import "../js/pages/account.js";
