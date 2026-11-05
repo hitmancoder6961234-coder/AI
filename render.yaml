@@ -13,7 +13,7 @@ services:
     plan: starter                # a persistent disk needs a paid plan; see "free tier" note in DEPLOY.md
     buildCommand: PUPPETEER_SKIP_DOWNLOAD=true npm ci --no-audit --no-fund && npm run build
     startCommand: npm start
-    healthCheckPath: /api/health
+    healthCheckPath: /api/ready   # readiness: database, storage and upload temp folder are usable (use /api/health for plain liveness)
     autoDeploy: true
     disk:
       name: darkness-data
@@ -29,7 +29,7 @@ services:
       - key: PRIVACY_STRICT
         value: "true"
       - key: PRIVACY_CSP
-        value: report-only          # switch to "enforce" after checking the browser console on your domain
+        value: enforce              # report-only = same policy, nothing blocked (to try a change); see SECURITY.md
       - key: DARKNESS_STORAGE_ROOT
         value: /var/data
       - key: TRUST_PROXY_HOPS
@@ -56,3 +56,8 @@ services:
         sync: false                 # from the Aiven console (Service URI)
       - key: AIVEN_CA_CERT
         sync: false                 # Aiven project CA certificate (PEM text)
+      # Optional, added by hand in the dashboard (Environment) once you have a mail account; they are NOT listed here on purpose, because a
+      # `sync: false` entry makes Render ask for a value every time the blueprint is created. Unset = "Forgot password?" says it is unavailable.
+      #   MAIL_PROVIDER (smtp | resend), MAIL_FROM, PUBLIC_APP_URL (the address USERS open: your Vercel domain when you use the front door),
+      #   SMTP_HOST / SMTP_PORT / SMTP_TLS / SMTP_USER / SMTP_PASS   or   RESEND_API_KEY
+      # Test with a real mailbox first: docs/OPERATIONS-VERIFICATION.md section 3.2. All variables: docs/ENVIRONMENT-VARIABLES.md.

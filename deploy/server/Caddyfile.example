@@ -20,7 +20,8 @@ ai.example.com {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"
 	}
 
+	# Must be at least the largest upload the app accepts (MAX_UPLOAD_SIZE_MB = 100) plus multipart overhead, or the proxy rejects it first.
 	request_body {
-		max_size 50MB
+		max_size 110MB
 	}
 }
