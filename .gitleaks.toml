@@ -12,4 +12,7 @@ description = "Fake keys used by the log-redaction tests"
 regexes = [
   '''AIzaSyFAKE-KEY-for-tests-0123456789abcdef''',
   '''sk-abcdefghijklmnopqrstuvwxyz0123456789''',
+  '''sk-foreign-123456789012''',
+  '''stub-secret-key-123456''',
+  '''sk-test-SECRET-KEY-1234567890abcdef''',
 ]

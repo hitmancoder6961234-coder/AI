@@ -113,7 +113,7 @@ const SECRET_PATTERNS: Array<[string, RegExp]> = [
   ["Stripe live key", /\bsk_live_[0-9a-zA-Z]{20,}\b/],
   ["a password that was once shared in chat", /Khan@1(?:2)3/], // written so this line does not match itself
 ];
-const ALLOWED_FAKES = ["AIzaSyFAKE-KEY-for-tests-0123456789abcdef", "sk-abcdefghijklmnopqrstuvwxyz0123456789"];
+const ALLOWED_FAKES = ["AIzaSyFAKE-KEY-for-tests-0123456789abcdef", "sk-abcdefghijklmnopqrstuvwxyz0123456789", "sk-foreign-123456789012", "stub-secret-key-123456", "sk-test-SECRET-KEY-1234567890abcdef"];
 
 function sourceFiles(dir: string, out: string[] = []): string[] {
   for (const e of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
@@ -146,7 +146,7 @@ test("the gitleaks allowlist is exact, minimal and not stale", () => {
   assert.ok(!/^\s*paths\s*=/m.test(toml), "no path-wide exemption (a real secret in tests/ must still be caught)");
   const listed = [...toml.matchAll(/'''([^']+)'''/g)].map((m) => m[1]);
   assert.deepEqual(listed.sort(), [...ALLOWED_FAKES].sort());
-  const corpus = sourceFiles("tests").map((f) => read(f)).join("\n");
+  const corpus = [...sourceFiles("tests"), "scripts/smoke.mjs"].map((f) => read(f)).join("\n"); // the smoke test is a script, not a tests/ file
   for (const fake of listed) assert.ok(corpus.includes(fake), "allowlisted string is still used by a test: " + fake);
   assert.ok(read(".env.example").split("\n").every((l) => !/^[A-Z_]*(KEY|SECRET|PASSWORD|TOKEN)[A-Z_]*=[^\s#]{8,}/.test(l)), ".env.example holds placeholders only");
   const gi = read(".gitignore");
