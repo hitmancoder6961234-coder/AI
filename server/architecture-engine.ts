@@ -1,6 +1,6 @@
 import path from "path";
-import { ExtractedFile, ApiEndpoint, DatabaseModel, DependencyItem } from "./project-analyzer";
-import { buildProjectGraph, artifactVisualizer } from "./artifact-visualizer";
+import { ExtractedFile, ApiEndpoint, DatabaseModel, DependencyItem } from "./project-analyzer.js";
+import { buildProjectGraph, artifactVisualizer } from "./artifact-visualizer.js";
 
 export type ArchitectureNodeType =
   | "user"
@@ -59,6 +59,7 @@ export interface ArchitectureNode {
   metrics?: Record<string, any>;
   level?: "high" | "detailed" | "symbol" | "file";
   parent?: string;
+  technology?: string;
 }
 
 export type ConnectionType =
@@ -1893,8 +1894,9 @@ export function buildProjectArchitecture(
           target: currentPath,
           from: previousPath,
           to: currentPath,
-          type: "CONTAINS",
+          type: "CONTAINS" as ConnectionType,
           label: "",
+          evidence: [],
           status: "VERIFIED"
         });
       }
@@ -1907,8 +1909,9 @@ export function buildProjectArchitecture(
       target: f.path,
       from: previousPath,
       to: f.path,
-      type: "CONTAINS",
+      type: "CONTAINS" as ConnectionType,
       label: "",
+      evidence: [],
       status: "VERIFIED"
     });
   });
@@ -2829,7 +2832,7 @@ function buildArchitectureAdvisorReport(ctx: {
   const missingCount = issues.filter((i) => i.status === "MISSING").length;
   const potentialCount = issues.filter((i) => i.severity === "potential").length;
   const warningCount = issues.filter((i) => i.severity === "warning").length;
-  const criticalCount = issues.filter((i) => i.severity === "critical" || i.severity === "error").length;
+  const criticalCount = issues.filter((i) => (i.severity as string) === "critical" || i.severity === "error").length;
 
   let overallStatus: ArchitectureAdvisorReport["healthSummary"]["overallStatus"] = "FULLY_CONNECTED";
   let score = 100;

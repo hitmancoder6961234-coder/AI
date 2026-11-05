@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
-import { saveVisualAsset } from "./db";
-import { renderSvgToPngBuffer, generateArchitectureDiagramSvg, generateWorkflowDiagramSvg, generateRagPipelineDiagramSvg, generateTechStackVisualSvg } from "./visual-intelligence";
-import { ProjectAnalysis } from "./project-analyzer";
+import { saveVisualAsset } from "./db.js";
+import { renderSvgToPngBuffer, generateArchitectureDiagramSvg, generateWorkflowDiagramSvg, generateRagPipelineDiagramSvg, generateTechStackVisualSvg } from "./visual-intelligence.js";
+import { ProjectAnalysis } from "./project-analyzer.js";
 
 export interface GenerateImageOptions {
   projectId: string;
@@ -229,7 +229,7 @@ export class PollinationsImageProvider implements ImageGenerationProvider {
       const seed = Math.floor(Math.random() * 1000000);
       const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(cleanPrompt)}?width=1280&height=720&nologo=true&seed=${seed}`;
       
-      const response = await fetch(url, { headers: { "User-Agent": "Darkness-Image-Gen/1.0" } });
+      const response = await fetch(url, { headers: { "User-Agent": "Darkness-Image-Gen/1.0" }, signal: AbortSignal.timeout(45_000) }); // never wait for ever on the image host
       if (!response.ok) {
         return null;
       }
@@ -289,7 +289,7 @@ export class ConceptualDiagramSvgProvider implements ImageGenerationProvider {
       svgContent = this.buildCustomConceptualSvg(prompt, analysis, assetType);
     }
 
-    const pngBuffer = renderSvgToPngBuffer(svgContent, 1280);
+    const pngBuffer = await renderSvgToPngBuffer(svgContent, 1280);
     const base64Data = pngBuffer.toString("base64");
 
     return {

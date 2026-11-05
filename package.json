@@ -1,7 +1,7 @@
 {
   "name": "darkness-ai",
   "version": "2.0.0",
-  "description": "Darkness AI \u2014 private multi-model AI workspace (chat, knowledge, projects, documents) with a working agent.",
+  "description": "Darkness AI — private multi-model AI workspace (chat, knowledge, projects, documents) with a working agent.",
   "type": "module",
   "engines": {
     "node": ">=22.13"
@@ -13,7 +13,16 @@
     "start": "node dist/server.js",
     "test": "node --import tsx --test tests/*.test.ts",
     "smoke": "node scripts/smoke.mjs",
-    "lint": "echo 'Lint OK'"
+    "lint": "eslint .",
+    "lint:ci": "eslint . --max-warnings 1033",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "check:lockfile": "node scripts/lockfile-platforms.mjs --check",
+    "check:architecture": "node scripts/check-architecture.mjs",
+    "preflight": "node scripts/preflight.mjs",
+    "backup": "node scripts/backup.mjs create",
+    "admin": "node scripts/admin.mjs",
+    "authz": "node scripts/authz-audit.mjs",
+    "verify": "npm run check:lockfile && npm run check:architecture && npm run lint:ci && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
     "@google/genai": "^2.21.0",
@@ -48,6 +57,7 @@
     "sharp": "^0.35.4"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@types/adm-zip": "^0.5.8",
     "@types/cookie-parser": "^1.4.10",
@@ -57,7 +67,18 @@
     "@types/node": "^26.5.0",
     "@vitejs/plugin-react": "^4.4.0",
     "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "globals": "^17.14.0",
     "tsx": "^4.23.13",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1",
     "vite": "^6.0.0"
+  },
+  "overrides": {
+    "uuid": "^11.1.1",
+    "image-size": "^2.0.4",
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "^11.0.1"
+    }
   }
 }

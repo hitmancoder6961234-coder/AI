@@ -7,7 +7,7 @@
  * directly to the user interface rather than exposing raw code blocks.
  */
 
-import { sanitizeSvgForXml, renderSvgToPngBuffer } from "./visual-intelligence";
+import { sanitizeSvgForXml } from "./visual-intelligence.js";
 
 export interface VisualGenerationResult {
   svg: string;

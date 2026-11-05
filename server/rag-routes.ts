@@ -17,7 +17,6 @@ import {
   getDocumentChunks,
   getFileTypeDisplayName,
   searchUserMultiDocumentRag,
-  buildMultiDocumentKnowledgePrompt,
 } from "./rag-engine.js";
 import {
   getProject,
@@ -25,21 +24,16 @@ import {
   createFile,
   createKnowledgeChunksBatch,
   listKnowledgeChunks,
-  updateProject,
   upsertKnowledgeSource,
-  listWorkspaceFiles,
-  getWorkspaceFile,
-  deleteWorkspaceFile,
-  saveConversation,
+  getProjectFileByPath,
+  deleteKnowledgeForProject,
   saveMessage,
 } from "./db.js";
 import { generateGeminiWithResilience, streamGeminiWithResilience } from "./gemini-resilience.js";
 import { isSupabaseConfigured, syncRagDocumentToSupabase, syncRagChunkToSupabase, syncConversationToSupabase, syncMessageToSupabase } from "./supabase.js";
 import { writeProjectFileToDisk, resolveProjectFilePath } from "./project-storage.js";
-import { AgentRuntime } from "./agent-runtime";
+import { AgentRuntime } from "./agent-runtime.js";
 import {
-  MAX_UPLOAD_SIZE_BYTES,
-  MAX_UPLOAD_SIZE_MB,
   FILE_TOO_LARGE_PAYLOAD,
   isFileTooLarge,
   sharedMulter,
@@ -80,7 +74,7 @@ export function registerRagRoutes(
 
   // 1. Get Project RAG Status & Metadata
   app.get("/api/projects/:pid/rag", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     try {
       const status = getProjectRagStatus(pid);
       res.json(status);
@@ -94,7 +88,7 @@ export function registerRagRoutes(
 
   // 2. Upload Document(s) to Knowledge Base
   app.post("/api/projects/:pid/rag/upload", wrapUploadMiddleware(sharedMulter.array("files", 20)), async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const user = await getUser(req);
     let proj = getProject(pid);
     if (!proj) {
@@ -148,7 +142,7 @@ export function registerRagRoutes(
         const createdFile = createFile({
           id: "file_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9),
           project_id: pid,
-          storage_path: targetPath,
+          path: targetPath, // was `storage_path`, which createFile ignores: path was undefined and the insert failed (NOT NULL project_files.path), so this upload route always answered 500
           name: safeName,
           extension: ext,
           language: ext.replace(".", "") || "text",
@@ -167,10 +161,10 @@ export function registerRagRoutes(
         upsertKnowledgeSource({
           id: sourceId,
           project_id: pid,
-          storage_path: targetPath,
+          path: targetPath,
           name: safeName,
           extension: ext,
-          mime_type: fileType,
+          file_type: fileType, // the column is file_type; `mime_type` was ignored, so the stored type was always the default "Document"
           size: f.size,
           chunks_count: chunks.length,
           status: chunks.length > 0 ? "Indexed" : "Queued",
@@ -178,7 +172,8 @@ export function registerRagRoutes(
 
         processedDocs.push({
           id: sourceId,
-          storage_path: targetPath,
+          path: targetPath,
+          storage_path: targetPath, // kept: older clients read this name
           name: safeName,
           extension: ext,
           fileType,
@@ -195,7 +190,6 @@ export function registerRagRoutes(
             name: safeName,
             storage_path: targetPath,
             mime_type: fileType,
-            extension: ext,
             size: f.size,
             chunks_count: chunks.length,
             status: "Indexed",
@@ -220,6 +214,8 @@ export function registerRagRoutes(
 
         if (isSupabaseConfigured()) {
           for (const c of allNewChunks) {
+            // NOTE: this passes a knowledge-chunk shaped object (file_id / chunk_id / start_line ...) to the RAG-chunk mirror, which expects
+            // document_id / chunk_index. Not changed because it cannot be verified without a live Supabase; see docs/IMPROVEMENT-LOG.md.
             syncRagChunkToSupabase({
               id: c.id,
               user_id: user.id,
@@ -230,7 +226,7 @@ export function registerRagRoutes(
               start_line: c.startLine,
               end_line: c.endLine,
               symbol: c.symbol,
-            }).catch(e => console.warn("[Supabase] RAG Chunk Sync:", e.message));
+            } as any).catch(e => console.warn("[Supabase] RAG Chunk Sync:", e.message));
           }
         }
       }
@@ -249,7 +245,7 @@ export function registerRagRoutes(
 
   // 3. Index All Project Files into Knowledge Base
   app.post("/api/projects/:pid/rag/index-project-files", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     try {
       const result = await indexProjectKnowledge(pid);
       const updatedStatus = getProjectRagStatus(pid);
@@ -267,7 +263,7 @@ export function registerRagRoutes(
 
   // 4. Reindex Knowledge Base
   app.post("/api/projects/:pid/rag/reindex", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { filePath } = req.body || {};
 
     try {
@@ -296,7 +292,7 @@ export function registerRagRoutes(
 
   // 5. Delete Document from RAG
   const handleDocDelete = (req: express.Request, res: express.Response) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const docId = String(req.params.docId || req.query.id || req.body?.id || "").trim();
     const docPath = String(req.query.path || req.body?.path || "").trim();
     const target = docId || docPath;
@@ -325,7 +321,7 @@ export function registerRagRoutes(
 
   // 6. Get Chunks for a specific Document
   app.get("/api/projects/:pid/rag/documents/chunks", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const filePath = String(req.query.path || "").trim();
     if (!filePath) return res.status(400).json({ error: "path parameter is required" });
 
@@ -339,7 +335,7 @@ export function registerRagRoutes(
 
   // 7. Test Retrieval Search Endpoint
   app.get("/api/projects/:pid/rag/search", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const q = String(req.query.q || "").trim();
     const topK = Number(req.query.topK) || undefined;
     const threshold = req.query.threshold !== undefined ? Number(req.query.threshold) : undefined;
@@ -355,7 +351,7 @@ export function registerRagRoutes(
   });
 
   app.post("/api/projects/:pid/rag/search", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { query, topK, threshold, strategy } = req.body || {};
     try {
       const results = searchProjectRag(pid, String(query || ""), {
@@ -371,7 +367,7 @@ export function registerRagRoutes(
 
   // 8. RAG Settings: Get & Save
   app.get("/api/projects/:pid/rag/settings", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     try {
       const settings = getProjectRagSettings(pid);
       res.json({ settings });
@@ -381,7 +377,7 @@ export function registerRagRoutes(
   });
 
   app.post("/api/projects/:pid/rag/settings", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { settings } = req.body || {};
     if (!settings || typeof settings !== "object") {
       return res.status(400).json({ error: "Valid settings object is required" });
@@ -401,7 +397,7 @@ export function registerRagRoutes(
 
   // 9. Test Vector Store Connection & Integrity
   app.post("/api/projects/:pid/rag/test-vector-store", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const start = Date.now();
     try {
       const chunks = listKnowledgeChunks(pid);
@@ -473,7 +469,7 @@ export function registerRagRoutes(
         projectId: reqPid,
         documents: Array.from(docMap.values()),
         totalDocuments: docMap.size,
-        totalChunks: (userStatus.totalChunks || 0) + (globalStatus.totalChunks || 0),
+        totalChunks: (userStatus.stats?.chunks || 0) + (globalStatus.stats?.chunks || 0), // the count lives in stats.chunks
         status: docMap.size > 0 ? "Ready" : "Empty",
       });
     } catch (err: any) {
@@ -550,7 +546,7 @@ export function registerRagRoutes(
           path: relativePath,
           name: cleanName,
           extension: ext,
-          mime_type: fileType,
+          file_type: fileType,
           size: file.size,
           chunks_count: chunks.length,
           status: "Indexed",
@@ -574,9 +570,7 @@ export function registerRagRoutes(
             user_id: user.id,
             project_id: pid,
             name: cleanName,
-            path: relativePath,
             mime_type: fileType,
-            extension: ext,
             size: file.size,
             chunks_count: chunks.length,
             status: "Indexed",
@@ -601,6 +595,8 @@ export function registerRagRoutes(
 
         if (isSupabaseConfigured()) {
           for (const c of allNewChunks) {
+            // NOTE: this passes a knowledge-chunk shaped object (file_id / chunk_id / start_line ...) to the RAG-chunk mirror, which expects
+            // document_id / chunk_index. Not changed because it cannot be verified without a live Supabase; see docs/IMPROVEMENT-LOG.md.
             syncRagChunkToSupabase({
               id: c.id,
               user_id: user.id,
@@ -611,7 +607,7 @@ export function registerRagRoutes(
               start_line: c.startLine,
               end_line: c.endLine,
               symbol: c.symbol,
-            }).catch(e => console.warn("[Supabase] Knowledge RAG Chunk Sync:", e.message));
+            } as any).catch(e => console.warn("[Supabase] Knowledge RAG Chunk Sync:", e.message));
           }
         }
       }
@@ -633,7 +629,7 @@ export function registerRagRoutes(
     const user = await getUser(req);
     try {
       const results = searchUserMultiDocumentRag(user.id, String(query || ""), {
-        topK: Number(topK) || 8,
+        maxTotalChunks: Math.min(Math.max(Number(topK) || 8, 1), 50), // the option is maxTotalChunks; `topK` was ignored
         threshold: threshold !== undefined ? Number(threshold) : 0.38,
       });
       res.json(results);
@@ -649,7 +645,6 @@ export function registerRagRoutes(
     const pid = String(projectId || `knowledge_${user.id}`);
     try {
       deleteProjectDocument(pid, id || docPath);
-      deleteProjectDocument("global", id || docPath);
       res.json({ success: true, message: "Document deleted" });
     } catch (err: any) {
       res.status(500).json({ error: err.message || "Failed to delete document" });
@@ -661,29 +656,10 @@ export function registerRagRoutes(
     const pid = String(req.body?.projectId || `knowledge_${user.id}`);
     if (!pidAllowed(pid, user.id)) return res.status(403).json({ error: "Not your project" });
     try {
-      // Global nuclear delete on SQLite knowledge tables
-      try {
-        const { db } = await import("./db.js");
-        db.prepare("DELETE FROM knowledge_chunks").run();
-        db.prepare("DELETE FROM knowledge_sources").run();
-      } catch (dbErr) {
-        console.warn("[RAG Delete All] SQLite global delete note:", dbErr);
-      }
-
+      // ONLY this knowledge space / project. This handler used to run `DELETE FROM knowledge_chunks` and `DELETE FROM knowledge_sources` with no
+      // WHERE clause (and a delete-everything on the Supabase mirror), so any signed-in user could erase every user's knowledge base.
+      // deleteKnowledgeForProject is scoped by project id (and removes the matching mirror rows).
       deleteKnowledgeForProject(pid);
-      deleteKnowledgeForProject("global");
-      
-      // Also clear in Supabase if admin client available (delete all chunks & documents)
-      try {
-        const { getSupabaseAdmin } = await import("./supabase.js");
-        const client = getSupabaseAdmin();
-        if (client) {
-          await client.from("rag_chunks").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-          await client.from("rag_documents").delete().neq("id", "00000000-0000-0000-0000-000000000000");
-        }
-      } catch (sbErr) {
-        console.warn("[RAG Delete All] Supabase cleanup note:", sbErr);
-      }
       res.json({ success: true, message: "All documents deleted successfully" });
     } catch (err: any) {
       console.error("[RAG Delete All] error:", err);
@@ -700,7 +676,9 @@ export function registerRagRoutes(
       let filesToProcess;
       if (docPath) {
         // Find the file to reindex
-        const file = getWorkspaceFile(pid, docPath);
+        // getWorkspaceFile(id) takes ONE argument (a workspace file id), so passing (projectId, path) never found anything and every
+        // single-document reindex answered 404. The project's file is looked up by path.
+        const file = getProjectFileByPath(pid, String(docPath));
         if (file) {
           let content = file.content;
           if (file.is_binary) {

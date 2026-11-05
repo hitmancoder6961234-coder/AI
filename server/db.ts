@@ -14,14 +14,13 @@ import {
   syncMessageToSupabase,
   syncKnowledgeChunkToSupabase,
   deleteKnowledgeChunksFromSupabase,
-  syncModelToSupabase,
   deleteModelFromSupabase,
   syncUserToSupabase,
   syncSessionToSupabase,
   deleteSessionFromSupabase,
   syncWorkspaceFileToSupabase,
   deleteWorkspaceFileFromSupabase,
-  isSupabaseConfigured
+  isSupabaseConfigured,
 } from "./supabase.js";
 
 // Ensure storage database directory exists via storageManager
@@ -910,7 +909,7 @@ export function countProjectFiles(projectId: string): number {
 
 export function updateProject(
   id: string,
-  updates: Partial<Omit<DbProject, "id" | "created_at">> & { metadata?: any }
+  updates: Partial<Omit<DbProject, "id" | "created_at" | "metadata">> & { metadata?: any } // metadata is stored as JSON text; callers pass an object
 ): DbProject | null {
   const current = getProject(id);
   if (!current) return null;
@@ -1096,13 +1095,13 @@ export function createFile(file: {
 export function getFile(id: string): DbProjectFile | null {
   const stmt = db.prepare("SELECT * FROM project_files WHERE id = ?");
   const row = stmt.get(id);
-  return (row as DbProjectFile) || null;
+  return (row as unknown as DbProjectFile) || null;
 }
 
 export function getProjectFileByPath(projectId: string, filePath: string): DbProjectFile | null {
   const stmt = db.prepare("SELECT * FROM project_files WHERE project_id = ? AND path = ?");
   const row = stmt.get(projectId, filePath);
-  return (row as DbProjectFile) || null;
+  return (row as unknown as DbProjectFile) || null;
 }
 
 export function listFiles(projectId: string): DbProjectFile[] {
@@ -1274,7 +1273,7 @@ export function createArtifact(artifact: {
 export function getArtifact(id: string): DbArtifact | null {
   const stmt = db.prepare("SELECT * FROM artifacts WHERE id = ?");
   const row = stmt.get(id);
-  return (row as DbArtifact) || null;
+  return (row as unknown as DbArtifact) || null;
 }
 
 export function listArtifacts(projectId: string): DbArtifact[] {
@@ -1396,7 +1395,7 @@ export function createKnowledgeChunk(chunk: {
   );
 
   const row = db.prepare("SELECT * FROM knowledge_chunks WHERE id = ?").get(chunk.id);
-  return row as DbKnowledgeChunk;
+  return row as unknown as DbKnowledgeChunk;
 }
 
 export function listKnowledgeChunks(projectId: string, fileId?: string): DbKnowledgeChunk[] {
@@ -1414,7 +1413,7 @@ export function deleteKnowledgeForProject(projectId: string): number {
   if (isSupabaseConfigured()) {
     deleteKnowledgeChunksFromSupabase(projectId).catch(() => {});
   }
-  return res.changes;
+  return Number(res.changes); // node:sqlite reports number | bigint
 }
 
 export function deleteKnowledgeChunksForFile(projectId: string, fileId: string): number {
@@ -1422,7 +1421,7 @@ export function deleteKnowledgeChunksForFile(projectId: string, fileId: string):
   if (isSupabaseConfigured()) {
     deleteKnowledgeChunksFromSupabase(projectId, fileId).catch(() => {});
   }
-  return res.changes;
+  return Number(res.changes); // node:sqlite reports number | bigint
 }
 
 export function upsertKnowledgeSource(source: Partial<DbKnowledgeSource> & { id: string; project_id: string; path: string; name: string }): DbKnowledgeSource {
@@ -1455,7 +1454,7 @@ export function upsertKnowledgeSource(source: Partial<DbKnowledgeSource> & { id:
     now
   );
 
-  return db.prepare("SELECT * FROM knowledge_sources WHERE id = ?").get(source.id) as DbKnowledgeSource;
+  return db.prepare("SELECT * FROM knowledge_sources WHERE id = ?").get(source.id) as unknown as DbKnowledgeSource;
 }
 
 export function listKnowledgeSources(projectId: string): DbKnowledgeSource[] {
@@ -1465,7 +1464,7 @@ export function listKnowledgeSources(projectId: string): DbKnowledgeSource[] {
 
 export function getKnowledgeSource(projectId: string, idOrPath: string): DbKnowledgeSource | null {
   const row = db.prepare("SELECT * FROM knowledge_sources WHERE project_id = ? AND (id = ? OR path = ?)").get(projectId, idOrPath, idOrPath);
-  return (row as DbKnowledgeSource) || null;
+  return (row as unknown as DbKnowledgeSource) || null;
 }
 
 export function deleteKnowledgeSource(projectId: string, idOrPath: string): boolean {
@@ -1485,8 +1484,10 @@ export function deleteKnowledgeSource(projectId: string, idOrPath: string): bool
 // ---------------------------------------------------------------------------
 export function saveArchitecture(
   projectId: string,
-  nodes: Array<{ id: string; node_type?: string; name: string; file_id?: string | null; metadata?: any }>,
-  edges: Array<{ id: string; source_node_id: string; target_node_id: string; relationship?: string; confidence?: number; evidence?: string | null }>
+  // Nodes may come in either shape: DB rows (node_type / name / file_id) or the analyzer's ArchitectureNode (type / label / files); both are read below.
+  nodes: Array<{ id: string } & Record<string, any>>,
+  // Edges likewise: source_node_id / target_node_id / relationship, or the analyzer's source / target (from / to) / label.
+  edges: Array<{ id: string } & Record<string, any>>
 ) {
   ensureProjectExists(projectId);
   runTransaction(() => {
@@ -1619,7 +1620,7 @@ export function getDiagnostics(projectId: string): DbDiagnostic[] {
 
 export function deleteDiagnosticsForProject(projectId: string): number {
   const res = db.prepare("DELETE FROM diagnostics WHERE project_id = ?").run(projectId);
-  return res.changes;
+  return Number(res.changes); // node:sqlite reports number | bigint
 }
 
 // ---------------------------------------------------------------------------

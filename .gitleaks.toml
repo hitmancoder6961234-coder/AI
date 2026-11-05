@@ -1,0 +1,15 @@
+title = "Darkness AI secret scanning"
+
+# Start from gitleaks' built-in rules (API keys, tokens, private keys, connection strings, ...).
+[extend]
+useDefault = true
+
+# The ONLY exceptions: fake credentials that the redaction tests deliberately push through the logger to prove they are scrubbed.
+# They are listed as exact strings, not as a path, so a real secret added to tests/ is still caught.
+# tests/ci-and-lockfile.test.ts fails if this list grows, widens or goes stale.
+[allowlist]
+description = "Fake keys used by the log-redaction tests"
+regexes = [
+  '''AIzaSyFAKE-KEY-for-tests-0123456789abcdef''',
+  '''sk-abcdefghijklmnopqrstuvwxyz0123456789''',
+]

@@ -431,14 +431,6 @@
       }
     }
 
-    highlightLine(lineNum) {
-      if (!this.isOpen || !this.panelEl) return;
-      const targetStep = this.steps.findIndex((s) => s.lineNumber === lineNum);
-      if (targetStep >= 0) {
-        this.applyStep(targetStep);
-      }
-    }
-
     _bindResizer() {
       const resizer = document.getElementById("vlResizer");
       if (resizer && this.panelEl) {

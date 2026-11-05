@@ -1,6 +1,6 @@
-import { ProjectAnalysis, ExtractedFile } from "./project-analyzer";
-import { buildProjectVisualIntelligence, ProjectVisuals } from "./visual-intelligence";
-import { listVisualAssets } from "./db";
+import { ProjectAnalysis, ExtractedFile } from "./project-analyzer.js";
+import { buildProjectVisualIntelligence } from "./visual-intelligence.js";
+import { listVisualAssets } from "./db.js";
 
 export interface ArtifactGenerationContext {
   project: {
@@ -89,11 +89,11 @@ export interface ArtifactGenerationContext {
 /**
  * Builds canonical project-grounded context for PPT, DOCX, XLSX, PDF, and Image generation.
  */
-export function buildArtifactGenerationContext(
+export async function buildArtifactGenerationContext(
   analysis: ProjectAnalysis,
   files: ExtractedFile[] = [],
   projectId?: string
-): ArtifactGenerationContext {
+): Promise<ArtifactGenerationContext> {
   const safeFiles = Array.isArray(files) ? files : [];
   const pid = projectId || analysis.projectId || "default_project";
   const cleanName = analysis.projectName || "Uploaded Project";
@@ -111,7 +111,7 @@ export function buildArtifactGenerationContext(
   }
 
   // 3. Generate diagrams and gather screenshots
-  const visualIntelligence = buildProjectVisualIntelligence(analysis, safeFiles);
+  const visualIntelligence = await buildProjectVisualIntelligence(analysis, safeFiles);
 
   // 4. Transform screenshots from files and DB assets
   const screenshots: ArtifactGenerationContext["visuals"]["screenshots"] = [];
@@ -123,7 +123,7 @@ export function buildArtifactGenerationContext(
       name: sc.name || `Screenshot ${idx + 1}`,
       category: sc.category || "ui_preview",
       description: sc.description || `Real screenshot detected in repository (${sc.name})`,
-      bufferBase64: sc.buffer.toString("base64"),
+      bufferBase64: sc.bufferBase64, // DetectedScreenshot already carries base64 (it has no `buffer`; the old code threw here)
       mimeType: "image/png",
     });
   });

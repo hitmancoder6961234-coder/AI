@@ -303,7 +303,7 @@ async function toPdf(doc: DocModel): Promise<Buffer> {
 // --- PPTX (generic documents; the Studio has a richer deck renderer) -----------------------------
 
 async function toPptx(doc: DocModel): Promise<Buffer> {
-  const pptx = new PptxGenJS();
+  const pptx = new (PptxGenJS as any)();
   pptx.layout = "LAYOUT_WIDE";
   pptx.title = doc.title;
   pptx.author = doc.author || "Darkness AI";

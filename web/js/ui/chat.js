@@ -1903,7 +1903,7 @@ window.Darkness.uiChat = {
                 if (analysis.architecture && analysis.architecture.length > 0) hasArch = true;
                 if (analysis.viva && analysis.viva.length > 0) hasViva = true;
                 if (analysis.security && analysis.security.issues) hasSecurity = true;
-                if (analysis.ragStatus === "indexed" || true) hasRag = true; // Assume RAG might be available or check actual status if known
+                hasRag = true; // Assume RAG might be available or check actual status if known
             }
         }
     }
@@ -3953,10 +3953,8 @@ window.Darkness.uiChat = {
 
     const clearActiveState = (e) => {
       if (!e.target.closest(".message") || e.target.closest(".composer")) {
-        if (activeMessage) {
-          activeMessage.classList.remove("message--active");
-          activeMessage = null;
-        }
+        // (the old code used an undeclared `activeMessage` variable and threw on every outside tap)
+        convEl.querySelectorAll(".message--active").forEach((el) => el.classList.remove("message--active"));
       }
     };
     document.removeEventListener("touchstart", clearActiveState);

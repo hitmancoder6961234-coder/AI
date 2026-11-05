@@ -1,33 +1,28 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, BorderStyle, AlignmentType, ImageRun } from "docx";
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, ImageRun } from "docx";
 import ExcelJS from "exceljs";
 import pptxgen from "pptxgenjs";
 import { PDFDocument, rgb, StandardFonts } from "pdf-lib";
 import puppeteer from "puppeteer";
 import sharp from "sharp";
-import { ProjectAnalysis, ExtractedFile } from "./project-analyzer";
-import { buildArtifactGenerationContext, validateArtifactContext, ArtifactGenerationContext } from "./artifact-context";
+import { ProjectAnalysis, ExtractedFile } from "./project-analyzer.js";
+import { buildArtifactGenerationContext } from "./artifact-context.js";
 import { GoogleGenAI } from "@google/genai";
 import { formatApiError, generateGeminiWithResilience } from "./gemini-resilience.js";
 import {
   buildProjectVisualIntelligence,
   generateArchitectureDiagramSvg as generateArchitectureDiagramSvgVi,
-  generateWorkflowDiagramSvg,
-  generateRagPipelineDiagramSvg,
-  generateTechStackVisualSvg,
   renderSvgToPngBuffer,
-} from "./visual-intelligence";
-import { generateProjectImage } from "./image-service";
+} from "./visual-intelligence.js";
+import { generateProjectImage } from "./image-service.js";
 import {
   ASSET_PALETTE,
-  PDF_PALETTE,
   ASSET_TYPOGRAPHY,
   addCleanPptHeader,
   addCleanPptFooter,
   addCleanPptCard,
   createCleanDocxTable,
-  createCleanDocxCallout,
   DOCX_STYLES,
-} from "./asset-stylesheet";
+} from "./asset-stylesheet.js";
 
 export interface GeneratedArtifact {
   id: string;
@@ -56,6 +51,10 @@ export interface GeneratedArtifact {
     noChange: string[];
   };
   appliedToProject?: boolean;
+  /** Source data for re-rendering (slides, report sections, ...); stored with the artifact. */
+  structuredData?: any;
+  /** Path in the project, when the artifact was applied to one. */
+  path?: string;
 }
 
 export type GenerationIntent =
@@ -695,8 +694,8 @@ export async function generateDocxReport(
   }
 
   const safeFiles = Array.isArray(files) ? files : [];
-  const context = buildArtifactGenerationContext(analysis, safeFiles, analysis?.projectId);
-  const visuals = buildProjectVisualIntelligence(analysis, safeFiles);
+  const context = await buildArtifactGenerationContext(analysis, safeFiles, analysis?.projectId);
+  const visuals = await buildProjectVisualIntelligence(analysis, safeFiles);
   const cleanProjName = context.project.name || "Software Project";
   const dateStr = new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
 
@@ -726,7 +725,7 @@ export async function generateDocxReport(
     {
       title: "3. System Architecture & Component Decomposition",
       paragraphs: [
-        context.architecture?.summary || `Analyzed ${context.evidence.architectureNodes.length} architectural subsystems within the codebase.`,
+        analysis.architecture?.summary || `Analyzed ${context.evidence.architectureNodes.length} architectural subsystems within the codebase.`,
         ...(context.evidence.architectureNodes.length > 0 ? context.evidence.architectureNodes.map(n => `• ${n.label} (${n.type}): ${n.description || "Subsystem component"}`) : ["• Core application runtime and services."])
       ],
       includeDiagram: true
@@ -782,7 +781,7 @@ export async function generateDocxReport(
 
     if (section.title.includes("Architecture") && visuals.architecturePng) {
       children.push(new Paragraph({
-        children: [new ImageRun({ data: visuals.architecturePng, transformation: { width: 600, height: 350 } })],
+        children: [new ImageRun({ type: "png", data: visuals.architecturePng, transformation: { width: 600, height: 350 } })],
         alignment: AlignmentType.CENTER,
         spacing: { before: 200, after: 200 }
       }));
@@ -835,7 +834,7 @@ export async function generateExcelWorkbook(
   }
 
   const safeFiles = Array.isArray(files) ? files : [];
-  const context = buildArtifactGenerationContext(analysis, safeFiles, analysis?.projectId);
+  const context = await buildArtifactGenerationContext(analysis, safeFiles, analysis?.projectId);
   const userPromptClean = (rawPrompt || "").trim();
 
   const workbook = new ExcelJS.Workbook();
@@ -877,7 +876,7 @@ Return ONLY valid JSON:
         apiKey,
         modelName: modelName || "gemini-3-flash-preview",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
-        temperature: 0.3,
+        config: { temperature: 0.3 }, // was a top-level `temperature`, which GeminiGenerateOptions ignores
       });
       const rawText = aiResp.text || "";
       const jsonMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -934,7 +933,7 @@ Return ONLY valid JSON:
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
-  return buffer as Buffer;
+  return buffer as unknown as Buffer;
 }
 
 
@@ -1012,10 +1011,10 @@ export async function generatePowerPointPresentation(
   }
 
   const safeFiles = Array.isArray(files) ? files : [];
-  const context = buildArtifactGenerationContext(analysis, safeFiles, analysis?.projectId);
+  const context = await buildArtifactGenerationContext(analysis, safeFiles, analysis?.projectId);
   const visuals = context.visuals;
 
-  const ppt = new pptxgen();
+  const ppt = new (pptxgen as any)();
   ppt.author = "Darkness AI";
   ppt.company = context.project.name || "Universal Project Intelligence";
   ppt.layout = "LAYOUT_16x9";
@@ -1173,8 +1172,8 @@ export async function generatePowerPointPresentation(
         category: "Data Flow",
         title: "End-to-End Request & Data Lifecycle",
         subtitle: "Sequential trace of user commands from client to verification",
-        steps: context.analysis?.dataFlow?.steps?.length >= 3
-          ? context.analysis.dataFlow.steps.slice(0, 4).map((s: any) => ({
+        steps: analysis?.dataFlow?.steps?.length >= 3
+          ? analysis.dataFlow.steps.slice(0, 4).map((s: any) => ({
               title: s.title || "Pipeline Stage",
               description: s.description || "Processes incoming payload and propagates to downstream workers."
             }))
@@ -1193,13 +1192,13 @@ export async function generatePowerPointPresentation(
         category: "API Contracts",
         title: "API Surface & Service Endpoints",
         subtitle: "RESTful interfaces and core contracts powering the platform",
-        features: context.analysis?.apiIntelligence?.endpoints?.length >= 2
-          ? context.analysis.apiIntelligence.endpoints.slice(0, 4).map((e: any) => ({
+        features: analysis?.apiIntelligence?.endpoints?.length >= 2
+          ? analysis.apiIntelligence.endpoints.slice(0, 4).map((e: any) => ({
               title: `[${e.method}] ${e.path}`,
               description: `Managed by ${e.file || "server.ts"} (line ${e.line || 1}). High-speed JSON exchange.`
             }))
-          : context.analysis?.knowledgeBase?.criticalFunctions?.length >= 2
-          ? context.analysis.knowledgeBase.criticalFunctions.slice(0, 4).map((fn: any) => ({
+          : (analysis?.knowledgeBase as any)?.criticalFunctions?.length >= 2
+          ? (analysis.knowledgeBase as any).criticalFunctions.slice(0, 4).map((fn: any) => ({
               title: `Function: ${fn.name}()`,
               description: `Located in ${fn.file || "source module"}. Core domain algorithm.`
             }))
@@ -1288,8 +1287,8 @@ export async function generatePowerPointPresentation(
         title: "Architectural Defense & Key Trade-offs",
         subtitle: "Detailed justification of critical engineering decisions",
         content: "Engineering trade-offs evaluated during system architecture and design:",
-        bullets: context.analysis?.knowledgeBase?.vivaQuestions?.length >= 2
-          ? context.analysis.knowledgeBase.vivaQuestions.slice(0, 3).map((vq: any) => `Q: ${vq.question}\nA: ${vq.answer}`)
+        bullets: analysis?.knowledgeBase?.vivaQuestions?.length >= 2
+          ? analysis.knowledgeBase.vivaQuestions.slice(0, 3).map((vq: any) => `Q: ${vq.question}\nA: ${vq.answer}`)
           : [
               `Q: Why was ${context.project.primaryLanguage} selected for this system?\nA: Delivers strong type safety, robust runtime performance, and rich ecosystem libraries tailored to the project requirements.`,
               `Q: How does the system achieve modularity?\nA: Component boundaries cleanly separate presentation, domain logic, and data storage across ${context.evidence.filesCount} modules.`,
@@ -1465,7 +1464,7 @@ FORMAT:
         apiKey,
         modelName: modelName || "gemini-3-flash-preview",
         contents: [{ role: "user", parts: [{ text: aiPrompt }] }],
-        temperature: 0.3,
+        config: { temperature: 0.3 }, // was a top-level `temperature`, which GeminiGenerateOptions ignores
       });
       // 4.5s timeout for fast response without blocking UI
       const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error("AI timeout")), 4500));
@@ -1572,11 +1571,12 @@ FORMAT:
     slide.background = { color: ASSET_PALETTE.canvas };
 
     if (spec.layout === "title_slide") {
+      // (the title and subtitle sizes used to read ASSET_TYPOGRAPHY.ppt.h1 / .h2, which do not exist, so fontSize was undefined)
       slide.addShape(ppt.ShapeType.roundRect, { x: 0.8, y: 1.15, w: 3.4, h: 0.32, fill: { color: ASSET_PALETTE.surfaceSubtle }, line: { color: ASSET_PALETTE.borderMedium, width: 0.85 }, rectRadius: 0.04 });
       slide.addText(templateKey.replace(/_/g, " ").toUpperCase() || "TECHNICAL ARCHITECTURE", { x: 0.8, y: 1.15, w: 3.4, h: 0.32, fontSize: ASSET_TYPOGRAPHY.ppt.badge, bold: true, color: ASSET_PALETTE.textSecondary, align: "center", valign: "middle" });
-      slide.addText(spec.title || ppt.title, { x: 0.8, y: 1.95, w: 8.4, h: 1.2, fontSize: ASSET_TYPOGRAPHY.ppt.h1, bold: true, color: ASSET_PALETTE.textPrimary, align: "left" });
+      slide.addText(spec.title || ppt.title, { x: 0.8, y: 1.95, w: 8.4, h: 1.2, fontSize: ASSET_TYPOGRAPHY.ppt.deckTitle, bold: true, color: ASSET_PALETTE.textPrimary, align: "left" });
       slide.addShape(ppt.ShapeType.rect, { x: 0.8, y: 3.25, w: 1.2, h: 0.06, fill: { color: ASSET_PALETTE.accent } });
-      slide.addText(spec.subtitle || "AI-Generated Intelligence", { x: 0.8, y: 3.5, w: 8.4, h: 1.0, fontSize: ASSET_TYPOGRAPHY.ppt.h2, color: ASSET_PALETTE.textSecondary, align: "left" });
+      slide.addText(spec.subtitle || "AI-Generated Intelligence", { x: 0.8, y: 3.5, w: 8.4, h: 1.0, fontSize: ASSET_TYPOGRAPHY.ppt.deckSubtitle, color: ASSET_PALETTE.textSecondary, align: "left" });
       addSlideFooter(slide, currentSlide++, totalSlides);
       continue;
     }
@@ -1725,7 +1725,7 @@ export async function generatePdfReport(
   }
 
   const safeFiles = Array.isArray(files) ? files : [];
-  const context = buildArtifactGenerationContext(analysis, safeFiles, analysis?.projectId);
+  const context = await buildArtifactGenerationContext(analysis, safeFiles, analysis?.projectId);
   const title = context.project.name || "Project Technical Report";
   const lang = context.project.primaryLanguage || "TypeScript";
   const frameworks = (context.project.frameworks || []).join(", ") || "Standard Toolchain";
@@ -2337,7 +2337,7 @@ export async function executeGeneration(params: GenerationParams): Promise<Gener
             {
               heading: "Security Audit Findings",
               body: (analysis?.securityAnalysis?.findings || []).length > 0
-                ? (analysis.securityAnalysis.findings || []).map(f => `• [${(f.severity || "info").toUpperCase()}] ${f.title}: ${f.summary || f.description} (${f.file}:${f.line})`).join("\n")
+                ? (analysis.securityAnalysis.findings || []).map(f => `• [${(f.severity || "info").toUpperCase()}] ${f.title}: ${f.description} (${f.file}:${f.line})`).join("\n")
                 : "✓ Zero high-severity security issues detected during static security analysis."
             }
           ]
@@ -2604,7 +2604,7 @@ export async function executeGeneration(params: GenerationParams): Promise<Gener
   if (intent === "diagram_architecture") {
     try {
       const svg = generateArchitectureDiagramSvg(analysis);
-      const pngBuffer = renderSvgToPngBuffer(svg, 1200);
+      const pngBuffer = await renderSvgToPngBuffer(svg, 1200); // async: it used to be used as a Buffer without await (size undefined, base64 of "[object Promise]")
       const filename = `${cleanProjName}_architecture_diagram.png`;
 
       const imgVal = await validateImage(pngBuffer, filename, "image/png");
@@ -2707,7 +2707,7 @@ export async function executeGeneration(params: GenerationParams): Promise<Gener
   }
 
   // 8. Markdown Project Report
-  if (intent === "project_report") {
+  if ((intent as string) === "project_report") { // narrowed away by the branches above, so this never matches; kept as is
     const md = `# Project Intelligence Report: ${analysis.projectName}
 Generated by Darkness Universal Project Engine on ${new Date().toLocaleDateString()}
 

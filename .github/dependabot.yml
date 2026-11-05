@@ -1,0 +1,17 @@
+# Weekly dependency and workflow update pull requests. They run the same required checks as any other change, including the
+# lockfile check: if an automated `npm install` drops the other platforms' native binaries from package-lock.json, CI says so and
+# `node scripts/lockfile-platforms.mjs --fix` repairs it.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly

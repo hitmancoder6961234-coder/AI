@@ -262,7 +262,7 @@ if (typeof window !== "undefined") {
       if (ch === "\\" && text[pos + 1] === "[") {
         var closeBracketDisplay = text.indexOf("\\]", pos + 2);
         if (closeBracketDisplay !== -1) {
-          var mathExpr = text.slice(pos + 2, closeBracketDisplay);
+          mathExpr = text.slice(pos + 2, closeBracketDisplay);
           result += renderMath(mathExpr, true);
           pos = closeBracketDisplay + 2;
           continue;
@@ -289,7 +289,7 @@ if (typeof window !== "undefined") {
       if (ch === "\\" && text[pos + 1] === "(") {
         var closeParenInline = text.indexOf("\\)", pos + 2);
         if (closeParenInline !== -1) {
-          var mathExpr = text.slice(pos + 2, closeParenInline);
+          mathExpr = text.slice(pos + 2, closeParenInline);
           result += renderMath(mathExpr, false);
           pos = closeParenInline + 2;
           continue;
@@ -1116,7 +1116,7 @@ if (typeof window !== "undefined") {
         <pre class="mermaid">${codeEscaped}</pre>
       </div>`;
     }
-    var cellId = block.cellId || "codecell_" + Math.random().toString(36).substring(2, 9);
+    cellId = block.cellId || "codecell_" + Math.random().toString(36).substring(2, 9);
 
     if (typeof window !== "undefined" && window.Darkness && window.Darkness.codeViewer && typeof window.Darkness.codeViewer.renderCell === "function") {
       return window.Darkness.codeViewer.renderCell({

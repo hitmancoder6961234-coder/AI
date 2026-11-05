@@ -217,8 +217,6 @@ export async function verifySupabaseConnection(): Promise<SupabaseHealthReport> 
       const { error: tErr } = await client.from(t).select("id").limit(1);
       if (!tErr || tErr.code === 'PGRST116' || tErr.code === 'PGRST204' || (tErr.message && (tErr.message.includes("contains 0 rows") || tErr.message.includes("Results contain 0 rows")))) {
         if (!tablesFound.includes(t)) tablesFound.push(t);
-      } else if (!tErr) {
-        if (!tablesFound.includes(t)) tablesFound.push(t);
       }
     }
     if (dbReachable) {
@@ -360,11 +358,10 @@ export async function ensureUserExistsInSupabase(rawUserId: string): Promise<str
 
     if (existingUser?.id) return validUserId;
 
-    let localUser: any = null;
-    try {
-      const { getUserById } = await import("./db.js");
-      localUser = getUserById(rawUserId) || getUserById(validUserId);
-    } catch {}
+    // The mirror stores a pseudonymous placeholder user, never the real e-mail or password hash. (This used to try
+    // `getUserById`, which db.ts does not export; the TypeError was swallowed, so the placeholder path is what has always run.
+    // Keep it that way on purpose: looking the real user up would copy their e-mail and password hash to the remote table.)
+    const localUser: any = null;
 
     const email = (localUser?.email || `user_${validUserId.slice(0, 8)}@darkness.local`).toLowerCase().trim();
     const name = (localUser?.name || "Darkness User").trim();
@@ -680,6 +677,9 @@ export async function syncRagDocumentToSupabase(doc: {
   mime_type?: string | null;
   status?: string;
   created_at?: string;
+  /** callers also pass size / chunks_count; the mirror table does not store them (accepted and ignored) */
+  size?: number;
+  chunks_count?: number;
 }): Promise<string | null> {
   const client = getSupabaseAdmin();
   if (!client) return null;
@@ -856,7 +856,7 @@ export async function syncKnowledgeChunkToSupabase(chunk: {
     };
 
     // Explicitly stringify metadata for rag_chunks to prevent TypeError: fetch failed
-    let safeMeta = meta;
+    let safeMeta: any = meta;
     if (typeof meta === "object" && meta !== null) {
       try {
         safeMeta = JSON.parse(JSON.stringify(meta));
@@ -1152,7 +1152,7 @@ export async function syncUserToSupabase(user: {
     } else if (authErr && (authErr.message?.includes("already") || authErr.status === 422)) {
       // User exists in Supabase Auth, update their metadata & password
       const { data: userList } = await client.auth.admin.listUsers({ page: 1, perPage: 100 });
-      const found = userList?.users?.find(u => u.email?.toLowerCase() === cleanEmail);
+      const found = userList?.users?.find((u: any) => u.email?.toLowerCase() === cleanEmail);
       if (found) {
         authUserId = found.id;
         const updatePayload: any = {
@@ -1281,7 +1281,7 @@ export async function checkSupabaseUserExists(email: string): Promise<{
     if (error && isNetworkError(error)) {
       throw new SupabaseUnreachableError(error.message);
     }
-    const found = data?.users?.find(u => u.email?.toLowerCase() === cleanEmail);
+    const found = data?.users?.find((u: any) => u.email?.toLowerCase() === cleanEmail);
     if (found) {
       const meta = found.user_metadata || {};
       return {

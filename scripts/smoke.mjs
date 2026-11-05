@@ -259,6 +259,26 @@ try {
   console.log("\ndocuments (upload + export of every type)");
   const formData = (name, buf, field = "files") => { const fd = new FormData(); fd.append(field, new Blob([buf]), name); return fd; };
   const postJson = (p, body, token) => fetch(base + p, { method: "POST", headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
+  await check("DOCX export applies the chosen margins, embeds pictures with a real type, and cannot be made to embed server files", async () => {
+    const { default: AdmZip } = await import("adm-zip");
+    const png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==";
+    const exportDocx = async (body) => {
+      const r = await postJson("/api/document/export-docx", { title: "T", ...body }, tokB);
+      assert.equal(r.status, 200, await r.clone().text());
+      return new AdmZip(Buffer.from(await r.arrayBuffer()));
+    };
+    const pictures = (z) => z.getEntries().filter((e) => e.entryName.startsWith("word/media/") && e.header.size > 0).map((e) => e.entryName);
+    // `margins` was passed to docx, which only knows `margin`: the choice never applied
+    assert.match((await exportDocx({ marginSize: "wide", contentHtml: "<p>hello</p>" })).readAsText("word/document.xml"), /w:top="2000"/);
+    assert.match((await exportDocx({ marginSize: "narrow", contentHtml: "<p>hello</p>" })).readAsText("word/document.xml"), /w:top="800"/);
+    // a data: picture is embedded with its real type (without it docx stores "....undefined", which Word cannot open)
+    const withPicture = await exportDocx({ contentHtml: `<p>x</p><img src="data:image/png;base64,${png}">` });
+    assert.deepEqual(pictures(withPicture).map((n) => n.split(".").pop()), ["png"]);
+    // the src comes from the caller: it may not reach outside web/public/uploads, and non-images are not embedded
+    const hostile = await exportDocx({ contentHtml: '<p>y</p><img src="uploads/../../../package.json"><img src="/uploads/../../../../package.json"><img src="data:image/png;base64,' + Buffer.from("this is not an image").toString("base64") + '">' });
+    assert.deepEqual(pictures(hostile), []);
+    assert.ok(!hostile.getEntries().some((e) => /darkness-ai|"scripts"/.test(e.getData().toString("latin1"))), "no server file content in the document");
+  });
   await check("export one document to every format", async () => {
     const md = "# Report\n\n## Intro\nHello **world**.\n\n| a | b |\n|---|---|\n| 1 | 2 |\n";
     const magic = { docx: "PK", xlsx: "PK", pptx: "PK", odt: "PK", pdf: "%PDF-", rtf: "{\\rtf1" };

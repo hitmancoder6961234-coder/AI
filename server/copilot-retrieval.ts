@@ -1,4 +1,4 @@
-import { ExtractedFile } from "./project-analyzer";
+import { ExtractedFile } from "./project-analyzer.js";
 
 export function retrieveRelevantFiles(prompt: string, files: ExtractedFile[], limit = 5): ExtractedFile[] {
   const q = prompt.toLowerCase();

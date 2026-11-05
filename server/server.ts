@@ -1,23 +1,18 @@
 import "./env-loader.js";
-import { registerProjectAndFileRoutes } from "./project-routes";
-import { 
-  generateProfessionalMermaidDiagram, 
-  renderProfessionalArchitectureSvg, 
+import { registerProjectAndFileRoutes } from "./project-routes.js";
+import {
+  renderProfessionalArchitectureSvg,
   renderProfessionalWorkflowSvg,
   renderProfessionalRagArchitectureSvg,
-  renderProfessionalFileArchitectureSvg
-} from "./architecture-diagram-renderer";
+  renderProfessionalFileArchitectureSvg,
+} from "./architecture-diagram-renderer.js";
 import {
   getAllArchitectureIcons,
-  resolveArchitectureIcon,
   getIconSvg,
-  getIconDataUri,
-  ARCHITECTURE_ICON_REGISTRY
-} from "./architecture-icon-registry";
+} from "./architecture-icon-registry.js";
 import {
   verifySupabaseConnection,
   ensureSupabaseBucketsExist,
-  ensureSupabaseTablesExist,
   isSupabaseConfigured,
   getSupabaseAdmin,
   syncModelToSupabase,
@@ -38,7 +33,7 @@ import {
   syncMessageToSupabase,
   toValidUuid,
 } from "./supabase.js";
-import { syncProjectFiles, createTerminalSession, startTerminalSession, stopTerminalSession, sendInputToSession, getProjectSessions, activeSessions, sanitizeSession, resolveProjectWorkspace, detectProject } from "./run-engine";
+import { syncProjectFiles, createTerminalSession, startTerminalSession, stopTerminalSession, sendInputToSession, getProjectSessions, stopProject, activeSessions, sanitizeSession, detectProject } from "./run-engine.js";
 import httpProxy from "http-proxy";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -58,38 +53,32 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import {
   formatApiError,
-  isRetryableError,
   streamGeminiWithResilience,
   generateGeminiWithResilience,
-  shouldPerformWebResearch,
   resolveSupportedGeminiModel,
   getEffectiveGeminiApiKey,
   getEffectiveGeminiClient,
 } from "./gemini-resilience.js";
-import { extractZipSecurely, analyzeProject, ProjectAnalysis, ExtractedFile } from "./project-analyzer";
-import { executeGeneration, GeneratedArtifact, detectGenerationIntent, generateDocxReport, generatePowerPointPresentation, generatePdfReport, generateExcelWorkbook } from "./file-generator";
-import { ProjectIntentClassifier, ProjectUnderstandingEngine, ProjectKnowledgeBuilder, ProjectIntent } from "./project-understanding-engine";
-import { renderSvgToPngBuffer, renderSvgToJpgBuffer, generateArchitectureDiagramSvg, generateWorkflowDiagramSvg } from "./visual-intelligence";
-import { executeCopilotTurn } from "./copilot-engine.js";
-import { indexProject, updateFileKnowledge, deleteFileKnowledge, getProjectKnowledge, searchKnowledge, assembleContext, deleteProjectKnowledge } from "./knowledge-engine.js";
+import { analyzeProject, ProjectAnalysis, ExtractedFile } from "./project-analyzer.js";
+import { executeGeneration, GeneratedArtifact, detectGenerationIntent, generateDocxReport, generatePowerPointPresentation, generatePdfReport, generateExcelWorkbook } from "./file-generator.js";
+import "./project-understanding-engine.js";
+import { renderSvgToPngBuffer, renderSvgToJpgBuffer, generateArchitectureDiagramSvg } from "./visual-intelligence.js";
+import "./copilot-engine.js";
+import { searchKnowledge, assembleContext, deleteProjectKnowledge } from "./knowledge-engine.js";
 import { registerRagRoutes } from "./rag-routes.js";
 import { searchUserMultiDocumentRag, buildMultiDocumentKnowledgePrompt } from "./rag-engine.js";
-import { AgentRuntime } from "./agent-runtime";
-import { UniversalExplanationEngine, UniversalMathSolver, AnswerIntegrityValidator, sanitizeResponseSections, sanitizeLatexString } from "./study-learning-engine";
-import { UniversalVisualIntentRouter, VisualIntentClassification } from "./visual-intent-router";
-import { InternalVisualEngine } from "./internal-visual-engine";
+import { AgentRuntime } from "./agent-runtime.js";
+import { UniversalExplanationEngine, AnswerIntegrityValidator } from "./study-learning-engine.js";
+import { VisualIntentClassification } from "./visual-intent-router.js";
+import { InternalVisualEngine } from "./internal-visual-engine.js";
 import {
   detectModelSpecs,
   estimateTokens,
   calculateDynamicContextBudget,
-  packRagChunksIntoBudget,
   packChatHistoryIntoBudget,
   buildFormattedGeminiHistory,
-  buildFormattedOpenAiHistory,
-  isContextLimitExceededError,
-  formatSafeDiagnostics,
 } from "./model-registry-engine.js";
-import { analyzeFileDiagnostics } from "./project-diagnostics";
+import "./project-diagnostics.js";
 import { storageManager } from "./storage-manager.js";
 import AdmZip from "adm-zip";
 import {
@@ -112,36 +101,19 @@ import {
   dbDeleteSession,
   getProject as dbGetProject,
   listProjects as dbListProjects,
-  updateProject as dbUpdateProject,
   deleteProject as dbDeleteProject,
   createFile as dbCreateFile,
-  getFile as dbGetFile,
-  getProjectFileByPath as dbGetProjectFileByPath,
   listFiles as dbListFiles,
   updateFile as dbUpdateFile,
-  updateFileByPath as dbUpdateFileByPath,
-  deleteFile as dbDeleteFile,
-  deleteProjectFileByPath as dbDeleteProjectFileByPath,
-  renameProjectFolderFiles as dbRenameProjectFolderFiles,
-  deleteProjectFolderFiles as dbDeleteProjectFolderFiles,
   createArtifact as dbCreateArtifact,
+  getArtifact as dbGetArtifact,
   listArtifacts as dbListArtifacts,
   deleteArtifact as dbDeleteArtifact,
-  createKnowledgeChunk as dbCreateKnowledgeChunk,
   createKnowledgeChunksBatch as dbCreateKnowledgeChunksBatch,
   upsertKnowledgeSource as dbUpsertKnowledgeSource,
-  deleteKnowledgeForProject as dbDeleteKnowledgeForProject,
-  saveArchitecture as dbSaveArchitecture,
-  getArchitecture as dbGetArchitecture,
-  deleteArchitectureForProject as dbDeleteArchitectureForProject,
-  saveDiagnostics as dbSaveDiagnostics,
-  getDiagnostics as dbGetDiagnostics,
-  deleteDiagnosticsForProject as dbDeleteDiagnosticsForProject,
   saveProjectAnalysis as dbSaveProjectAnalysis,
   getProjectAnalysis as dbGetProjectAnalysis,
   deleteProjectAnalysis as dbDeleteProjectAnalysis,
-  saveGithubConnection as dbSaveGithubConnection,
-  getGithubConnection as dbGetGithubConnection,
   saveConversation as dbSaveConversation,
   getConversation as dbGetConversation,
   listConversations as dbListConversations,
@@ -152,7 +124,6 @@ import {
   saveWorkspaceFile as dbSaveWorkspaceFile,
   getWorkspaceFile as dbGetWorkspaceFile,
   listWorkspaceFiles as dbListWorkspaceFiles,
-  deleteWorkspaceFile as dbDeleteWorkspaceFile,
   parseMetadataSafely,
   countProjectFiles,
   getConversationMessageCounts,
@@ -161,25 +132,13 @@ import {
   listVisualAssets,
   getVisualAsset,
   deleteVisualAsset,
-  dbGetModels,
-  dbSaveModel,
 } from "./db.js";
 import { generateProjectImage } from "./image-service.js";
 import {
-  PROJECTS_DIR,
-  validateProjectId,
-  getProjectStorageDir,
   sanitizeProjectPath,
-  resolveProjectFilePath,
   writeProjectFileToDisk,
-  readProjectFileFromDisk,
-  deleteProjectFileFromDisk,
-  renameProjectFileOnDisk,
   createProjectFolderOnDisk,
-  renameProjectFolderOnDisk,
-  deleteProjectFolderOnDisk,
   deleteProjectStorage,
-  listProjectDiskFiles,
   syncDiskFromDatabase,
 } from "./project-storage.js";
 import {
@@ -241,6 +200,7 @@ interface ModelItem {
   lastTestedAt?: number | null;
   lastError?: string | null;
   isUser: boolean;
+  user_id?: string; // owner; set on rows read from the database
 }
 
 interface MessageItem {
@@ -252,6 +212,7 @@ interface MessageItem {
   model_id: string | null;
   attachments?: any[];
   created_at: number;
+  project_id?: string | null;
 }
 
 interface ConversationItem {
@@ -261,9 +222,10 @@ interface ConversationItem {
   model_id: string;
   created_at: number;
   updated_at: number;
+  project_id?: string | null;
 }
 
-interface FileItem {
+export interface FileItem {
   id: string;
   user_id: string;
   conversation_id: string | null;
@@ -275,6 +237,9 @@ interface FileItem {
   content: string;
   uploaded_at: number;
   buffer?: Buffer;
+  /** extra fields some upload routes add to the object they send back to the client */
+  name?: string;
+  ok?: boolean;
 }
 
 export interface GitHubConfig {
@@ -560,7 +525,8 @@ export function mapDbRowToModelItem(row: any, fallbackUserId: string): ModelItem
     defaultTemperature: Number(row.temperature ?? row.default_temperature ?? row.defaultTemperature ?? specs.defaultTemperature),
     defaultTopP: Number(row.top_p ?? row.default_top_p ?? row.defaultTopP ?? specs.defaultTopP),
     supportsStreaming: row.supports_streaming !== undefined ? Boolean(row.supports_streaming) : true,
-    enabled: row.enabled !== undefined && row.enabled !== 0 ? Boolean(row.enabled) : true,
+    // A stored 0 / false means "disabled"; only a missing value defaults to enabled.
+    enabled: row.enabled === undefined || row.enabled === null ? true : !(row.enabled === 0 || row.enabled === false || row.enabled === "0" || row.enabled === "false"),
     status: row.status || "available",
     isUser: Boolean(row.is_user ?? row.isUser ?? true),
     user_id: validUid,
@@ -1267,9 +1233,16 @@ async function startServer() {
     }
     if (token) {
       if (sessions.has(token)) {
-        const uid = sessions.get(token)!;
-        const u = users.get(uid);
-        if (u) return u;
+        // The map is a process-lifetime cache. Expiry and revocation live in the database row, so confirm it is still live: without
+        // this a session stayed valid until the next restart (weeks, on a long-running host) however old or revoked it was.
+        // (The open legacy mode keeps its row-less "default_token".)
+        if (PRIVACY_STRICT && !dbGetSession(token)) {
+          sessions.delete(token);
+        } else {
+          const uid = sessions.get(token)!;
+          const u = users.get(uid);
+          if (u) return u;
+        }
       }
       const dbSess = dbGetSession(token);
       if (dbSess) {
@@ -1538,7 +1511,7 @@ async function startServer() {
       return res.status(409).json({ error: "An account with this email already exists" });
     }
 
-    let id = crypto.randomUUID();
+    let id: string = crypto.randomUUID();
     const hashedPassword = hashPassword(String(password));
     const userName = String(name || cleanEmail.split("@")[0]).trim();
     const now = Date.now();
@@ -2276,7 +2249,7 @@ async function startServer() {
   app.get("/api/models/:id/capabilities", (req, res) => {
     const user = resolveUser(req);
     if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const m = getUserModel(user.id, req.params.id);
+    const m = getUserModel(user.id, String(req.params.id));
     if (!m) return res.status(404).json({ error: "Model not found", type: "model_not_found" });
     res.json({ capabilities: m.capabilities });
   });
@@ -2438,7 +2411,7 @@ async function startServer() {
     }
     const body = req.body || {};
     const id = body.id ? String(body.id).trim() : crypto.randomUUID();
-    const title = String(body.title || "New Chat").trim();
+    const title = String(body.title || "New Chat").trim().slice(0, 200);
     const model_id = body.model_id || user.active_model_id || "";
 
     const conv: ConversationItem = {
@@ -2538,7 +2511,7 @@ async function startServer() {
   });
 
   app.get("/api/conversations/:cid", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2606,7 +2579,7 @@ async function startServer() {
   });
 
   app.delete("/api/conversations/:cid", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2642,7 +2615,7 @@ async function startServer() {
   });
 
   app.patch("/api/conversations/:cid/title", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2687,7 +2660,7 @@ async function startServer() {
   });
 
   app.get("/api/conversations/:cid/messages", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2699,14 +2672,26 @@ async function startServer() {
     if (conv.user_id && conv.user_id !== user.id && user.id !== initialUser.id && conv.user_id !== initialUser.id) {
       return res.status(403).json({ error: "Access denied to this conversation", code: "FORBIDDEN" });
     }
-    const convMessages = Array.from(messages.values())
+    let convMessages = Array.from(messages.values())
       .filter((m) => m.conversation_id === cid)
       .sort((a, b) => a.created_at - b.created_at);
+    if (convMessages.length === 0) {
+      // Not in the in-memory cache (a conversation created straight in the database, e.g. a branch, or one not yet touched since a
+      // restart): read it from the database and cache it, exactly like the chat route does.
+      try {
+        for (const dm of dbListMessages(cid)) {
+          if (!messages.has(dm.id)) {
+            messages.set(dm.id, { id: dm.id, conversation_id: dm.conversation_id, project_id: dm.project_id || null, role: dm.role as any, content: dm.content, model_id: dm.model_id, attachments: dm.attachments || [], created_at: dm.created_at });
+          }
+        }
+        convMessages = Array.from(messages.values()).filter((m) => m.conversation_id === cid).sort((a, b) => a.created_at - b.created_at);
+      } catch { /* keep the empty list */ }
+    }
     res.json({ messages: convMessages });
   });
 
   app.post("/api/conversations/:cid/messages", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2826,7 +2811,7 @@ async function startServer() {
   });
 
   app.get("/api/conversations/:cid/files", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -3857,7 +3842,7 @@ Following the details block, provide your beautiful, structured final textbook r
   // -------------------------------------------------------------------------
   app.post("/api/conversations/:cid/chat", async (req, res) => {
     const requestStartMs = Date.now();
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     const authMs = Date.now() - requestStartMs;
 
@@ -4054,7 +4039,7 @@ Following the details block, provide your beautiful, structured final textbook r
 
   // Regenerate endpoint
   app.post("/api/conversations/:cid/regenerate", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
@@ -4444,7 +4429,7 @@ Following the details block, provide your beautiful, structured final textbook r
       created_at: Date.now(),
       updated_at: Date.now(),
       status: "ready",
-      source: "upload"
+      source: "upload" as const
     };
 
     projects.set(pid, pItem);
@@ -4473,7 +4458,7 @@ Following the details block, provide your beautiful, structured final textbook r
   });
 
   app.delete("/api/projects/:pid", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const user = resolveUser(req) || initialUser;
 
     const proj = projects.get(pid);
@@ -4509,10 +4494,12 @@ Following the details block, provide your beautiful, structured final textbook r
       }
     }
 
-    // Stop any running process
+    // Stop every running process of this project first (it holds the project folder open) and forget its sessions
     try {
-      stopProject(pid);
-    } catch {}
+      stopProject(pid, { discard: true });
+    } catch (e) {
+      console.error("Error stopping project processes before delete:", e);
+    }
 
     // Database and disk cleanup
     try {
@@ -4538,7 +4525,7 @@ Following the details block, provide your beautiful, structured final textbook r
 
 
   app.post("/api/projects/:pid/chat", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const user = resolveUser(req) || initialUser;
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
@@ -4623,7 +4610,7 @@ Following the details block, provide your beautiful, structured final textbook r
 
   app.post("/api/projects/:pid/generate", async (req, res) => {
     const user = resolveUser(req) || initialUser;
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -4744,127 +4731,11 @@ Following the details block, provide your beautiful, structured final textbook r
     }
   });
 
-  app.post("/api/projects/:pid/diagnostics", (req, res) => {
-    const pid = req.params.pid;
-    const { path, content } = req.body || {};
-    if (!path || typeof content !== "string") return res.status(400).json({ error: "Missing path or content" });
-
-    // We can call analyzeFileDiagnostics here
-    const issues = analyzeFileDiagnostics(path, content, Array.from(files.values()).filter(f => f.project_id === pid));
-    const summary = { errors: 0, warnings: 0, suggestions: 0 };
-    issues.forEach(i => {
-       if (i.severity === 'error') summary.errors++;
-       else if (i.severity === 'warning') summary.warnings++;
-       else summary.suggestions++;
-    });
-    res.json({ issues, summary });
-  });
-
-  app.post("/api/projects/:pid/diagnostics/ai-fix", async (req, res) => {
-    const pid = req.params.pid;
-    const { path, line, issueId, issueMessage, issueExplanation, fixAll, model_id } = req.body || {};
-
-    const user = resolveUser(req);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-    const modelConfig = resolveModelConfig(model_id || user.active_model_id, user.id);
-    if (!modelConfig) return res.status(400).json({ error: "No model configured." });
-
-    const projectFiles = Array.from(files.values()).filter(f => f.project_id === pid);
-    const target = projectFiles.find(f => f.filename === path || f.filename.endsWith("/" + path));
-    if (!target) return res.status(404).json({ error: "File not found" });
-
-    const issues = analyzeFileDiagnostics(path, target.content || "", projectFiles);
-    const issue = issues.find(i => i.id === issueId);
-
-    if (issue && issue.patchedContent) {
-       return res.json({ fixedContent: issue.patchedContent });
-    }
-
-    if (issue && issue.suggestedCode && issue.diff) {
-       const newContent = (target.content || "").replace(issue.diff.before, issue.diff.after);
-       return res.json({ fixedContent: newContent });
-    } else if (issue && issue.suggestedCode && issue.currentCode) {
-       const newContent = (target.content || "").replace(issue.currentCode, issue.suggestedCode);
-       return res.json({ fixedContent: newContent });
-    }
-
-    const sys = "You are a senior developer fixing code issues. Return ONLY the fully fixed file content. Do not include markdown codeblocks (```) wrapping the file, just the raw content. Do not explain anything.";
-
-    let userPrompt = "";
-    if (fixAll) {
-       const allIssues = issues.map((iss, idx) => `${idx+1}. Line ${iss.line}: ${iss.message} - ${iss.explanation}`).join("\n");
-       userPrompt = `File: ${path}
-Issues to fix:
-${allIssues}
-
-Current Content:
-${target.content || ""}
-
-Fix all these issues and output the complete fixed file content:`;
-    } else {
-       userPrompt = `File: ${path}
-Line: ${line}
-Issue: ${issueMessage}
-Explanation: ${issueExplanation}
-
-Current Content:
-${target.content || ""}
-
-Fix the issue and output the complete fixed file content:`;
-    }
-
-    try {
-      if (modelConfig.provider === "gemini") {
-        const apiKey = modelConfig.apiKey || process.env.GEMINI_API_KEY;
-        if (!apiKey) throw new Error("API key is missing.");
-
-        const resp = await generateGeminiWithResilience({
-          apiKey,
-          modelName: modelConfig.modelName,
-          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-          systemInstruction: sys,
-        });
-
-        if (resp && resp.text) {
-           let fixed = resp.text.trim();
-           if (fixed.startsWith("```")) {
-              fixed = fixed.replace(/^```[a-z]*\n/, "").replace(/\n```$/, "");
-           }
-           return res.json({ fixedContent: fixed });
-        }
-      } else {
-        const baseUrl = getEffectiveBaseUrl(modelConfig);
-        if (!baseUrl) throw new Error("Base URL missing");
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (modelConfig.apiKey) headers["Authorization"] = `Bearer ${modelConfig.apiKey}`;
-
-        const resOpenAi = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            model: modelConfig.modelName || modelConfig.id,
-            messages: [{ role: "system", content: sys }, { role: "user", content: userPrompt }]
-          })
-        });
-        if (resOpenAi.ok) {
-          const data = await resOpenAi.json();
-          let fixed = data.choices?.[0]?.message?.content?.trim() || "";
-          if (fixed.startsWith("```")) {
-              fixed = fixed.replace(/^```[a-z]*\n/, "").replace(/\n```$/, "");
-          }
-          return res.json({ fixedContent: fixed });
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    return res.status(500).json({ error: "No automated fix available without Gemini" });
-  });
+  // (The single-file and AI-fix diagnostics routes live in project-routes.ts. Older copies that were registered after those and
+  // therefore never ran were removed here.)
 
   app.post("/api/projects/:pid/artifacts", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { filename, content, bufferBase64, category, description, source } = req.body || {};
     if (!filename || !category) return res.status(400).json({ error: "filename and category are required" });
 
@@ -4883,7 +4754,7 @@ Fix the issue and output the complete fixed file content:`;
       createdAt: Date.now(),
       updatedAt: Date.now(),
       source: source || "Upload",
-      validation: { status: "unverified", message: "Pending validation" }
+      validation: { status: "unverified" as const, message: "Pending validation" }
     };
     projectArtifacts.set(art.id, art);
     try {
@@ -4903,7 +4774,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/artifacts", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
 
     // Load and hydrate project artifacts from SQLite if they aren't already in memory
     try {
@@ -4952,7 +4823,7 @@ Fix the issue and output the complete fixed file content:`;
 
   app.get("/api/visual-assets/:id", (req, res) => {
     try {
-      const asset = getVisualAsset(req.params.id);
+      const asset = getVisualAsset(String(req.params.id));
       if (!asset || (!asset.content_base64 && !(asset as any).contentBase64)) {
         return res.status(404).send("Visual asset not found");
       }
@@ -4969,10 +4840,10 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/artifacts/:id", (req, res) => {
-    let art = projectArtifacts.get(req.params.id);
+    let art = projectArtifacts.get(String(req.params.id));
     if (!art) {
       try {
-        const dbArt = dbGetArtifact(req.params.id);
+        const dbArt = dbGetArtifact(String(req.params.id));
         if (dbArt) {
           let parsedExtra: any = {};
           if (dbArt.content && dbArt.content.startsWith("{")) {
@@ -4981,6 +4852,7 @@ Fix the issue and output the complete fixed file content:`;
           art = {
             id: dbArt.id,
             projectId: dbArt.project_id,
+            userId: (projects.get(dbArt.project_id) as any)?.user_id || "", // owner = the project's owner
             filename: parsedExtra.filename || dbArt.name,
             extension: parsedExtra.extension || (dbArt.name.split('.').pop() || "txt"),
             mimeType: parsedExtra.mimeType || dbArt.mime_type || "application/octet-stream",
@@ -4998,7 +4870,7 @@ Fix the issue and output the complete fixed file content:`;
           projectArtifacts.set(art.id, art);
         }
       } catch (dbErr) {
-        console.warn(`[API] DB lookup failed for artifact ${req.params.id}:`, dbErr);
+        console.warn(`[API] DB lookup failed for artifact ${String(req.params.id)}:`, dbErr);
       }
     }
     if (!art) return res.status(404).json({ error: "Artifact not found", type: "not_found" });
@@ -5011,10 +4883,10 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/artifacts/:id/download", (req, res) => {
-    let art = projectArtifacts.get(req.params.id);
+    let art = projectArtifacts.get(String(req.params.id));
     if (!art) {
       try {
-        const dbArt = dbGetArtifact(req.params.id);
+        const dbArt = dbGetArtifact(String(req.params.id));
         if (dbArt) {
           let parsedExtra: any = {};
           if (dbArt.content && dbArt.content.startsWith("{")) {
@@ -5023,6 +4895,7 @@ Fix the issue and output the complete fixed file content:`;
           art = {
             id: dbArt.id,
             projectId: dbArt.project_id,
+            userId: (projects.get(dbArt.project_id) as any)?.user_id || "", // owner = the project's owner
             filename: parsedExtra.filename || dbArt.name,
             extension: parsedExtra.extension || (dbArt.name.split('.').pop() || "txt"),
             mimeType: parsedExtra.mimeType || dbArt.mime_type || "application/octet-stream",
@@ -5058,7 +4931,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.delete("/api/artifacts/:id", (req, res) => {
-    const id = req.params.id;
+    const id = String(req.params.id);
     let deleted = false;
     if (projectArtifacts.has(id)) {
       projectArtifacts.delete(id);
@@ -5078,7 +4951,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.patch("/api/artifacts/:id", (req, res) => {
-    const art = projectArtifacts.get(req.params.id);
+    const art = projectArtifacts.get(String(req.params.id));
     if (!art) return res.status(404).json({ error: "Artifact not found", type: "not_found" });
 
     const { filename, description } = req.body || {};
@@ -5090,7 +4963,7 @@ Fix the issue and output the complete fixed file content:`;
 
   app.post("/api/artifacts/:id/apply", (req, res) => {
     const user = resolveUser(req) || initialUser;
-    const art = projectArtifacts.get(req.params.id);
+    const art = projectArtifacts.get(String(req.params.id));
     if (!art) return res.status(404).json({ error: "Artifact not found", type: "not_found" });
     if (!art.content) {
       return res.status(400).json({ error: "Only text and code artifacts can be applied to workspace.", type: "invalid_type" });
@@ -5419,7 +5292,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // Download All Project Artifacts as ZIP Archive
   app.get("/api/projects/:pid/artifacts/download-all", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     const arts = Array.from(projectArtifacts.values()).filter((a) => a.projectId === pid);
 
@@ -5486,7 +5359,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // Project report & presentation export routes (DOCX, PPTX, PDF, XLSX)
   app.get("/api/projects/:pid/export/docx", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5520,7 +5393,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/export/pptx", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5555,7 +5428,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/export/pdf", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5589,7 +5462,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/export/xlsx", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5708,7 +5581,7 @@ Fix the issue and output the complete fixed file content:`;
       }
 
       if (format === "png") {
-        const pngBuf = renderSvgToPngBuffer(svgStr, 1920);
+        const pngBuf = await renderSvgToPngBuffer(svgStr, 1920);
         res.setHeader("Content-Disposition", `attachment; filename="${baseFileName}.png"`);
         res.setHeader("Content-Type", "image/png");
         return res.send(pngBuf);
@@ -5730,7 +5603,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // Project architecture diagram export routes (SVG & high-res PNG)
   app.get(["/api/projects/:pid/export/svg", "/api/projects/:pid/export/diagram.svg"], async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5764,7 +5637,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get(["/api/projects/:pid/export/png", "/api/projects/:pid/export/diagram.png"], async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5799,7 +5672,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get(["/api/projects/:pid/export/jpg", "/api/projects/:pid/export/jpeg", "/api/projects/:pid/export/diagram.jpg"], async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5854,7 +5727,7 @@ Fix the issue and output the complete fixed file content:`;
         res.setHeader("Content-Type", "image/jpeg");
         return res.send(jpgBuf);
       } else {
-        const pngBuf = renderSvgToPngBuffer(svg, targetWidth);
+        const pngBuf = await renderSvgToPngBuffer(svg, targetWidth);
         if (!pngBuf || pngBuf.length === 0) {
           throw new Error("Failed to rasterize SVG into PNG");
         }
@@ -5870,7 +5743,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // --- Visual Asset Management & Image Generation API Routes ---
   app.post("/api/projects/:pid/assets/generate-image", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5902,8 +5775,9 @@ Fix the issue and output the complete fixed file content:`;
       try {
         const sourceAsset = getVisualAsset(sourceImageId);
         if (sourceAsset) {
-          sourceImageBase64 = sourceAsset.contentBase64;
-          sourceImageMimeType = sourceAsset.mimeType;
+          // DbVisualAsset uses snake_case; the camelCase names read here were undefined, so the source image was silently dropped
+          sourceImageBase64 = sourceAsset.content_base64;
+          sourceImageMimeType = sourceAsset.mime_type;
         }
       } catch (err) {
         console.warn(`[API] Failed to fetch source asset ${sourceImageId}:`, err);
@@ -5965,7 +5839,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/assets", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     try {
       const dbAssets = listVisualAssets(pid);
       const assets = dbAssets.map(a => ({
@@ -5987,7 +5861,7 @@ Fix the issue and output the complete fixed file content:`;
 
   app.delete("/api/projects/:pid/assets/:id", async (req, res) => {
     try {
-      deleteVisualAsset(req.params.id);
+      deleteVisualAsset(String(req.params.id));
       res.json({ success: true, message: "Visual asset deleted successfully" });
     } catch (err: any) {
       res.status(500).json({ error: formatApiError(err) || "Failed to delete visual asset" });
@@ -5995,7 +5869,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/export/xlsx", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -6030,7 +5904,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // Project comprehensive report export (Markdown & JSON)
   app.get("/api/projects/:pid/report", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -6174,14 +6048,14 @@ ${vq.answer}
   });
 
   app.use("/api/preview/:port", (req, res) => {
-    const port = parseInt(req.params.port, 10);
+    const port = parseInt(String(req.params.port), 10);
     if (!port || isNaN(port)) return res.status(400).send("Invalid port");
     previewProxy.web(req, res, { target: `http://127.0.0.1:${port}` });
   });
 
   app.post("/api/projects/:pid/terminals", async (req, res) => {
     try {
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
       const { command, title } = req.body;
 
       const dbFiles = dbListFiles(pid);
@@ -6199,7 +6073,7 @@ ${vq.answer}
 
   app.get("/api/projects/:pid/detect", (req, res) => {
     try {
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
       const detection = detectProject(pid);
       res.json(detection);
     } catch (err: any) {
@@ -6208,17 +6082,17 @@ ${vq.answer}
   });
 
   app.get("/api/projects/:pid/terminals", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const sessions = getProjectSessions(pid);
     res.json(sessions.map(s => sanitizeSession(s)));
   });
 
   app.post("/api/terminals/:tid/stop", (req, res) => {
     try {
-      const session = stopTerminalSession(req.params.tid);
+      const session = stopTerminalSession(String(req.params.tid));
       // Clean up from memory if explicitly requested (e.g., closing tab)
       if (req.query.delete === 'true') {
-          activeSessions.delete(req.params.tid);
+          activeSessions.delete(String(req.params.tid));
       }
       res.json(sanitizeSession(session));
     } catch (err: any) {
@@ -6228,8 +6102,8 @@ ${vq.answer}
 
   app.post("/api/terminals/:tid/restart", async (req, res) => {
     try {
-      stopTerminalSession(req.params.tid);
-      const session = await startTerminalSession(req.params.tid);
+      stopTerminalSession(String(req.params.tid));
+      const session = await startTerminalSession(String(req.params.tid));
       res.json(sanitizeSession(session));
     } catch (err: any) {
       res.status(404).json({ error: err.message });
@@ -6238,7 +6112,7 @@ ${vq.answer}
 
   app.post("/api/terminals/:tid/input", (req, res) => {
     try {
-      if (req.body.input) sendInputToSession(req.params.tid, req.body.input);
+      if (req.body.input) sendInputToSession(String(req.params.tid), req.body.input);
       res.json({ ok: true });
     } catch (err: any) {
       res.status(404).json({ error: err.message });
@@ -6247,7 +6121,7 @@ ${vq.answer}
 
   // Legacy fallback for run buttons
   app.post("/api/projects/:pid/run", async (req, res) => {
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
       const dbFiles = dbListFiles(pid);
       const projFiles = dbFiles.map(f => ({ filename: f.path, content: f.content, project_id: f.project_id }));
       syncProjectFiles(pid, projFiles);
@@ -6259,7 +6133,7 @@ ${vq.answer}
   });
 
   app.get("/api/projects/:pid/run/status", (req, res) => {
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
       const sessions = getProjectSessions(pid);
       if (sessions.length > 0) {
           res.json(sanitizeSession(sessions[sessions.length-1]));
@@ -6269,12 +6143,8 @@ ${vq.answer}
   });
 
   app.post("/api/projects/:pid/stop", (req, res) => {
-      const pid = req.params.pid;
-      const sessions = getProjectSessions(pid);
-      for (const s of sessions) {
-          if (s.status === "running" || s.status === "starting") stopTerminalSession(s.id);
-      }
-      res.json({ ok: true });
+      const stopped = stopProject(String(req.params.pid));
+      res.json({ ok: true, stopped });
   });
 
   // Project analysis versions & runs
@@ -6283,16 +6153,16 @@ ${vq.answer}
     res.json({ versions: [] });
   });
   app.post("/api/projects/:pid/versions", (req, res) => {
-    res.status(201).json({ id: `ver_${Date.now()}`, project_id: req.params.pid });
+    res.status(201).json({ id: `ver_${Date.now()}`, project_id: String(req.params.pid) });
   });
   app.get("/api/projects/:pid/runs", (_req, res) => {
     res.json({ runs: [] });
   });
   app.post("/api/projects/:pid/runs", (req, res) => {
-    res.status(201).json({ id: `run_${Date.now()}`, project_id: req.params.pid });
+    res.status(201).json({ id: `run_${Date.now()}`, project_id: String(req.params.pid) });
   });
   app.get("/api/runs/:run_id", (req, res) => {
-    res.json({ id: req.params.run_id, status: "completed", stage: "done" });
+    res.json({ id: String(req.params.run_id), status: "completed", stage: "done" });
   });
   app.patch("/api/runs/:run_id", (req, res) => {
     res.json({ ok: true });
@@ -6755,7 +6625,7 @@ ${vq.answer}
   // Universal /api/chat route with full request/response cycle telemetry
   app.post("/api/chat", async (req, res) => {
     const startTime = performance.now();
-    const requestId = `srv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const requestId = (req as any).id || `srv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`; // the id every response header and log line already carries
     const timestamp = new Date().toISOString();
     const { message, prompt, history, messages, studioType, stream, professorMode } = req.body || {};
     const textMsg = String(message || prompt || "").trim();
@@ -7549,6 +7419,10 @@ USER TRANSFORMATION INSTRUCTION:
       const promptText = String(prompt || "").trim();
       if (!promptText) {
         return res.status(400).json({ error: "Instruction prompt is required" });
+      }
+      // a missing or non-string studioType used to throw below (a 500 with an internal message)
+      if (typeof studioType !== "string" || !studioType.trim() || studioType.length > 40) {
+        return res.status(400).json({ error: "studioType is required (\"presentation\" or \"document\")" });
       }
 
       const isPresentation = studioType === "presentation";
@@ -8452,6 +8326,11 @@ Do NOT reuse, merge, or carry over any content, facts, figures, or titles from p
   // -------------------------------------------------------------------------
   // Vite Integration (Dev) vs Static Serving (Production)
   // -------------------------------------------------------------------------
+  // An unknown API path is a JSON 404, not the app's HTML page with a 200 (the single-page fallback below must never answer for /api).
+  app.use(["/api", "/classic-api"], (req, res) => {
+    res.status(404).json({ error: "Not found", type: "not_found", requestId: res.getHeader("x-request-id") || undefined });
+  });
+
   console.log("NODE_ENV is:", process.env.NODE_ENV);
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");

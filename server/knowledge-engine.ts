@@ -1,7 +1,6 @@
 // knowledge-engine.ts
-import { ExtractedFile, ProjectAnalysis } from "./project-analyzer";
+import { ExtractedFile, ProjectAnalysis } from "./project-analyzer.js";
 import {
-  createKnowledgeChunk,
   createKnowledgeChunksBatch,
   listKnowledgeChunks,
   deleteKnowledgeForProject,
@@ -153,7 +152,7 @@ export function chunkFileContent(file: ExtractedFile, projectId: string): Knowle
           startLine: cellIdx,
           endLine: cellIdx,
           content: source,
-          type: cell.cell_type === 'code' ? 'function' : 'text',
+          chunkType: cell.cell_type === 'code' ? 'function' : 'text', // was `type`: the schema field is chunkType, so notebook chunks had none
           hash: computeHash(source)
         });
         cellIdx++;

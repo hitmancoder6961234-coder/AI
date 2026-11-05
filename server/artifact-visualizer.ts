@@ -1,5 +1,5 @@
 import path from "path";
-import { ExtractedFile } from "./project-analyzer";
+import { ExtractedFile } from "./project-analyzer.js";
 
 export interface ProjectNode {
   id: string;

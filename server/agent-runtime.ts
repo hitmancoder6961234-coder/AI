@@ -16,13 +16,16 @@ import {
   resolveSupportedGeminiModel,
   getEffectiveGeminiApiKey,
 } from "./gemini-resilience.js";
-import { UniversalVisualIntentRouter } from "./visual-intent-router.js";
+import { UniversalVisualIntentRouter, type VisualIntentClassification } from "./visual-intent-router.js";
 import { analyzeProject, ExtractedFile } from "./project-analyzer.js";
 import { searchKnowledge, assembleContext } from "./knowledge-engine.js";
 import { searchUserMultiDocumentRag, buildMultiDocumentKnowledgePrompt } from "./rag-engine.js";
 import { ProjectIntentClassifier, ProjectUnderstandingEngine } from "./project-understanding-engine.js";
 import { AnswerEngine, UnifiedIntent } from "../web/src/answer-engine.js";
-import { UniversalExplanationEngine } from "./study-learning-engine.js";
+import { UniversalExplanationEngine, UniversalMathSolver } from "./study-learning-engine.js";
+// These were used below without being imported, so every document / image step threw a ReferenceError inside its try block.
+import { generateDocxReport, generateExcelWorkbook, generatePowerPointPresentation, generatePdfReport, type GeneratedArtifact } from "./file-generator.js";
+import { generateProjectImage } from "./image-service.js";
 import {
   generateProfessionalMermaidDiagram,
   renderProfessionalWorkflowSvg,
@@ -32,7 +35,7 @@ import {
   buildFormattedGeminiHistory,
   buildFormattedOpenAiHistory,
 } from "./model-registry-engine.js";
-import { saveMessage, getProjectAnalysis } from "./db.js";
+import { saveMessage, getProjectAnalysis, getWorkspaceFile } from "./db.js";
 import { isSupabaseConfigured, syncMessageToSupabase } from "./supabase.js";
 
 
@@ -54,6 +57,10 @@ export interface AgentContextParams {
   modelId?: string;
   selectedCodeContext?: any;
   professorMode?: string;
+  history?: any[];
+  targetFile?: string;
+  generationMode?: string;
+  knowledgeContextId?: string;
   user?: any;
   sendSSE: (data: any) => void;
   signal?: AbortSignal;
@@ -63,8 +70,8 @@ export interface AgentContextParams {
   files?: Map<string, any>;
   projectAnalyses?: Map<string, any>;
   projectArtifacts?: Map<string, any>;
-  dbCreateArtifact?: (artifact: any) => Promise<any>;
-  resolveModelConfig?: (modelId?: string) => any;
+  dbCreateArtifact?: (artifact: any) => any; // may be synchronous (the server passes the SQLite helper)
+  resolveModelConfig?: (modelId?: string, userId?: string) => any;
   getWorkspaceFile?: (fileId: string) => any;
 }
 
@@ -175,8 +182,10 @@ export class AgentRuntime {
                            textMsg.match(/(?:[0-9]+\s*[xX]\s*\^2|[0-9]+\s*[xX]\s*[+\-]|T\(n\)\s*=)/i);
     if (mathSolveMatch && !projectId) {
       try {
-        const solvedResult = UniversalMathSolver.solve(textMsg);
-        if (solvedResult.success && solvedResult.canonicalMarkdown) {
+        // solveProblem returns the structured result (solve() returns only its markdown string, which has no `.success`, so this
+        // branch could never run). Only answer deterministically when the solver verified its own answer; otherwise ask the model.
+        const solvedResult = UniversalMathSolver.solveProblem(textMsg);
+        if (solvedResult && solvedResult.overallVerified && solvedResult.canonicalMarkdown) {
           sendSSE({ content: solvedResult.canonicalMarkdown });
           sendSSE({ done: true });
           

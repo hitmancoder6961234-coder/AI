@@ -18,9 +18,9 @@
  * - Zero emojis, zero generic rectangles.
  */
 
-import { ProjectAnalysis } from "./project-analyzer";
-import { resolveArchitectureIcon, ResolvedIcon } from "./architecture-icon-registry";
-import { ArchitectureNode, ArchitectureEdge, ArchitectureFlowStep } from "./architecture-engine";
+import { ProjectAnalysis } from "./project-analyzer.js";
+import { resolveArchitectureIcon, ResolvedIcon } from "./architecture-icon-registry.js";
+import "./architecture-engine.js";
 
 export interface RenderDiagramOptions {
   theme?: "light" | "dark";
@@ -94,7 +94,7 @@ export function renderProfessionalArchitectureSvg(
     });
 
     if (analysis.databaseIntelligence?.detected || (analysis.databaseIntelligence?.models && analysis.databaseIntelligence.models.length > 0)) {
-      const dbEngine = analysis.databaseIntelligence.engine || "PostgreSQL";
+      const dbEngine = analysis.databaseIntelligence.system || "PostgreSQL"; // the field is `system`; `engine` does not exist, so this always said PostgreSQL
       rawNodes.push({
         id: "node_db",
         label: `${dbEngine} Store`,
@@ -113,7 +113,7 @@ export function renderProfessionalArchitectureSvg(
       });
     }
 
-    if (analysis.ragIntelligence?.detected || (analysis.dependencies?.packages || []).some(p => p.name.includes("gemini") || p.name.includes("openai"))) {
+    if ((analysis as any).ragIntelligence?.detected || (analysis.dependencies?.packages || []).some(p => p.name.includes("gemini") || p.name.includes("openai"))) {
       rawNodes.push({
         id: "node_ai",
         label: "AI / Inference Provider",

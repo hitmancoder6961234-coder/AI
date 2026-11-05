@@ -119,7 +119,7 @@ export function registerCopilotRoutes(app: Express, deps: CopilotDeps): void {
   app.get("/api/copilot/conversations/:id", (req, res) => {
     const uid = need(req, res);
     if (!uid) return;
-    const c = ownConv(req.params.id, uid);
+    const c = ownConv(String(req.params.id), uid);
     if (!c) return res.status(404).json({ error: "Conversation not found" });
     let scope: unknown = null;
     try { scope = c.scope ? JSON.parse(c.scope) : null; } catch { /* ignore */ }
@@ -131,7 +131,7 @@ export function registerCopilotRoutes(app: Express, deps: CopilotDeps): void {
     if (!uid) return;
     const title = typeof req.body?.title === "string" ? req.body.title.trim().slice(0, 120) : "";
     if (!title) return res.status(400).json({ error: "title is required" });
-    const r = db.prepare("UPDATE copilot_conversations SET title = ? WHERE id = ? AND user_id = ?").run(title, req.params.id, uid) as any;
+    const r = db.prepare("UPDATE copilot_conversations SET title = ? WHERE id = ? AND user_id = ?").run(title, String(req.params.id), uid) as any;
     if (!r.changes) return res.status(404).json({ error: "Conversation not found" });
     res.json({ ok: true });
   });
@@ -139,9 +139,9 @@ export function registerCopilotRoutes(app: Express, deps: CopilotDeps): void {
   app.delete("/api/copilot/conversations/:id", (req, res) => {
     const uid = need(req, res);
     if (!uid) return;
-    if (!ownConv(req.params.id, uid)) return res.status(404).json({ error: "Conversation not found" });
-    db.prepare("DELETE FROM copilot_messages WHERE conversation_id = ? AND user_id = ?").run(req.params.id, uid);
-    db.prepare("DELETE FROM copilot_conversations WHERE id = ? AND user_id = ?").run(req.params.id, uid);
+    if (!ownConv(String(req.params.id), uid)) return res.status(404).json({ error: "Conversation not found" });
+    db.prepare("DELETE FROM copilot_messages WHERE conversation_id = ? AND user_id = ?").run(String(req.params.id), uid);
+    db.prepare("DELETE FROM copilot_conversations WHERE id = ? AND user_id = ?").run(String(req.params.id), uid);
     res.json({ ok: true });
   });
 
