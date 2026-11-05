@@ -335,6 +335,7 @@ try {
     if (convId) assert.notEqual((await get(`/api/conversations/${convId}`, tokB)).status, 200);
   });
 
+  const patchJson = (p, body, token) => fetch(base + p, { method: "PATCH", headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
   console.log("\nprivacy controls");
   await check("policy is public and machine-readable", async () => {
     const p = await j(await get("/api/privacy/policy"));
@@ -569,6 +570,80 @@ try {
     assert.equal((await fetch(base + "/api/projects/upload-files", { method: "POST", headers: { authorization: `Bearer ${tokC}` }, body: fd })).status, 403);
     assert.equal((await postJson(`/api/builder/projects/${pidB}/brief`, {}, tokC)).status, 404);
     assert.ok(!JSON.stringify(await j(await get("/api/builder/projects", tokC))).includes(pidB));
+  });
+
+  await check("generated artifacts and images belong to their project's owner (read, download, rename, delete; not by id alone)", async () => {
+    // Artifacts are produced by model calls; to test access rules without one, put a row in the server's own database file.
+    const { DatabaseSync } = await import("node:sqlite");
+    const sdb = new DatabaseSync(path.join(dataDir, "smoke.db"));
+    sdb.exec("PRAGMA busy_timeout = 5000");
+    const now = Date.now();
+    sdb.prepare("INSERT INTO artifacts (id, project_id, name, mime_type, artifact_type, version, content, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)")
+      .run("art_smoke_bob_1", pidB, "bobs-report.txt", "text/plain", "document", 1, "BOB-SECRET-REPORT", now, now);
+    sdb.prepare("INSERT INTO visual_assets (id, project_id, asset_type, mime_type, filename, content_base64, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?)")
+      .run("vis_smoke_bob_1", pidB, "diagram", "image/png", "bob.png", Buffer.from("BOB-PNG").toString("base64"), now, now);
+    sdb.close();
+    // the owner can use them
+    const mine = await get("/api/artifacts/art_smoke_bob_1", tokB);
+    assert.equal(mine.status, 200);
+    assert.equal((await get("/api/artifacts/art_smoke_bob_1/download", tokB)).status, 200);
+    const img = await get("/api/visual-assets/vis_smoke_bob_1", tokB);
+    assert.equal(img.status, 200);
+    assert.match(img.headers.get("cache-control") || "", /private/, "user images are not cacheable by shared caches");
+    // another signed-in user gets "not found" for every verb, and cannot learn that the id exists
+    assert.equal((await get("/api/artifacts/art_smoke_bob_1", tokC)).status, 404);
+    const dl = await get("/api/artifacts/art_smoke_bob_1/download", tokC);
+    assert.equal(dl.status, 404);
+    assert.ok(!(await dl.text()).includes("BOB-SECRET-REPORT"));
+    assert.equal((await patchJson("/api/artifacts/art_smoke_bob_1", { filename: "hijacked.txt" }, tokC)).status, 404);
+    assert.equal((await fetch(base + "/api/artifacts/art_smoke_bob_1", { method: "DELETE", headers: { authorization: `Bearer ${tokC}` } })).status, 404);
+    assert.equal((await get("/api/visual-assets/vis_smoke_bob_1", tokC)).status, 404);
+    // bulk download by id list (the ids are in the body, so the path guard cannot see them)
+    const zipReq = (tok) => postJson("/api/artifacts/download-zip", { artifactIds: ["art_smoke_bob_1"], zipName: "x.zip" }, tok);
+    const ownZip = await zipReq(tokB);
+    assert.equal(ownZip.status, 200);
+    assert.ok((await ownZip.arrayBuffer()).byteLength > 100, "the owner gets the archive");
+    const foreignZip = await zipReq(tokC);
+    assert.equal(foreignZip.status, 404, "another user's id is skipped like an unknown one, so there is nothing to download");
+    assert.ok(!(await foreignZip.text()).includes("BOB-SECRET-REPORT"));
+    // ...and nothing changed for the owner
+    const after = await j(await get("/api/artifacts/art_smoke_bob_1", tokB));
+    assert.equal(after.artifact.filename, "bobs-report.txt");
+    assert.equal((await get("/api/artifacts/art_smoke_bob_1/download", tokB)).status, 200, "still there");
+    // an unknown id still just says not found, and no session means no access
+    assert.equal((await get("/api/artifacts/art_does_not_exist", tokC)).status, 404);
+    assert.equal((await get("/api/artifacts/art_smoke_bob_1", undefined)).status, 401);
+  });
+
+  await check("project diagnostics report real problems (project-wide was always empty) and the single-file route no longer throws", async () => {
+    const bad = '{ "name": "x", ';
+    assert.ok((await postJson(`/api/projects/${pidB}/files`, { path: "config/bad.json", content: bad }, tokB)).status < 300);
+    const all = await j(await postJson(`/api/projects/${pidB}/diagnostics/project`, {}, tokB));
+    assert.ok(Array.isArray(all.issues) && all.issues.length >= 1, "the broken JSON is reported: " + JSON.stringify(all).slice(0, 200));
+    assert.ok(all.summary.errors + all.summary.warnings >= 1);
+    const one = await postJson(`/api/projects/${pidB}/diagnostics`, { path: "config/bad.json", content: bad }, tokB);
+    assert.equal(one.status, 200, "was a TypeError (issues.forEach on a Promise)");
+    const oj = await j(one);
+    assert.ok(oj.issues.length >= 1 && oj.summary.errors + oj.summary.warnings >= 1);
+    assert.equal((await postJson(`/api/projects/${pidB}/diagnostics`, { path: "config/bad.json", content: bad }, tokC)).status, 404, "another user's project is still off limits");
+  });
+  await check("knowledge: project upload works (was always a 500), single-document reindex finds the file (was always 404), search honours topK", async () => {
+    const NL = String.fromCharCode(10);
+    const long = Array.from({ length: 40 }, (_, i) => "## Section " + i + NL + NL + "The orders service validates the cart, charges the customer and stores order " + i + ". " + "Payment retries use exponential backoff. ".repeat(12)).join(NL + NL);
+    const up = await fetch(base + `/api/projects/${pidB}/rag/upload`, { method: "POST", headers: { authorization: `Bearer ${tokB}` }, body: formData("orders.md", Buffer.from(long)) });
+    assert.equal(up.status, 200, await up.clone().text());
+    const upj = await j(up);
+    assert.ok(upj.success && upj.files[0].path === "docs/orders.md" && upj.files[0].fileType === "Markdown");
+    const kup = await fetch(base + "/api/knowledge/rag/upload", { method: "POST", headers: { authorization: `Bearer ${tokB}` }, body: formData("kb.md", Buffer.from(long)) });
+    assert.equal(kup.status, 200);
+    const re = await postJson("/api/knowledge/rag/reindex", { docPath: "docs/kb.md" }, tokB);
+    assert.equal(re.status, 200, await re.clone().text());
+    assert.ok((await j(re)).chunksIndexed > 0);
+    assert.equal((await postJson("/api/knowledge/rag/reindex", { docPath: "docs/nope.md" }, tokB)).status, 404);
+    for (const k of [1, 3]) {
+      const found = await j(await postJson("/api/knowledge/rag/search", { query: "orders service validates the cart", topK: k }, tokB));
+      assert.equal(found.allHits.length, k, "topK " + k);
+    }
   });
 
   console.log("\nProject Studio (brief -> outline -> report + deck)");

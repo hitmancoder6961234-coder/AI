@@ -29,8 +29,9 @@ import {
   deleteKnowledgeForProject,
   saveMessage,
 } from "./db.js";
-import { generateGeminiWithResilience, streamGeminiWithResilience } from "./gemini-resilience.js";
-import { isSupabaseConfigured, syncRagDocumentToSupabase, syncRagChunkToSupabase, syncConversationToSupabase, syncMessageToSupabase } from "./supabase.js";
+import "./gemini-resilience.js";
+import { conversationOwnership, sameOwner } from "./ownership.js";
+import { isSupabaseConfigured, syncRagDocumentToSupabase, syncRagChunkToSupabase } from "./supabase.js";
 import { writeProjectFileToDisk, resolveProjectFilePath } from "./project-storage.js";
 import { AgentRuntime } from "./agent-runtime.js";
 import {
@@ -46,8 +47,10 @@ const upload = sharedMulter;
 /** A caller may only address their own knowledge space or a project they own. */
 function pidAllowed(pid: string, userId: string): boolean {
   if (pid === `knowledge_${userId}`) return true;
+  // `knowledge_<id>` is the personal knowledge space of exactly that user: a project somebody else created with such an id does not make it theirs
+  if (pid.startsWith("knowledge_")) return false;
   const proj: any = getProject(pid);
-  return Boolean(proj && String(proj.user_id || "").toLowerCase() === String(userId).toLowerCase());
+  return Boolean(proj && sameOwner(proj.user_id, userId));
 }
 
 export function registerRagRoutes(
@@ -644,6 +647,8 @@ export function registerRagRoutes(
     const { id, path: docPath, projectId } = req.body || {};
     const user = await getUser(req);
     const pid = String(projectId || `knowledge_${user.id}`);
+    // only a knowledge space or project the caller owns; the shared "global" pool is not theirs to delete from
+    if (!pidAllowed(pid, user.id)) return res.status(403).json({ error: "Not your project" });
     try {
       deleteProjectDocument(pid, id || docPath);
       res.json({ success: true, message: "Document deleted" });
@@ -719,7 +724,13 @@ export function registerRagRoutes(
         try { res.write("data: " + JSON.stringify(data) + "\n\n"); } catch {}
       };
 
-      const cid = req.body?.conversation_id || req.body?.cid || ("knowledge_rag_chat_" + user.id);
+      const cid = String(req.body?.conversation_id || req.body?.cid || ("knowledge_rag_chat_" + user.id));
+      // a conversation id chosen by the client must be the caller's own (otherwise the question and the answer would be written into someone
+      // else's conversation)
+      if (conversationOwnership(cid, user.id, conversations) === "foreign") {
+        res.write(`data: ${JSON.stringify({ error: { message: "Conversation not found" } })}\n\n`);
+        return;
+      }
 
       // Save user message to knowledge RAG conversation history
       if (q) {

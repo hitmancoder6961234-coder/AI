@@ -2122,6 +2122,17 @@ export function dbSaveModel(model: any) {
   );
 }
 
+/**
+ * Removes the duplicate model rows that earlier versions saved under the shared "user_default" owner whenever a user added a model. Each held a
+ * copy of the user's provider key, and none of the delete paths (delete the model, erase the account) reached them. The server's own default
+ * model ("darkness-gemini") is not a duplicate and is kept. Returns the number of rows removed. Call it in strict mode only.
+ */
+export function dbPurgeSharedModelCopies(): number {
+  const shared = toValidUuid("user_default")!;
+  const r = db.prepare("DELETE FROM models WHERE user_id = ? AND id != 'darkness-gemini'").run(shared);
+  return Number(r.changes) || 0;
+}
+
 export function dbDeleteModel(id: string, userId?: string) {
   const rawId = String(id || "").trim();
   const cleanId = rawId.includes(":::") ? rawId.split(":::").pop()! : rawId;

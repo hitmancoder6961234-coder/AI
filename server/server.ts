@@ -88,6 +88,7 @@ import {
   dbGetModel,
   dbSaveModel,
   dbDeleteModel,
+  dbPurgeSharedModelCopies,
   dbRecordDeletedModel,
   dbIsModelDeleted,
   dbClearDeletedModel,
@@ -160,6 +161,7 @@ import { csrfOriginGuard } from "./security/csrf.js";
 import { cspReportRoutes } from "./security/csp.js";
 import { ensureUploadDirs, startUploadSweeper, UPLOAD_TMP_ROOT } from "./upload-temp.js";
 import "./upload-validation.js";
+import { createArtifactAccess } from "./artifact-access.js";
 import { registerDocumentExportRoutes } from "./document-export-routes.js";
 import { countModelKeys, keyAad, migrateModelKeys, revealSecret } from "./security/secret-store.js";
 import { vaultEnabled } from "./security/vault.js";
@@ -171,6 +173,7 @@ import { EMAIL_RE, LoginGuard, isCommonPassword } from "./security/login-guard.j
 import type { StudioEngine } from "./studio/pipeline.js";
 import { extractDocumentText } from "./rag-engine.js";
 import { db as sqliteDb } from "./db.js";
+import { conversationOwnership, fileOwnership, projectOwnership } from "./ownership.js";
 import { bodyParsers, bodyTooLargeHandler } from "./body-limits.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
@@ -735,6 +738,14 @@ async function hydrateFromDatabase() {
       });
     }
 
+    // Earlier versions saved every user-created model a second time under the shared "user_default" owner (a copy of the provider key that
+    // survived deleting the model and erasing the account). In strict mode nobody signs in as that owner, so those copies are residue: remove
+    // them BEFORE models are loaded into memory. (The server's own default model keeps its row. Open / local mode is left alone: there the
+    // default owner is the real user.)
+    if (PRIVACY_STRICT) {
+      try { const purged = dbPurgeSharedModelCopies(); if (purged) logger.warn("shared_model_copies_purged", { count: purged }); } catch (e) { logger.warn("shared_model_copies_purge_failed", { err: e }); }
+    }
+
     // Load models from Supabase or SQLite
     const supaAdmin = getSupabaseAdmin();
     if (supaAdmin) {
@@ -1071,20 +1082,39 @@ async function startServer() {
   // -------------------------------------------------------------------------
   // Strict mode: a project / conversation id in the URL must belong to the caller
   // -------------------------------------------------------------------------
+  const artifactAccess = createArtifactAccess({
+    projects,
+    artifacts: projectArtifacts,
+    getProjectRow: (id) => dbGetProject(id),
+    getArtifactRow: (id) => dbGetArtifact(id),
+    getVisualAssetRow: (id) => getVisualAsset(id),
+    isUserOwner,
+  });
+
   if (PRIVACY_STRICT) {
     const notFound = (res: express.Response) => res.status(404).json({ error: "Not found", type: "not_found" });
+    // Memory AND the database are consulted (server/ownership.ts): a record that exists but was never loaded into memory used to pass these
+    // guards, and a handler could then act on it. A record that exists nowhere still falls through, so each route keeps its own "not found".
     app.param("pid", (req, res, next, pid) => {
-      const p: any = projects.get(String(pid));
-      if (!p) return next();
       const uid = privacyUserId(req);
-      return uid && isUserOwner(p.user_id, uid) ? next() : notFound(res);
+      const who = projectOwnership(pid, uid, projects as Map<string, any>);
+      if (who === "unknown") return next();
+      return uid && who === "owned" ? next() : notFound(res);
     });
     app.param("cid", (req, res, next, cid) => {
-      const c: any = conversations.get(String(cid));
-      if (!c) return next();
       const uid = privacyUserId(req);
-      return uid && isUserOwner(c.user_id, uid) ? next() : notFound(res);
+      const who = conversationOwnership(cid, uid, conversations as Map<string, any>);
+      if (who === "unknown") return next();
+      return uid && who === "owned" ? next() : notFound(res);
     });
+
+    // Generated artifacts and images are addressed by id alone (`:id` is also used by models, files, ... so it cannot be a global param
+    // guard). They belong to the project they were generated for; the rule lives in ./artifact-access.ts (unit-tested) and is also used by
+    // the bulk download below. Unknown ids fall through to the route's own 404; known ones that are not yours are "not found" too.
+    const guardArtifactAccess = (allowed: (id: string, uid: string | null) => boolean): express.RequestHandler => (req, res, next) =>
+      allowed(String(req.params.id), privacyUserId(req)) ? next() : notFound(res);
+    app.use("/api/artifacts/:id", guardArtifactAccess((id, uid) => artifactAccess.mayUseArtifact(id, uid)));
+    app.use("/api/visual-assets/:id", guardArtifactAccess((id, uid) => artifactAccess.mayUseVisualAsset(id, uid)));
   }
 
   // -------------------------------------------------------------------------
@@ -1492,7 +1522,14 @@ async function startServer() {
     res.json(health);
   });
 
-  app.get("/api/storage/status", (_req, res) => {
+  // Server-wide operations (the storage limit, the shared cache, host disk figures and the storage path). The app has no administrator role, so in
+  // strict (multi-user) mode no signed-in user may call them: any user could otherwise set the limit to 1 GB (every upload then fails for EVERY
+  // user), wipe the shared cache, or read the server's file-system path. The operator uses the host (preflight, backup, the platform's disk view).
+  const operatorOnly: express.RequestHandler = (_req, res, next) => {
+    if (!PRIVACY_STRICT) return next(); // open / local mode: the one user is the operator
+    res.status(403).json({ error: "This setting is managed by the person who runs the server.", code: "OPERATOR_ONLY" });
+  };
+  app.get("/api/storage/status", operatorOnly, (_req, res) => {
     try {
       const breakdown = storageManager.getStorageBreakdown();
       const used = storageManager.getUsedStorage();
@@ -1524,7 +1561,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/storage/limit", (req, res) => {
+  app.post("/api/storage/limit", operatorOnly, (req, res) => {
     const { limitGB } = req.body || {};
     const gb = Number(limitGB);
     if (!gb || gb <= 0 || gb > 1000) {
@@ -1539,7 +1576,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/storage/clear-cache", (_req, res) => {
+  app.post("/api/storage/clear-cache", operatorOnly, (_req, res) => {
     try {
       const cacheDir = path.join(storageManager.getStorageRoot(), "cache");
       if (fs.existsSync(cacheDir)) {
@@ -1985,9 +2022,9 @@ async function startServer() {
 
     // 1. ALWAYS persist to local SQLite database as primary persistent store
     try {
+      // Exactly ONE row, owned by the caller. This handler used to save the model two more times, under "user_default" and the demo user, which
+      // left a copy of the user's provider key behind in a shared owner: it survived deleting the model and erasing the account.
       dbSaveModel(newModel);
-      dbSaveModel({ ...newModel, user_id: "user_default" });
-      dbSaveModel({ ...newModel, user_id: initialUser.id });
     } catch (err: any) {
       console.error("[MODEL TRACE] Failed to save model to SQLite:", err);
       return res.status(500).json({ error: err?.message || "Failed to persist model" });
@@ -2009,9 +2046,7 @@ async function startServer() {
       }
     }
 
-    setUserModel(user.id, newModel);
-    setUserModel(initialUser.id, newModel);
-    setUserModel("user_default", newModel);
+    setUserModel(user.id, newModel); // (no copies in the shared "user_default" / demo-user namespaces: they would hold every user's key)
 
     // If user has no active model, make this first configured model their active model
     if (!user.active_model_id) {
@@ -2551,6 +2586,20 @@ async function startServer() {
     const title = String(body.title || "New Chat").trim().slice(0, 200);
     const model_id = body.model_id || user.active_model_id || "";
 
+    // The client may choose the id, but never one that belongs to someone else: without this check, naming another user's
+    // conversation id here replaced the in-memory record and the database row and handed that conversation (and its messages)
+    // to the caller. (Found by the final audit; ids are UUIDs, so an attacker first had to learn one.)
+    if (!/^[A-Za-z0-9._:-]{1,100}$/.test(id)) {
+      return res.status(400).json({ error: "Invalid conversation id", code: "INVALID_ID" });
+    }
+    let existingOwner: string | null | undefined = (conversations.get(id) as any)?.user_id;
+    if (existingOwner === undefined) {
+      try { existingOwner = (dbGetConversation(id) as any)?.user_id; } catch { existingOwner = undefined; }
+    }
+    if (existingOwner && !isUserOwner(existingOwner, user.id)) {
+      return res.status(409).json({ error: "That conversation id is already in use", code: "ID_IN_USE" });
+    }
+
     const conv: ConversationItem = {
       id,
       user_id: user.id,
@@ -3048,6 +3097,9 @@ async function startServer() {
       // 1. Files explicitly selected or passed for this specific session
       if (Array.isArray(params.file_ids) && params.file_ids.length > 0) {
         for (const fid of params.file_ids) {
+          // Only the caller's own files may be attached by id (a foreign id is skipped, like an unknown one): the document would otherwise be
+          // placed in front of the model and the answer would hand it to the caller.
+          if (fileOwnership(fid, params.userId, files as Map<string, any>) !== "owned") continue;
           const fileObj = files.get(fid) || dbGetWorkspaceFile(fid);
           if (fileObj && fileObj.content) {
             docItems.push({ filename: fileObj.filename, content: fileObj.content });
@@ -3989,6 +4041,19 @@ Following the details block, provide your beautiful, structured final textbook r
 
     let conv = await getOrLoadConversation(cid, user.id);
     if (!conv) {
+      // Only a NEW, well-formed id may be created here. `getOrLoadConversation` also returns null for a conversation that exists but belongs to
+      // someone else; the strict-mode id guard only knows conversations that are in memory, so a database-only one used to reach this point and
+      // be re-created under the caller's account with the same id. Such an id is "not found", exactly as if it did not exist.
+      if (!/^[A-Za-z0-9._:-]{1,100}$/.test(cid)) {
+        return res.status(400).json({ error: "Invalid conversation id", code: "INVALID_ID" });
+      }
+      let existingOwner: string | null | undefined = (conversations.get(cid) as any)?.user_id;
+      if (existingOwner === undefined) {
+        try { existingOwner = (dbGetConversation(cid) as any)?.user_id; } catch { existingOwner = undefined; }
+      }
+      if (existingOwner && !isUserOwner(existingOwner, user.id)) {
+        return res.status(404).json({ error: "Conversation not found", type: "not_found" });
+      }
       // Auto-create conversation if not exists
       conv = {
         id: cid,
@@ -5162,13 +5227,11 @@ Following the details block, provide your beautiful, structured final textbook r
 
   // Architecture Advisor: Get Report
   app.get("/api/projects/:pid/advisor", (req, res) => {
-    let pid = req.params.pid;
-    let proj = projects.get(pid) || dbGetProject(pid);
-    if (!proj && pid !== "global" && projects.size > 0) {
-      proj = Array.from(projects.values())[0];
-      pid = proj.id;
-    }
-    if (!proj) {
+    const pid = String(req.params.pid);
+    const user = resolveUser(req) || initialUser;
+    // An unknown or foreign id answers "no advisor", exactly as an empty workspace does. It used to return the report of the FIRST project on
+    // the server, whoever owned it.
+    if (projectOwnership(pid, user?.id, projects as Map<string, any>) !== "owned") {
       return res.json({ ok: true, advisor: null, health: null });
     }
 
@@ -5203,15 +5266,12 @@ Following the details block, provide your beautiful, structured final textbook r
         return { ok: false, file: cleanPath, error: "Replacement or creation content ('after') is required" };
       }
 
-      let pFiles = Array.from(files.values()).filter((f) => f.project_id === effectivePid);
-      if (pFiles.length === 0 && projects.size > 0) {
-        const firstPid = Array.from(projects.keys())[0];
-        const pFirst = Array.from(files.values()).filter((f) => f.project_id === firstPid);
-        if (pFirst.length > 0) {
-          pFiles = pFirst;
-          effectivePid = firstPid;
-        }
+      // Only the files of THIS project, and only if the caller owns it. (Two fallbacks used to live here: "the first project on the server when
+      // this one has no files" and "any file of any user whose name matches": both let a caller edit someone else's files.)
+      if (projectOwnership(effectivePid, user?.id, projects as Map<string, any>) !== "owned") {
+        return { ok: false, file: cleanPath, error: "Project not found" };
       }
+      const pFiles = Array.from(files.values()).filter((f) => f.project_id === effectivePid);
 
       let targetFile = pFiles.find(
         (f) =>
@@ -5221,19 +5281,6 @@ Following the details block, provide your beautiful, structured final textbook r
           cleanPath.endsWith(f.filename) ||
           path.basename(f.filename) === path.basename(cleanPath)
       );
-
-      if (!targetFile) {
-        const allFiles = Array.from(files.values());
-        targetFile = allFiles.find(
-          (f) =>
-            f.filename === cleanPath ||
-            f.filename.endsWith("/" + cleanPath) ||
-            path.basename(f.filename) === path.basename(cleanPath)
-        );
-        if (targetFile && targetFile.project_id) {
-          effectivePid = targetFile.project_id;
-        }
-      }
 
       if (targetFile) {
         let currentContent = targetFile.content || "";
@@ -5312,7 +5359,11 @@ Following the details block, provide your beautiful, structured final textbook r
   app.post("/api/projects/:pid/advisor/apply-fix", (req, res) => {
     try {
       const user = resolveUser(req) || initialUser;
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
+      // Only the owner may apply fixes, and only to the project named in the URL (an unknown or foreign id is "not found").
+      if (projectOwnership(pid, user?.id, projects as Map<string, any>) !== "owned") {
+        return res.status(404).json({ error: "Not found", type: "not_found" });
+      }
       let proj = projects.get(pid);
       if (!proj) {
         const dbP = dbGetProject(pid);
@@ -5331,10 +5382,6 @@ Following the details block, provide your beautiful, structured final textbook r
           projects.set(pid, proj);
         }
       }
-      if (!proj && pid !== "global" && projects.size > 0) {
-        proj = Array.from(projects.values())[0];
-      }
-
       const effectivePid = proj ? proj.id : pid;
       const { file: targetPath, before, after, explanation } = req.body || {};
       const result = applySingleFixHelper(effectivePid, user, { file: targetPath, before, after, explanation });
@@ -5364,7 +5411,11 @@ Following the details block, provide your beautiful, structured final textbook r
   app.post("/api/projects/:pid/advisor/apply-all-fixes", (req, res) => {
     try {
       const user = resolveUser(req) || initialUser;
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
+      // Only the owner may apply fixes, and only to the project named in the URL (an unknown or foreign id is "not found").
+      if (projectOwnership(pid, user?.id, projects as Map<string, any>) !== "owned") {
+        return res.status(404).json({ error: "Not found", type: "not_found" });
+      }
       let proj = projects.get(pid);
       if (!proj) {
         const dbP = dbGetProject(pid);
@@ -5383,10 +5434,6 @@ Following the details block, provide your beautiful, structured final textbook r
           projects.set(pid, proj);
         }
       }
-      if (!proj && pid !== "global" && projects.size > 0) {
-        proj = Array.from(projects.values())[0];
-      }
-
       const effectivePid = proj ? proj.id : pid;
       let fixesToApply = req.body?.fixes;
 
@@ -5475,8 +5522,11 @@ Following the details block, provide your beautiful, structured final textbook r
     const zip = new AdmZip();
     let addedCount = 0;
 
+    // Only the caller's own artifacts go in the archive; ids that are unknown or belong to someone else are skipped alike, so the
+    // answer reveals nothing about them (before this, listing another user's artifact ids returned their documents).
+    const callerId = privacyUserId(req);
     for (const id of artifactIds) {
-      const art = projectArtifacts.get(id);
+      const art = PRIVACY_STRICT && !artifactAccess.ownsArtifact(String(id), callerId) ? undefined : projectArtifacts.get(id);
       if (art) {
         if (art.bufferBase64) {
           const buf = Buffer.from(art.bufferBase64, "base64");

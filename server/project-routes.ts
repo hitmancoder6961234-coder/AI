@@ -58,6 +58,7 @@ import {
   countProjectFiles,
 } from "./db.js";
 import { syncProjectToSupabase, isSupabaseConfigured } from "./supabase.js";
+import { fileOwnership, projectOwnership, sameOwner } from "./ownership.js";
 import {
   getProjectStorageDir,
   sanitizeProjectPath,
@@ -270,9 +271,8 @@ export function registerProjectAndFileRoutes(
       console.warn("Could not sync db workspace files:", e);
     }
 
-    const shared = Array.from(files.values()).filter(
-      (f) => (!f.project_id && !f.conversation_id) || f.user_id === user?.id
-    );
+    // Only the caller's own files. This used to include EVERY user's files that were not attached to a project or conversation.
+    const shared = Array.from(files.values()).filter((f) => sameOwner(f.user_id, user?.id));
     res.json({ files: shared, total: shared.length, success: true });
   });
 
@@ -321,9 +321,8 @@ export function registerProjectAndFileRoutes(
 
   app.get("/api/files", (req, res) => {
     const user = resolveUser(req) || initialUser;
-    const userFiles = Array.from(files.values()).filter(
-      (f) => f.user_id === user.id || !f.project_id
-    );
+    // Only the caller's own files (the old `|| !f.project_id` listed everyone's unattached files, content included).
+    const userFiles = Array.from(files.values()).filter((f) => sameOwner(f.user_id, user?.id));
     res.json(userFiles);
   });
 
@@ -435,7 +434,10 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/files/:id/content", (req, res) => {
-    const fid = req.params.id;
+    const fid = String(req.params.id);
+    const user = resolveUser(req) || initialUser;
+    // a file that belongs to someone else is "not found", exactly like one that does not exist
+    if (fileOwnership(fid, user?.id, files) !== "owned") return res.status(404).json({ error: "File not found" });
     const file = files.get(fid) || dbGetWorkspaceFile(fid);
     if (!file) return res.status(404).json({ error: "File not found" });
     res.json({
@@ -447,7 +449,9 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/files/:id/raw", (req, res) => {
-    const fid = req.params.id;
+    const fid = String(req.params.id);
+    const user = resolveUser(req) || initialUser;
+    if (fileOwnership(fid, user?.id, files) !== "owned") return res.status(404).send("File not found");
     const file = files.get(fid) || dbGetWorkspaceFile(fid);
     if (!file) return res.status(404).send("File not found");
 
@@ -469,7 +473,12 @@ export function registerProjectAndFileRoutes(
   });
 
   app.delete("/api/files/:id", (req, res) => {
-    const fid = req.params.id;
+    const fid = String(req.params.id);
+    const user = resolveUser(req) || initialUser;
+    // only the owner can delete; someone else's file answers "not found" and is left untouched
+    const who = fileOwnership(fid, user?.id, files);
+    if (who === "foreign") return res.status(404).json({ error: "File not found" });
+    if (who === "unknown") return res.json({ success: true, id: fid });
     files.delete(fid);
     try {
       dbDeleteWorkspaceFile(fid);
@@ -1141,7 +1150,9 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/projects/:pid/analysis", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
+    // only an existing project of the caller: an id that exists nowhere used to be analysed and SAVED, creating a project row under the default owner
+    if (projectOwnership(pid, (resolveUser(req) || initialUser)?.id, projects) !== "owned") return res.status(404).json({ error: "Project not found" });
     let analysis = projectAnalyses.get(pid) || dbGetProjectAnalysis(pid);
     if (!analysis) {
       const pFiles = dbListFiles(pid);
@@ -1165,7 +1176,8 @@ export function registerProjectAndFileRoutes(
   });
 
   app.post("/api/projects/:pid/analyze", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
+    if (projectOwnership(pid, (resolveUser(req) || initialUser)?.id, projects) !== "owned") return res.status(404).json({ error: "Project not found" });
     const pFiles = dbListFiles(pid);
     const extracted: ExtractedFile[] = pFiles.map((f) => ({
       path: f.path,

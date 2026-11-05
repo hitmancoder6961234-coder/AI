@@ -36,6 +36,7 @@ import {
   buildFormattedOpenAiHistory,
 } from "./model-registry-engine.js";
 import { saveMessage, getProjectAnalysis, getWorkspaceFile } from "./db.js";
+import { fileOwnership, projectOwnership } from "./ownership.js";
 import { fetchWithPolicy, iterateWithIdleTimeout } from "./provider-http.js";
 import { isSupabaseConfigured, syncMessageToSupabase } from "./supabase.js";
 
@@ -109,6 +110,8 @@ export class AgentRuntime {
     let attachedDocsContext = "";
     if (Array.isArray(fileIds)) {
       for (const fid of fileIds) {
+        // an attached file must belong to the caller (a foreign id is skipped, like an unknown one)
+        if (fileOwnership(fid, userId, files) !== "owned") continue;
         const fileObj = files.get(fid) || getWorkspaceFile(fid);
         if (fileObj && fileObj.content) {
           attachedDocsContext += `\n\n=== ATTACHED DOCUMENT "${fileObj.filename}": ===\n${fileObj.content.substring(0, 30000)}\n=== END OF ATTACHED DOCUMENT ===\n`;
@@ -152,7 +155,9 @@ export class AgentRuntime {
     const activeModelId = modelConfig.modelName || modelConfig.id;
 
     // 3. Classify Intent
-    const projectId = rawProjectId || undefined;
+    // A project id from the client is honoured only for the caller's own projects: another user's id is treated as "no project", so its files,
+    // analysis and knowledge never reach the model prompt.
+    const projectId = typeof rawProjectId === "string" && rawProjectId && projectOwnership(rawProjectId, userId, projects) !== "foreign" ? rawProjectId : undefined;
     const visualClass = UniversalVisualIntentRouter.classify(textMsg, projectId);
 
     // 4. Handle Rich Artifact / Visual Generation (PPT, DOCX, PDF, XLSX, Images, Diagrams)
