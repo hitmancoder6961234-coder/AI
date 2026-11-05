@@ -623,6 +623,10 @@ export async function startTerminalSession(sessionId: string): Promise<TerminalS
     cwd: session.workingDirectory,
     shell: true,
     env: envVars,
+    // On Unix the shell and everything it starts get their own process group, so stopProject can end the whole tree with kill(-pid). Without
+    // this, kill(-pid) always failed (there was no such group), only the shell was signalled, and a dev server started by `npm run dev` kept
+    // running (and holding its port and pipes) after "Stop". Not used on Windows: there it would open a console window; taskkill /T handles trees.
+    detached: process.platform !== "win32",
   });
 
   session.process = proc;
@@ -766,6 +770,7 @@ export function stopTerminalSession(sessionId: string): TerminalSession {
           session.process.kill("SIGTERM");
         }
         setTimeout(() => {
+          try { process.kill(-pid, "SIGKILL"); } catch (_) { /* the group is already gone */ }
           try {
             if (session.process && !session.process.killed) session.process.kill("SIGKILL");
           } catch (_) {}

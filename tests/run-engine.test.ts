@@ -15,7 +15,15 @@ const waitFor = async (fn: () => boolean, ms = 8000) => { const t0 = Date.now();
 const LONG = `node -e "setInterval(function(){},1000)"`;
 
 const started: string[] = [];
-after(() => { for (const p of started) stopProject(p, { discard: true }); });
+after(() => {
+  for (const p of started) stopProject(p, { discard: true });
+  // A process or timer left behind keeps this test file alive forever, and `node --test` then waits until the CI job times out. Fail fast and
+  // say what is still open instead.
+  setTimeout(() => {
+    console.error("[run-engine.test] still running 20 s after the tests finished; open resources:", process.getActiveResourcesInfo());
+    process.exit(1);
+  }, 20_000).unref();
+});
 
 async function launch(pid: string, command: string) {
   started.push(pid);
