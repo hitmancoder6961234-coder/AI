@@ -172,6 +172,9 @@ import { registerPromptRoutes } from "./prompts-routes.js";
 import { ensurePromptTables } from "./prompts.js";
 import { createMemory, ensureMemoryTables, selectRelevantMemories } from "./memory.js";
 import { registerSessionRoutes } from "./agent/session-routes.js";
+import { registerRecoveryRoutes } from "./recovery-routes.js";
+import { ensureRecoveryTables, isDisabled } from "./recovery.js";
+import { mailerFromEnv } from "./mailer.js";
 import { ensureSessionTables } from "./agent/sessions.js";
 import { ensureInsightsTables, recordAgentRun } from "./insights.js";
 import { countModelKeys, keyAad, migrateModelKeys, revealSecret } from "./security/secret-store.js";
@@ -1628,6 +1631,36 @@ async function startServer() {
   const loginGuard = new LoginGuard({ maxFails: intOr(process.env.LOGIN_MAX_FAILS, 5), baseLockMs: intOr(process.env.LOGIN_LOCK_SECONDS, 60) * 1000 });
   const emailGuard = new LoginGuard({ maxFails: 25, baseLockMs: 30_000, maxLockMs: 5 * 60_000 });
 
+  // Account recovery by e-mail (only when a mail provider is configured through the environment; otherwise the routes say so and never pretend).
+  ensureRecoveryTables(sqliteDb);
+  const toRecoveryUser = (u: any) => (u ? { id: String(u.id), email: String(u.email), name: String(u.name || "") } : null);
+  registerRecoveryRoutes(app, {
+    db: sqliteDb,
+    getMailer: () => mailerFromEnv(process.env),
+    appUrl: () => String(process.env.PUBLIC_APP_URL || ""),
+    findUserByEmail: (email) => toRecoveryUser(dbGetUserByEmail(email) || Array.from(users.values()).find((u) => u.email.toLowerCase() === email)),
+    findUserById: (id) => toRecoveryUser(users.get(id) || dbGetUser(id)),
+    setPassword: (uid, plain) => {
+      const hash = hashPassword(plain);
+      const u = users.get(uid);
+      if (u) u.password = hash;
+      const row = dbGetUser(uid);
+      if (row) dbSaveUser({ id: row.id, email: row.email, name: row.name, password: hash, active_model_id: row.active_model_id, created_at: row.created_at });
+    },
+    revokeSessions: (uid) => {
+      let n = 0;
+      for (const [token, owner] of Array.from(sessions.entries())) if (owner === uid) { sessions.delete(token); n++; }
+      try {
+        for (const r of sqliteDb.prepare("SELECT token FROM sessions WHERE user_id = ?").all(uid) as any[]) { dbDeleteSession(String(r.token)); n++; }
+      } catch { /* the in-memory sessions are already gone */ }
+      return n;
+    },
+    clearLockout: (email) => { emailGuard.success(email); },
+    minLength: PRIVACY_STRICT ? 8 : 4,
+    isCommonPassword,
+    strict: PRIVACY_STRICT,
+    log: (event, fields) => logger.info(event, fields || {}),
+  });
   // Verified against when the e-mail is unknown, so "no such account" costs the same time as "wrong password".
   const DUMMY_HASH = hashPassword(crypto.randomBytes(12).toString("hex"));
   const waitText = (s: number) => (s >= 90 ? `${Math.ceil(s / 60)} minutes` : `${s} seconds`);
@@ -1889,6 +1922,10 @@ async function startServer() {
         return authError(res, 429, "ACCOUNT_LOCKED", `Too many failed sign-in attempts. Please wait ${waitText(locked.retryAfter)} and try again.`, { retryAfter: locked.retryAfter });
       }
       return authError(res, 401, "INVALID_CREDENTIALS", "Invalid email or password", { attemptsLeft: a.attemptsLeft });
+    }
+    // an account disabled by the operator cannot sign in (checked after the password, so this does not reveal which e-mails have accounts)
+    if (isDisabled(sqliteDb, matched.id)) {
+      return authError(res, 403, "ACCOUNT_DISABLED", "This account has been disabled. Contact the person who runs this server.");
     }
     loginGuard.success(guardKey);
     emailGuard.success(cleanEmail);

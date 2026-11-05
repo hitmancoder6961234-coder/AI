@@ -613,6 +613,145 @@ try {
     assert.equal((await post("/api/agent/run", { goal: "hi" })).status, 401);
   });
 
+  // (runs before 'abuse resistance': that check deliberately trips the per-address limiter, after which no account can be created from this address)
+  console.log("\naccount recovery");
+  await check("account recovery: no mail provider means an honest 501, the operator CLI issues a one-time link, a reset ends every session, and a disabled account cannot sign in", async () => {
+    const { spawnSync } = await import("node:child_process");
+    const dbFile = path.join(dataDir, "smoke.db");
+    const admin = (...args) => spawnSync(process.execPath, ["scripts/admin.mjs", ...args], { env: { ...process.env, DARKNESS_DB_PATH: dbFile }, encoding: "utf8" });
+    const info = await j(await get("/api/auth/recovery"));
+    assert.deepEqual([info.available, info.method], [false, "operator"], "no mail provider is configured in this run");
+    const f = await post("/api/auth/forgot", { email: "someone@example.com" });
+    assert.equal(f.status, 501, "the server does not pretend to send mail");
+    assert.equal((await j(f)).code, "RECOVERY_NOT_CONFIGURED");
+    assert.equal((await post("/api/auth/reset", { token: "A".repeat(43), password: "Whatever-pass-12345" })).status, 400, "a made-up token is refused");
+    const email = `recover-${crypto.randomUUID().slice(0, 6)}@example.com`;
+    const su = await post("/api/auth/signup", { email, password: pw, name: "Recover" });
+    assert.equal(su.status, 201, "sign-up for the recovery account: " + JSON.stringify(await su.clone().json().catch(() => ({}))));
+    const s1 = (await j(su)).token;
+    const s2 = (await j(await post("/api/auth/login", { email, password: pw }))).token;
+    assert.equal((await get("/api/memory", s1)).status, 200, "the new session works before the reset");
+    const out = admin("reset-link", email, "--url", "https://app.example.com");
+    assert.equal(out.status, 0, out.stderr);
+    const link = /https:\/\/app\.example\.com\/reset\.html#token=([A-Za-z0-9_-]{43})/.exec(out.stdout);
+    assert.ok(link, "the CLI printed a one-time link");
+    const weak = await post("/api/auth/reset", { token: link[1], password: "short" });
+    assert.equal((await j(weak)).code, "WEAK_PASSWORD", "a weak password is refused");
+    const done = await post("/api/auth/reset", { token: link[1], password: "Brand-new-pass-4455" });
+    assert.equal(done.status, 200, "the link still worked after the weak attempt (the token was not burned)");
+    assert.equal((await j(done)).revokedSessions >= 2, true);
+    for (const t of [s1, s2]) assert.equal((await get("/api/memory", t)).status, 401, "every earlier session is signed out");
+    assert.equal((await post("/api/auth/login", { email, password: pw })).status, 401, "the old password no longer works");
+    const fresh = await post("/api/auth/login", { email, password: "Brand-new-pass-4455" });
+    assert.equal(fresh.status, 200, "the new password signs in");
+    assert.equal((await post("/api/auth/reset", { token: link[1], password: "Another-new-pass-99" })).status, 400, "the link works once");
+    const db0 = new (await import("node:sqlite")).DatabaseSync(dbFile, { readOnly: true });
+    const stored = JSON.stringify(db0.prepare("SELECT * FROM password_resets").all()); db0.close();
+    assert.ok(!stored.includes(link[1]), "only a hash of the token is stored");
+    // operator disable / enable
+    assert.equal(admin("disable", email).status, 0);
+    const blocked = await post("/api/auth/login", { email, password: "Brand-new-pass-4455" });
+    assert.equal(blocked.status, 403); assert.equal((await j(blocked)).code, "ACCOUNT_DISABLED");
+    assert.equal(admin("reset-link", email).status, 1, "no reset link for a disabled account");
+    assert.equal(admin("enable", email).status, 0);
+    assert.equal((await post("/api/auth/login", { email, password: "Brand-new-pass-4455" })).status, 200, "enabling the account lets it sign in again");
+    const listing = admin("users");
+    assert.ok(!listing.stdout.includes(email) && !/password/i.test(listing.stdout), "the user listing masks addresses and shows no hashes");
+    // the reset page is served without inline script (Content-Security-Policy)
+    const page = await fetch(base + "/reset.html");
+    assert.equal(page.status, 200);
+    const html = await page.text();
+    assert.ok(!/<script(?![^>]*\bsrc=)/i.test(html) && !/\son\w+\s*=/i.test(html), "no inline script or handlers");
+    // erasing the account also removes its reset tokens
+    assert.equal(admin("reset-link", email).status, 0);
+    const tok = (await j(await post("/api/auth/login", { email, password: "Brand-new-pass-4455" }))).token;
+    const er = await fetch(base + "/api/privacy/erase", { method: "DELETE", headers: { authorization: "Bearer " + tok, "content-type": "application/json" }, body: JSON.stringify({ confirm: "ERASE" }) });
+    assert.equal(er.status, 200);
+    const db1 = new (await import("node:sqlite")).DatabaseSync(dbFile, { readOnly: true });
+    const left = db1.prepare("SELECT (SELECT COUNT(*) FROM password_resets WHERE user_id NOT IN (SELECT id FROM users)) AS orphans, (SELECT COUNT(*) FROM users WHERE lower(email) = ?) AS accounts").get(email); db1.close();
+    assert.deepEqual([left.orphans, left.accounts], [0, 0], "no reset token or account row is left behind");
+  });
+
+  console.log("\nprovider keys at rest");
+  await check("a provider key is stored once, for its owner: deleting the model or erasing the account leaves no copy of it (it used to leave one under a shared owner)", async () => {
+    const { DatabaseSync } = await import("node:sqlite");
+    const KEYTXT = "SMOKE-KEY-RETENTION-" + crypto.randomUUID().slice(0, 8);
+    const tok = (await j(await post("/api/auth/signup", { email: `keys-${crypto.randomUUID().slice(0, 6)}@example.com`, password: pw, name: "Keys" }))).token;
+    const make = (id) => post("/api/models", { id, name: id, provider: "custom", modelName: "x", baseUrl: `http://127.0.0.1:${STUB_PORT}/v1`, apiKey: KEYTXT, capabilities: { text: true } }, tok);
+    assert.equal((await make("keyret-delete")).status, 201); assert.equal((await make("keyret-erase")).status, 201);
+    const db = () => new DatabaseSync(path.join(dataDir, "smoke.db"), { readOnly: true });
+    const count = (sql, ...a) => { const d = db(); try { return d.prepare(sql).get(...a).n; } finally { d.close(); } };
+    assert.equal(count("SELECT COUNT(*) AS n FROM models WHERE id = ?", "keyret-delete"), 1, "exactly one row for the model (not copies under other owners)");
+    assert.equal(count("SELECT COUNT(*) AS n FROM models WHERE id = ?", "keyret-erase"), 1);
+    const del = await fetch(base + "/api/models/keyret-delete", { method: "DELETE", headers: { authorization: "Bearer " + tok } });
+    assert.equal(del.status, 200);
+    assert.equal(count("SELECT COUNT(*) AS n FROM models WHERE id = ?", "keyret-delete"), 0, "deleting the model removes every row of it");
+    const er = await fetch(base + "/api/privacy/erase", { method: "DELETE", headers: { authorization: "Bearer " + tok, "content-type": "application/json" }, body: JSON.stringify({ confirm: "ERASE" }) });
+    assert.equal(er.status, 200);
+    assert.equal(count("SELECT COUNT(*) AS n FROM models WHERE id LIKE 'keyret-%'"), 0, "erasing the account removes its models");
+    assert.equal(count("SELECT COUNT(*) AS n FROM models WHERE api_key LIKE ?", "%" + KEYTXT + "%"), 0, "no stored key of this user is left in any row");
+  });
+
+  console.log("\nserver-wide operations");
+  await check("server-wide operations (storage limit, shared cache, host disk figures) are not available to signed-in users: there is no administrator role, so any user could otherwise break uploads for everyone", async () => {
+    const tok = (await j(await post("/api/auth/signup", { email: `ops-${crypto.randomUUID().slice(0, 6)}@example.com`, password: pw, name: "Ops" }))).token;
+    const auth = { "content-type": "application/json", authorization: "Bearer " + tok };
+    for (const [method, p, body] of [["POST", "/api/storage/limit", { limitGB: 1 }], ["POST", "/api/storage/limit", { limitGB: 1000 }], ["POST", "/api/storage/clear-cache", {}], ["GET", "/api/storage/status"]]) {
+      const r = await fetch(base + p, { method, headers: auth, body: body ? JSON.stringify(body) : undefined });
+      const t = await j(r);
+      assert.equal(r.status, 403, method + " " + p);
+      assert.equal(t.code, "OPERATOR_ONLY", method + " " + p);
+      assert.ok(!/\\|[A-Za-z]:\/|\/tmp\/|darkness-smoke/.test(JSON.stringify(t)), "the answer does not reveal the server's storage path");
+    }
+    // and nothing changed: uploads still work for this user (a 1 GB limit would have blocked them)
+    const up = await fetch(base + "/api/files/shared", { method: "POST", headers: auth, body: JSON.stringify({ filename: "after-ops.txt", content: "still fine" }) });
+    assert.equal(up.status, 201);
+  });
+
+  console.log("\nrequest-size limits");
+  await check("JSON body limits are per route: 1 MB by default, 25 MB for model requests, 100 MB only for file and export content; oversized bodies are refused at once with an accurate 413 and malformed JSON with 400", async () => {
+    const mkUser = async () => (await j(await post("/api/auth/signup", { email: `limits-${crypto.randomUUID().slice(0, 6)}@example.com`, password: pw, name: "Limits" }))).token;
+    const tok = await mkUser();
+    const raw = (p, bodyText, extra = {}) => fetch(base + p, { method: "POST", headers: { "content-type": "application/json", authorization: "Bearer " + tok, ...extra }, body: bodyText });
+    const text = (mb) => JSON.stringify({ content: "x".repeat(Math.floor(mb * 1024 * 1024)) });
+    // 1. a normal request, and one just under the default limit
+    assert.equal((await raw("/api/memory", JSON.stringify({ content: "a normal note", category: "preference" }))).status, 201);
+    // (a route that truncates an over-long field, so a 413 here could only be the body-size limit; the memory route refuses long notes for its own reason)
+    assert.equal((await raw("/api/conversations", JSON.stringify({ title: "x".repeat(900 * 1024) }))).status, 201, "a 900 KB body is under the 1 MB default limit");
+    // 2. over the default limit: refused, quickly, naming the limit of THIS route
+    const t0 = Date.now();
+    const over = await raw("/api/memory", text(2));
+    assert.equal(over.status, 413);
+    const body = await j(over);
+    assert.deepEqual([body.error, body.maxMB], ["PAYLOAD_TOO_LARGE", 1], JSON.stringify(body));
+    assert.ok(Date.now() - t0 < 3000, "refused promptly");
+    // 3. the 30 MB case of the header probe, on a default-tier route
+    const big = await raw("/api/conversations", JSON.stringify({ title: "x".repeat(30 * 1024 * 1024) }));
+    assert.equal(big.status, 413, "30 MB to a default-tier route");
+    // 4. file content is allowed to be large on the file routes (a 3 MB text file), and a model request can carry 3 MB
+    assert.equal((await raw("/api/files/shared", JSON.stringify({ filename: "big.txt", content: "y".repeat(3 * 1024 * 1024) }))).status, 201, "3 MB of file content on a file route");
+    const conv = await j(await raw("/api/conversations", JSON.stringify({ title: "limits" })));
+    const msg = await raw(`/api/conversations/${conv.id}/messages`, JSON.stringify({ role: "user", content: "z".repeat(3 * 1024 * 1024) }));
+    assert.ok(msg.status >= 200 && msg.status < 300, "3 MB on a model-request route: " + msg.status);
+    // 5. over the model-request tier: refused with the 25 MB limit named
+    const aiOver = await raw(`/api/conversations/${conv.id}/messages`, JSON.stringify({ role: "user", content: "z".repeat(26 * 1024 * 1024) }));
+    assert.equal(aiOver.status, 413); assert.equal((await j(aiOver)).maxMB, 25);
+    // 6. malformed JSON is a 400 with a request id, never a 500
+    for (const bad of ['{"content":', "not json", "[1,", "{'a':1}"]) { const r = await raw("/api/memory", bad); assert.equal(r.status, 400, bad); assert.ok((await j(r)).requestId, "has a request id"); }
+    // 7. a declared size over the limit is refused before the body is sent (no wait for the upload)
+    const { createConnection } = await import("node:net");
+    const answer = await new Promise((resolve, reject) => {
+      const sock = createConnection(APP_PORT, "127.0.0.1"); let got = "";
+      const timer = setTimeout(() => { sock.destroy(); reject(new Error("the server waited for an announced 200 MB body")); }, 4000);
+      sock.on("data", (d) => { got += d.toString(); if (got.includes("\r\n\r\n")) { clearTimeout(timer); sock.destroy(); resolve(got); } });
+      sock.on("error", () => {});
+      sock.write(`POST /api/memory HTTP/1.1\r\nHost: x\r\nAuthorization: Bearer ${tok}\r\nContent-Type: application/json\r\nContent-Length: ${200 * 1024 * 1024}\r\n\r\n`);
+    });
+    assert.match(answer, /^HTTP\/1\.1 413/, "an announced 200 MB body is refused from its header");
+    // 8. the server is still fine, and a legitimate request still works
+    assert.equal((await raw("/api/memory", JSON.stringify({ content: "still fine after the refusals", category: "preference" }))).status, 201);
+  });
+
   console.log("\nabuse resistance");
   await check("login attempts from one address are rate limited (different accounts, so only the IP limiter can trip)", async () => {
     let limited = null;
