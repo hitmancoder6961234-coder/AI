@@ -1,11 +1,11 @@
 # Phase status register
 
-The single place that records where the seven-phase roadmap stands. Updated after each authorised phase (last update: 6 November 2026, Phase 1 closure). **Completing a phase does not authorise the next one: only your explicit approval does.**
+The single place that records where the seven-phase roadmap stands. Updated after each authorised phase (last update: 6 November 2026, Phase 2 preparation notes; Phase 1 stays CLOSED). **Completing a phase does not authorise the next one: only your explicit approval does.**
 
 | Phase | Status | Exit criteria | Tests / evidence | My approval |
 |---|---|---|---|---|
 | Phase 1: Staging readiness and deployment preparation | **CLOSED on 6 November 2026** (closure approved by you the same day; closing it does not authorise Phase 2) | All Phase 1 documentation criteria PASS; P1-03 fixed and tested; everything about real platforms NOT TESTED (kept so: see "Phase 1 closure" below and [STAGING-READINESS-REPORT.md](STAGING-READINESS-REPORT.md) section 11) | CI run 42183723118 on `376dc00` and run 42178822719 on `81216aa`, five jobs green each time; locally: 381/381 unit tests, smoke 97/97, authorization audit 151 routes / 145 attacked / 0 violations, `npm audit` 0, lint 0 errors at the 1,033-warning budget, 93 modules with 0 import cycles; preflight run against a staging-like environment; branch protection read from the public API (none) | **Approved 6 Nov 2026** (Phase 1 closure only) |
-| Phase 2: Staging deployment | Not started | Pending | None | Pending |
+| Phase 2: Staging deployment | **Not started** (preparation only: the staging-readiness decision report was delivered and preliminary decisions are recorded below; **nothing is authorised**) | Pending | None | Pending |
 | Phase 3: Functional and integration testing | Not started | Pending | None | Pending |
 | Phase 4: Security, reliability and performance | Not started | Pending | None | Pending |
 | Phase 5: Product quality and AI experience | Not started | Pending | None | Pending |
@@ -22,6 +22,7 @@ The single place that records where the seven-phase roadmap stands. Updated afte
 | 6 Nov 2026 | Strict phase order and execution control | all phases |
 | 6 Nov 2026 (later) | "Authorized work instructions": commit exactly the 14 reviewed documentation files; implement P1-03 (highest priority) with isolated-database tests; run the full verification; separate commits on `release-hardening`; no force-push, no merge, no deploy, no Phase 2, no P1-01 / P1-09 | done: documentation commit `a088815`; P1-03 implemented and verified locally and in CI (`81216aa`). Phase 2 stays unauthorised |
 | 6 Nov 2026 (later) | "If no error then automatically go for the next phase, but if any confirmation is needed then ask; if red alert, ask" | **Replaces the earlier "never advance automatically" wording** for phases that finish with no error and need no confirmation. It does **not** cover anything that needs a decision, an account, a purchase, a credential, a deployment, a merge, a settings change or a risky operation: each of those still stops and asks. Applying it to the end of Phase 1: it is **not** eligible to advance automatically, because Phase 2 needs your confirmations (provider choice and caps, hosting accounts and purchases, backup route, the open fix decisions) |
+| 6 Nov 2026 (Phase 2 preparation) | Reviewed the staging-readiness decision report; **preliminary decisions** recorded in "Phase 2 preparation" below; record finding P2-01 and its mitigation as documentation only; no source, test, workflow, environment, database or GitHub change; no account, purchase, infrastructure or deployment; Phase 2 not authorised | done by the documentation-only commit that adds this section. **Does not authorise Phase 2** |
 | 6 Nov 2026 (final) | "Approve closing Phase 1" after the final verification report; limited actions: record the closure, keep P1-13 open and the compatibility limitations, documentation-only commit and push to `release-hardening`; no code, test, workflow, environment, database or infrastructure change; no branch protection, no P1-01 / P1-09, no merge, no deploy, no purchase, no Phase 2 | done by the closure commit. **Does not authorise Phase 2** |
 
 Not approved (so not done): implementing P1-01 or P1-09; any provider key; any Render, Vercel or Aiven resource; any GitHub setting change (including branch protection); merging PR #1; any purchase; any deployment; Phase 2.
@@ -56,6 +57,37 @@ AI providers and their spending caps; Render and Vercel accounts or projects and
 - **P1-13 (LOW, OPEN):** unit tests use the default storage root and so write into the repository-root `data/` folder. Recorded for future remediation; **not to be fixed now**.
 - **P1-03 compatibility limitations, all LOW and unchanged:** legacy UNIQUE / CHECK constraints that exist only as automatic indexes are not carried over by a rebuild; a failed second stage is retried on the next start rather than rolled back (verified safe); the oldest commit (`8c38256`) could not be generated in the test harness; shapes from before `user_id` existed are not in the git history and are known only from the migration's own column lists; foreign-key dependents beyond two `projects` children and `messages` were not each tested; a very large database and the external `DARKNESS_DB_PATH` case were not tested. **Recommendation kept: back up any database older than the repository history first and open a copy of it on a scratch root before any real use.**
 - Other open Phase 1 findings stay open as listed below (P1-01, P1-04 to P1-10, P1-12).
+
+## Phase 2 preparation (6 November 2026; Phase 2 is NOT started and NOT authorised)
+
+**Preliminary decisions** (yours, recorded as stated; none is a purchase or an instruction to build anything)
+
+| Topic | Decision |
+|---|---|
+| Hosting direction | Render Starter with a persistent disk, and a Vercel front end |
+| Database | A fresh SQLite database for staging; production or personal data is never copied |
+| AI provider keys | **No server-level provider keys initially**; testers may use their own keys |
+| Mail | Remains disabled |
+| Aiven and Supabase | Not required for the initial staging |
+| Backups | Manual, including one before every deployment |
+| P1-01 (start-up configuration check) | Not approved |
+| P1-09 (backup scheduler and monitoring) | Not approved yet |
+| Branch protection on `main` | Not applied yet |
+| Domain | Platform-provided hostnames |
+| Test data | Synthetic data only |
+| Deployment commit | `0d089e0`, **subject to final verification before deployment** (the later documentation-only commits that add these notes do not change code; the exact commit is re-confirmed at deploy time) |
+
+**Still undecided** (from the decision report): Vercel Hobby (free, non-commercial use only) versus Pro; the Render region; who creates and operates the Render and Vercel accounts; the disk size (2 to 5 GB); which providers and spending caps the testers' own keys should have (testers bring their own); whether an older production database exists that would be upgraded in place; the backup store for an off-site copy; when branch protection is applied.
+
+**Phase 2 preparation finding (a Phase 2 item: Phase 1 is not reopened)**
+
+| ID | Severity | Status |
+|---|---|---|
+| **P2-01** | **MEDIUM (cost / abuse exposure)** | **OPEN** until an actual mitigation is implemented and verified |
+
+*Open sign-up combined with server-level provider keys.* Anyone who can reach a deployment can register: there is no switch that closes or restricts registration (a search of the code for invite-only, sign-up-disable or allow-list settings found none), and without a mail provider there is no e-mail verification. Several features use the **server's** provider keys for any signed-in user: image generation and illustrations use `GEMINI_API_KEY`; the Copilot "GPT" mode uses `OPENAI_API_KEY`; the agent uses the first provider that has a server key; and a Gemini model added without a key of its own falls back to the server key (`server/server.ts` ~l. 3501 and 3621, `server/image-service.ts`, `server/copilot/routes.ts`, `server/agent/providers.ts`). The only brake in the code is the per-address AI limiter (`RATE_LIMIT_AI_PER_MIN`, default 40 per minute) and the sign-up limiter (`RATE_LIMIT_AUTH_PER_15MIN`, default 20 per 15 minutes), both per address and per process, so rotating addresses defeats them. On a public staging URL that carries a server-level key, strangers could therefore register and spend that key. *Correction to the decision report:* it said the server key serves "every signed-in user" as the default model; the default Gemini model is registered for the baseline user, and which other paths hand it to a new account was not fully traced. The four paths above are what the code shows; each is to be confirmed by a two-account test in Phase 2.
+
+*Recommended mitigation (accepted as the staging direction, not yet in effect):* **no server-level AI provider keys on staging initially**; testers add their own model and key inside the app (stored sealed per user), so the only key anyone can spend is their own. With no server key, the features above report "not configured" and spend nothing. Verification (Phase 2): preflight shows no server provider key; a freshly registered second user cannot obtain a working model, an illustration, a Copilot GPT answer or an agent run without their own key; provider dashboards show no usage. **No code change and no registration restriction is authorised**; closing or gating sign-up (an allow-list, an invite code, or per-user cost limits) would be a code change that needs its own approval, and until something is implemented **and verified** this finding stays OPEN.
 
 ## Phase 1 follow-up checks (6 Nov 2026)
 
