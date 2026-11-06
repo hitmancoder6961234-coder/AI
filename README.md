@@ -32,7 +32,7 @@ still works in **offline mode** (content derived from your project's structure, 
 ```bash
 npm run lint                # ESLint: bug-class rules fail, style rules warn
 npm run typecheck           # TypeScript compiler (non-blocking in CI until its baseline is 0)
-npm test                    # 363 unit tests (the number the runner prints, not a count of test( lines)
+npm test                    # 381 unit tests (the number the runner prints, not a count of test( lines)
 npm run build && npm run smoke   # 97 end-to-end checks against the real server
 npm run authz               # attacks every state-changing route (151) as another user; fails on any change to anyone else's data (docs/AUTHORIZATION-AUDIT.md)
 ```

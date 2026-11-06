@@ -241,7 +241,7 @@ in-flight requests get `SHUTDOWN_GRACE_MS` to finish. Render's default 30 s stop
 
 ## Verified vs. not verified
 
-Verified by automated tests on the real server (363 unit tests and 97 end-to-end checks on the final tree, locally and on GitHub's runners; the local clean-room runs on Node 22 and 24 were 349 / 94 before the last round of fixes and have not been repeated, but the GitHub run starts from a fresh `npm ci` on both) and in Chrome and Edge: strict-mode
+Verified by automated tests on the real server (381 unit tests and 97 end-to-end checks on the current tree, locally and on GitHub's runners; the local clean-room runs on Node 22 and 24 were 349 / 94 before the last round of fixes and have not been repeated, but the GitHub run starts from a fresh `npm ci` on both) and in Chrome and Edge: strict-mode
 isolation, ownership checks, export/erase, rate limits, the code-execution gate, log redaction, the agent over SSE,
 the SSRF guard, vault encryption, every document type round-tripping (DOCX, PDF, PPTX, XLSX, ODT, RTF, HTML, MD, TXT,
 CSV, JSON in; most of them back out), your original API at `/classic-api`, the full Project Studio flow with a scripted
@@ -255,7 +255,7 @@ chunks; logout expires the cookie and the old cookie stops working; expired and 
 address does not leak in response headers; request ids and client IPs survive the hop. Server logs from a full smoke run contain
 no e-mail addresses, tokens or keys, and the only `error`-level lines are the two failure cases the tests trigger on purpose.
 
-**Verified on GitHub (6 Nov 2026):** the CI workflow ran on pull request #1 (run 42118240655) and passed on Linux Node 22 and 24, Windows and macOS, with the dependency audit and secret scan; the same commands pass locally. This proves the build, tests and smoke run on clean hosted machines, not that any deployment works.
+**Verified on GitHub (6 Nov 2026):** the CI workflow ran on pull request #1 and passed on Linux Node 22 and 24, Windows and macOS, with the dependency audit and secret scan (run 42118240655 on `9607514`, and again run 42178822719 on `81216aa`); the same commands pass locally. This proves the build, tests and smoke run on clean hosted machines, not that any deployment works.
 
 **Not verified (no live access, no Docker, no Vercel/Render/Aiven account here)**: that Vercel actually runs `api/proxy.js` and
 `vercel.json` as assumed (headers, rewrites, the 4.5 MB / 25 s / 300 s limits are taken from Vercel's documentation, not measured);

@@ -12,7 +12,7 @@ Related: [STAGING-ENVIRONMENT-INVENTORY.md](STAGING-ENVIRONMENT-INVENTORY.md) ·
 - [ ] Release identified: branch `release-hardening` at an exact commit (recorded in the Phase 2 report). If the documentation changes from Phase 1 are to be deployed, they were committed first with your approval.
 - [ ] `git status` clean; HEAD equals the recorded commit; `origin/main` still `46223be`; PR #1 still open, not merged.
 - [ ] The CI run for that exact commit is green.
-- [ ] Local gate on that commit: `npm run verify`, `node scripts/smoke.mjs`, `npm run authz` (record counts; expected today 363 unit, 97 smoke, 0 violations).
+- [ ] Local gate on that commit: `npm run verify`, `node scripts/smoke.mjs`, `npm run authz` (record counts; expected on `81216aa`: 381 unit, 97 smoke, 0 violations).
 - [ ] Staging secrets exist and are **different** from production: encryption key, provider key(s) with spending caps.
 - [ ] A rollback owner and a place to keep the encryption key and backups are agreed.
 

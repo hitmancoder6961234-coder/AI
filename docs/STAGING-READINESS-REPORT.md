@@ -1,6 +1,6 @@
 # Staging readiness report (Phase 1)
 
-Prepared 6 November 2026 on branch `release-hardening`. **Nothing was deployed, merged, committed or changed on any external service in this phase.** Sections marked *verified* were checked against the repository, the GitHub API or a local run on that date; anything about a real platform is marked *not verified*.
+Prepared 6 November 2026 on branch `release-hardening`. **Nothing was deployed, merged or changed on any external service in this phase** (this report and the other Phase 1 documents were committed afterwards, as `a088815`; the P1-03 fix followed as `81216aa`). Sections marked *verified* were checked against the repository, the GitHub API or a local run on that date; anything about a real platform is marked *not verified*.
 
 Companion documents: [STAGING-ENVIRONMENT-INVENTORY.md](STAGING-ENVIRONMENT-INVENTORY.md) · [STAGING-DEPLOYMENT-PLAN.md](STAGING-DEPLOYMENT-PLAN.md) · [STAGING-VERIFICATION-CHECKLIST.md](STAGING-VERIFICATION-CHECKLIST.md) · [STAGING-ROLLBACK-PLAN.md](STAGING-ROLLBACK-PLAN.md). Existing documents these build on (not duplicated): [../DEPLOY.md](../DEPLOY.md), [OPERATIONS-VERIFICATION.md](OPERATIONS-VERIFICATION.md), [ENVIRONMENT-VARIABLES.md](ENVIRONMENT-VARIABLES.md), [ARCHITECTURE.md](ARCHITECTURE.md), [AUTHORIZATION-AUDIT.md](AUTHORIZATION-AUDIT.md), [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
@@ -15,6 +15,8 @@ Companion documents: [STAGING-ENVIRONMENT-INVENTORY.md](STAGING-ENVIRONMENT-INVE
 | Pull request | #1, open, `merged=false`, `mergeable_state=clean`, 10 commits, head `9607514` |
 | Latest CI | run `42118240655` (pull_request, head `9607514`): success. Linux Node 22, Linux Node 24, Windows, macOS, dependency audit + secret scan: all success. Earlier run `42113163658` (head `695e156`) failed on two real findings, both fixed |
 | Working tree at the start | clean (0 entries). This phase then edited documentation only (listed in section 9) and left it **uncommitted** for your review |
+
+*Update, 6 Nov 2026 (later): the table above is the state when this report was written. Since then the documentation was committed (`a088815`) and P1-03 was fixed (`81216aa`); `release-hardening` is 12 commits ahead of `main`, `main` is still `46223be`, PR #1 is still open, and the latest CI run `42178822719` on `81216aa` passed all five jobs. Current counts: 381 unit tests, 97 smoke checks, 0 authorization violations.*
 
 ## 2. Architecture overview
 
@@ -137,6 +139,7 @@ Severity per the error-handling protocol (LOW / MEDIUM / HIGH / CRITICAL). No HI
 | P1-10 | MEDIUM | `TRUST_PROXY_HOPS` defaults to 1 in production but Vercel -> Render needs 2; a wrong value makes all clients look like one address (limits trip for everyone) or lets a forged `X-Forwarded-For` reset limits | *Proven*: `privacy.ts` ~l. 266 and `render.yaml`. Existed before | OPEN. The staging checklist includes the two-network test (OPERATIONS-VERIFICATION 2.2) | No |
 | P1-11 | LOW | `VITE_API_URL` browser override and `ASSETS` branch were undocumented | *Proven* by the audit | **FIXED - VERIFICATION PENDING** (rows added to ENVIRONMENT-VARIABLES.md) | No |
 | P1-12 | LOW | `main` has no branch protection and no required checks; direct pushes (including force-push) are not restricted | *Proven* by the public GitHub API on 6 Nov 2026 (`protected: false`, no rulesets) | OPEN (inspection only; recommended protections are in STAGING-DECISION-BRIEF.md section 3) | **Yes** (changing GitHub settings) |
+| P1-13 | LOW | Several unit tests use the default storage root, so `npm test` writes into the repository-root `data/` (local development data, git-ignored) | *Proven* 6 Nov 2026: `data/database/darkness.db` modified by test runs; it holds only seeded rows (2 system users, `global` project), integrity ok, stamped `user_version = 1` by the P1-03 code, no rebuild, no snapshot. Existed before | OPEN (tests should use a temporary root) | No (outside the authorised scope; tell me if you want it fixed) |
 
 Not errors but **blockers** (missing access or decisions): see section 10.
 

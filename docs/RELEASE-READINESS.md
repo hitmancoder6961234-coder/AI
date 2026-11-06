@@ -19,7 +19,7 @@ So: deploy to a **staging** environment, work through [OPERATIONS-VERIFICATION.m
 
 | Not verified | Why it matters |
 |---|---|
-| ~~The CI workflow has never run on GitHub~~ **Updated 6 Nov 2026**: it has now run once on the pull request (run 42118240655): all five jobs passed. It first failed on two real findings (three fake keys flagged by gitleaks; a Linux-only test hang), both fixed in `0babe13` and `9607514`. It has not run on `main` and its jobs are not yet configured as required checks | the run is on the PR only; branch protection was not inspected or changed |
+| ~~The CI workflow has never run on GitHub~~ **Updated 6 Nov 2026**: it has now run on the pull request (run 42118240655, and again run 42178822719 on the P1-03 commit `81216aa`): all five jobs passed both times. It first failed on two real findings (three fake keys flagged by gitleaks; a Linux-only test hang), both fixed in `0babe13` and `9607514`. It has not run on `main` and its jobs are not yet configured as required checks | the run is on the PR only; branch protection was not inspected or changed |
 | Nothing has been deployed: Vercel front door, Render service, Docker image, Caddy | behaviour was verified through the real `api/proxy.js` in front of the real build, not on the providers' platforms |
 | No real third-party model provider was called (Gemini, OpenAI, ...) | provider handling was tested against local stand-in providers that misbehave on purpose |
 | No external penetration test, no fuzzing campaign | the audit below is a white-box review plus automated probes written by the same team that wrote the code |
@@ -113,9 +113,9 @@ All numbers are from runs on the final working tree on 5 November 2026. Nothing 
 
 | Check | Result |
 |---|---|
-| `npm run verify` (lockfile, architecture, lint budget, typecheck, unit tests, build) | exit 0: 92 modules / 210 imports / **0 import cycles**, **0 lint errors** (1,033 warnings = the budget), typecheck 0 errors, build ok |
-| Unit tests | **363 / 363** passed, 0 failed, 0 skipped (working tree on Node 22; and in the clean rooms on Node 22.23 and Node 24.22) |
-| End-to-end smoke (real server, production build) | **97 / 97** (working tree and both clean rooms) |
+| `npm run verify` (lockfile, architecture, lint budget, typecheck, unit tests, build) | exit 0: 93 modules / 212 imports / **0 import cycles**, **0 lint errors** (1,033 warnings = the budget), typecheck 0 errors, build ok (re-run 6 Nov 2026 on `81216aa`, after the P1-03 migration fix; the 5 Nov figures were 92 modules / 210 imports) |
+| Unit tests | **381 / 381** passed, 0 failed, 0 skipped (working tree on Node 22 on 6 Nov 2026, and on GitHub's runners on Node 22 and 24: run 42178822719). The 18 added since 5 Nov are `tests/db-migration.test.ts`. The clean-room runs below were made on 5 Nov 2026 with 363 tests, before that change |
+| End-to-end smoke (real server, production build) | **97 / 97** (working tree twice on 6 Nov 2026, GitHub runners, and both clean rooms on 5 Nov) |
 | **Authorization audit** (`npm run authz`; every state-changing route attacked as another user) | **151 routes, 145 attacked (499 requests), 6 public by design, 0 violations**: working tree (twice) and both clean rooms. Mutation-tested: with two holes re-introduced it fails with 8 violations. Details: [AUTHORIZATION-AUDIT.md](AUTHORIZATION-AUDIT.md) |
 | **Clean room, Node 22.23** (a copy without `node_modules`, `dist`, `.git`, `data`, `.env`: `npm ci`, lockfile check, native packages, build, typecheck, architecture, lint budget, unit tests, smoke, authorization audit) | **all 11 steps exit 0**; 363 / 363, 97 / 97, 0 violations |
 | **Clean room, Node 24.22** (same steps) | **all 11 steps exit 0**; 363 / 363, 97 / 97, 0 violations |
@@ -157,14 +157,14 @@ All numbers are from runs on the final working tree on 5 November 2026. Nothing 
 - **Route sweep, 10 findings**: `POST /api/chat`, `/api/document/ai-generate`, `/api/presentation/ai-generate`, `/api/presentation/ai-edit-slide` answer `500` when no model key is configured (3 repeats of the PDF export `503` when no browser engine is installed, and `501` for e-mail recovery when no mail provider is set). They reveal configuration, not secrets or data; the clean fix (one central `503`) is open (Low).
 - **Crawl**: 105 elements inspected; 4 were skipped on purpose (destructive buttons such as delete / sign out, which have their own checks) and 16 could not be re-located after a page reload, so they were **not clicked** (neither ok nor dead): a coverage gap, not a pass.
 - **Accessibility audit** does not cover `/reset.html` (checked separately for 360 px layout, 44 px targets and focus), screen-reader speech, or the user's own documents and slides.
-- The browser suites are scripts that run **outside** the repository (they need Chrome and long runs); they are not part of `npm run verify` or CI. The CI workflow has never run on GitHub.
+- The browser suites are scripts that run **outside** the repository (they need Chrome and long runs); they are not part of `npm run verify` or CI. (The CI workflow has since run on GitHub: see the 6 Nov 2026 update in the table of unverified items.)
 - All browser results are from a local headless Chrome against local servers with stand-in providers.
 
 ### Defects in the tests themselves that were fixed (assertions kept as strict)
 
 `model-compare` (a 150 ms timing bound that could not tell parallel from sequential: now counts calls in flight), the auth-gate lock-out step (fixed 1.5 s waits: now waits for the server's answer and the screen), the project-page suite (two fixed waits, above), and the smoke tests' own ordering (sign-ups before the deliberate rate-limit exhaustion).
 
-Not done in this round: a load / capacity test, an external penetration test, a real-provider, real-mail or real-platform run (BLOCKED, no access), and a GitHub Actions run.
+Not done in this round (5 Nov 2026): a load / capacity test, an external penetration test, a real-provider, real-mail or real-platform run (BLOCKED, no access), and a GitHub Actions run (done since, on 6 Nov 2026: five jobs green).
 
 ## Deployment checklist
 
@@ -174,7 +174,7 @@ The full, ordered list is in [DEPLOY.md](../DEPLOY.md) (go-live checklist) and [
 2. Set production mode, strict privacy, a persistent volume for `DARKNESS_STORAGE_ROOT`, and the provider key(s) in the host's secret store, never in the repository.
 3. Leave `ENABLE_RUN_ENGINE` off. Run **one** instance.
 4. Enable disk encryption on the volume (provider keys are plaintext in the database).
-5. Push the repository to GitHub and make the CI jobs required checks; confirm the Windows and macOS jobs, the secret scan and the audit job actually run.
+5. ~~Push the repository to GitHub and confirm the CI jobs run~~ (done 6 Nov 2026: Windows, macOS, the secret scan and the audit job all ran and passed on PR #1). **Still open:** make the CI jobs required checks (`main` has no branch protection yet; see docs/BRANCH-PROTECTION-PROPOSAL.md).
 6. After the first deploy: sign up, sign in on a second device, sign out other sessions, upload a ZIP, export a document, run one comparison with a real provider key, and watch `/api/ready` and the logs.
 7. Rotate any credential that was ever pasted into chat, e-mail or a ticket.
 

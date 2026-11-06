@@ -16,7 +16,7 @@ All on a Windows 11 development machine, Node 22 (and 24 for unit tests and smok
 
 | Area | What was run | Result |
 |---|---|---|
-| Whole gate | `npm run verify` (lockfile, architecture, lint budget, typecheck, unit tests, build) | see RELEASE-READINESS for the final numbers |
+| Whole gate | `npm run verify` (lockfile, architecture, lint budget, typecheck, unit tests, build) | see RELEASE-READINESS for the final numbers (latest, 6 Nov 2026: 381 unit tests, 97 smoke, 0 authorization violations, CI green) |
 | End to end | `node scripts/smoke.mjs` boots `dist/server.js` and drives it over HTTP, including account recovery through the real operator CLI | all checks passed |
 | Backup / restore drill | a production-build server with real accounts and data: `backup create` **while the server runs** -> `verify` -> a copy of the backup with one flipped byte -> `verify` fails and `restore` refuses it -> data changed after the backup -> server stopped -> `restore --yes` -> server restarted | 15 / 15: the server was ready on restored data, the pre-backup account could sign in again but its **old session was dead** (a restore invalidates every session and reset token), post-backup data was gone, the replaced data was kept aside (the drill script is not in the repository; the steps are in section 4) |
 | A defect the drill work found | `restore` with `DARKNESS_DB_PATH` pointing outside the storage root left the **old `-wal` file beside the restored database**, which SQLite would replay onto it. Fixed in `scripts/backup.mjs` (the old file and its `-wal` / `-shm` are moved aside) with a regression test | fixed, tested |
