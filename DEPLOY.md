@@ -195,6 +195,10 @@ The Classic app is now published as three files next to its page (`/classic/app.
 
 * `node scripts/admin.mjs ...` account operations (masked user list, one-time reset link, revoke sessions, disable / enable): see "Account recovery" above.
 
+### Upgrading an existing database
+
+A fresh database needs nothing. A database created by an **older version** (tables without `user_id`) is rebuilt on the first start: take a verified backup first (`scripts/backup.mjs`), then start; the build writes `<storage root>/backups/pre-migrate-<time>.db`, rebuilds in one transaction and stamps `PRAGMA user_version = 1`. It refuses to start (and leaves the database unchanged) on a shape it does not recognise or when anything fails: see [docs/OPERATIONS-VERIFICATION.md](docs/OPERATIONS-VERIFICATION.md) section 7 and SECURITY.md #63, #64.
+
 ### Go-live checklist
 
 1. `node scripts/preflight.mjs` on the API host: no FAIL, and you understand every WARN. If you configured mail, send yourself a real reset link and use it once (the preflight checks the settings, not delivery).

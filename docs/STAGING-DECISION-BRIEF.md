@@ -59,7 +59,7 @@ I did not use the stored git credential for this. From the public API:
 4. Whether to commit the Phase 1 documentation (list and diff summary are in the report).
 5. Whether branch protection should be enabled before Phase 6.
 6. Vercel's documentation says the free Hobby plan is for **non-commercial personal use only**; if Darkness AI is or will be a commercial product, a Pro plan is required (a purchase, so not done and not assumed). Render's Starter plan and disk are also paid.
-7. Whether an old production database exists that the new version would upgrade in place (it decides how urgent P1-03 is: proven to lose projects in an older-shaped database, so such a database must be backed up first and must not be started with this build until P1-03 is fixed).
+7. Whether an old production database exists that the new version would upgrade in place (P1-03 is now fixed and tested, so an older database can be upgraded safely, but it must still be backed up first).
 
 ## Sources
 

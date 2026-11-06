@@ -5,6 +5,8 @@ import crypto from "crypto";
 import { storageManager } from "./storage-manager.js";
 import { aivenConfigured, mirrorMessage } from "./security/aiven.js";
 import { keyAad, protectSecret, revealSecret } from "./security/secret-store.js";
+import { logger } from "./observability/logger.js";
+import { prepareDatabase, stampSchemaVersion, type MigrationHooks, type MigrationLog } from "./db-migrations.js";
 import {
   syncProjectToSupabase,
   deleteProjectFromSupabase,
@@ -130,15 +132,15 @@ db.exec("PRAGMA secure_delete = ON;");
 /**
  * Execute a function within an ACID transaction
  */
-export function runTransaction<T>(fn: () => T): T {
-  db.exec("BEGIN TRANSACTION;");
+export function runTransaction<T>(fn: () => T, conn: DatabaseSync = db): T {
+  conn.exec("BEGIN TRANSACTION;");
   try {
     const result = fn();
-    db.exec("COMMIT;");
+    conn.exec("COMMIT;");
     return result;
   } catch (err) {
     try {
-      db.exec("ROLLBACK;");
+      conn.exec("ROLLBACK;");
     } catch (rbErr) {
       console.error("Rollback failed:", rbErr);
     }
@@ -146,42 +148,37 @@ export function runTransaction<T>(fn: () => T): T {
   }
 }
 
+export interface InitSchemaOptions {
+  /** where the pre-migration snapshot goes (default: <storage root>/backups) */
+  snapshotDir?: string;
+  allowNewerSchema?: boolean;
+  log?: MigrationLog;
+  /** test seams, see db-migrations.ts */
+  hooks?: MigrationHooks;
+}
+
 /**
- * Initialize / verify database schema and migrations
+ * Initialize / verify database schema and migrations.
+ *
+ * Stage 1 (db-migrations.ts, BEFORE the ordinary CREATE TABLE work): version guard, refusal of unexpected shapes, a snapshot when a destructive
+ * step is needed, and the legacy table rebuilds in one atomic transaction with foreign keys off. Stage 2 (below): additive `CREATE ... IF NOT
+ * EXISTS` work, one-time clean-ups and seeds, in ONE transaction that also stamps PRAGMA user_version at its end. Every error in either stage
+ * propagates to the caller, so the process never starts on a half-migrated database. Each stage is atomic; stage 1's result is a valid
+ * current-shape schema, so a failure in stage 2 is simply retried on the next start.
+ *
+ * `conn` defaults to the application database; tests pass a temporary one.
  */
-export function initDatabaseSchema() {
+export function initDatabaseSchema(conn: DatabaseSync = db, opts: InitSchemaOptions = {}) {
+  const db = conn; // every statement below runs on `conn` (this shadows the module-level connection on purpose)
+  const log = opts.log ?? logger;
+  prepareDatabase(db, {
+    snapshotDir: opts.snapshotDir ?? path.join(storageManager.getStorageRoot(), "backups"),
+    log,
+    allowNewerSchema: opts.allowNewerSchema ?? process.env.DARKNESS_ALLOW_NEWER_SCHEMA === "true",
+    hooks: opts.hooks,
+  });
   runTransaction(() => {
-    // 1. Projects
-    try {
-      const info = db.prepare("PRAGMA table_info(projects)").all() as any[];
-      if (info.length > 0 && !info.some(c => c.name === 'user_id')) {
-        db.exec(`
-          DROP TABLE IF EXISTS projects_old;
-          ALTER TABLE projects RENAME TO projects_old;
-          CREATE TABLE projects (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL DEFAULT 'user_default',
-            name TEXT NOT NULL,
-            description TEXT,
-            source_type TEXT DEFAULT 'upload',
-            root_path TEXT,
-            status TEXT DEFAULT 'ready',
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            last_indexed_at INTEGER,
-            metadata TEXT
-          );
-          INSERT INTO projects (id, user_id, name, description, source_type, root_path, status, created_at, updated_at, last_indexed_at, metadata)
-          SELECT id, 'user_default', name, description, source_type, root_path, status, created_at, updated_at, last_indexed_at, metadata FROM projects_old;
-          DROP TABLE IF EXISTS projects_old;
-        `);
-      }
-    } catch (e) {
-      console.error("Migration error for projects.user_id:", e);
-      try {
-        db.exec("DROP TABLE IF EXISTS projects_old;");
-      } catch {}
-    }
+    // 1. Projects (the legacy "no user_id" rebuild is done by prepareDatabase)
     db.exec(`
       CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY,
@@ -223,11 +220,13 @@ export function initDatabaseSchema() {
       CREATE INDEX IF NOT EXISTS idx_project_files_hash ON project_files(hash);
     `);
 
-    // Clean up duplicate project files if any exist from older imports
-    try {
-      db.exec("DELETE FROM project_files WHERE rowid NOT IN (SELECT MIN(rowid) FROM project_files GROUP BY project_id, path);");
+    // Duplicate project files left by older imports are removed ONCE, while the unique index does not exist yet (prepareDatabase wrote a snapshot
+    // first when there are duplicates). The oldest row of each (project_id, path) is kept. Errors propagate: a half-done clean-up is not accepted.
+    if (!db.prepare("SELECT 1 FROM sqlite_master WHERE type = 'index' AND name = 'idx_project_files_unique_path'").get()) {
+      const removed = Number(db.prepare("DELETE FROM project_files WHERE rowid NOT IN (SELECT MIN(rowid) FROM project_files GROUP BY project_id, path)").run().changes);
+      if (removed > 0) log.warn("migration_duplicate_project_files_removed", { rows: removed });
       db.exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_project_files_unique_path ON project_files(project_id, path);");
-    } catch (idxErr) {}
+    }
 
     // 3. Artifacts
     db.exec(`
@@ -382,29 +381,7 @@ export function initDatabaseSchema() {
       );
     `);
 
-    // 11. Conversations
-    try {
-      const info = db.prepare("PRAGMA table_info(conversations)").all() as any[];
-      if (info.length > 0 && !info.some(c => c.name === 'user_id')) {
-        db.exec(`
-          ALTER TABLE conversations RENAME TO conversations_old;
-          CREATE TABLE conversations (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL DEFAULT 'user_default',
-            project_id TEXT,
-            title TEXT NOT NULL,
-            model_id TEXT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL
-          );
-          INSERT INTO conversations (id, user_id, project_id, title, model_id, created_at, updated_at)
-          SELECT id, 'user_default', project_id, title, model_id, created_at, updated_at FROM conversations_old;
-          DROP TABLE conversations_old;
-        `);
-      }
-    } catch (e) {
-      console.error("Migration error for conversations.user_id:", e);
-    }
+    // 11. Conversations (the legacy "no user_id" rebuild is done by prepareDatabase)
     db.exec(`
       CREATE TABLE IF NOT EXISTS conversations (
         id TEXT PRIMARY KEY,
@@ -434,30 +411,7 @@ export function initDatabaseSchema() {
       CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
     `);
 
-    // 13. Workspace Files (General uploads)
-    try {
-      const info = db.prepare("PRAGMA table_info(workspace_files)").all() as any[];
-      if (info.length > 0 && !info.some(c => c.name === 'user_id')) {
-        db.exec(`
-          ALTER TABLE workspace_files RENAME TO workspace_files_old;
-          CREATE TABLE workspace_files (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL DEFAULT 'user_default',
-            filename TEXT NOT NULL,
-            mime TEXT,
-            size INTEGER DEFAULT 0,
-            file_type TEXT,
-            content TEXT,
-            uploaded_at INTEGER NOT NULL
-          );
-          INSERT INTO workspace_files (id, user_id, filename, mime, size, file_type, content, uploaded_at)
-          SELECT id, 'user_default', filename, mime, size, file_type, content, uploaded_at FROM workspace_files_old;
-          DROP TABLE workspace_files_old;
-        `);
-      }
-    } catch (e) {
-      console.error("Migration error for workspace_files.user_id:", e);
-    }
+    // 13. Workspace Files (General uploads; the legacy "no user_id" rebuild is done by prepareDatabase)
     db.exec(`
       CREATE TABLE IF NOT EXISTS workspace_files (
         id TEXT PRIMARY KEY,
@@ -520,41 +474,11 @@ export function initDatabaseSchema() {
         PRIMARY KEY (user_id, id)
       );
     `);
-    try {
+    // The legacy primary-key / user_id rebuild of `models` is done by prepareDatabase. A table with neither a user_id column nor a legacy
+    // primary key is not produced by any known build; it only gets the column. The check replaces a blanket try/catch.
+    if (!(db.prepare("PRAGMA table_info(models)").all() as any[]).some((c) => c.name === "user_id")) {
       db.exec(`ALTER TABLE models ADD COLUMN user_id TEXT DEFAULT 'user_default'`);
-    } catch (e) {}
-
-    try {
-      const tableInfo = db.prepare("PRAGMA table_info(models)").all() as any[];
-      const pkCols = tableInfo.filter(c => c.pk > 0);
-      if (pkCols.length === 1 && pkCols[0].name === 'id') {
-        db.exec(`
-          CREATE TABLE IF NOT EXISTS models_new (
-            id TEXT NOT NULL,
-            user_id TEXT NOT NULL DEFAULT 'user_default',
-            name TEXT NOT NULL,
-            provider TEXT NOT NULL,
-            base_url TEXT,
-            api_key TEXT,
-            model_name TEXT NOT NULL,
-            model_type TEXT,
-            capabilities TEXT,
-            context_window INTEGER,
-            max_output_tokens INTEGER,
-            default_temperature REAL,
-            default_top_p REAL,
-            supports_streaming INTEGER DEFAULT 1,
-            enabled INTEGER DEFAULT 1,
-            status TEXT,
-            is_user INTEGER DEFAULT 0,
-            PRIMARY KEY (user_id, id)
-          );
-          INSERT OR IGNORE INTO models_new SELECT id, COALESCE(user_id, 'user_default'), name, provider, base_url, api_key, model_name, model_type, capabilities, context_window, max_output_tokens, default_temperature, default_top_p, supports_streaming, enabled, status, is_user FROM models;
-          DROP TABLE models;
-          ALTER TABLE models_new RENAME TO models;
-        `);
-      }
-    } catch (e) {}
+    }
 
     db.exec(`CREATE INDEX IF NOT EXISTS idx_models_user_id ON models(user_id);`);
 
@@ -589,35 +513,25 @@ export function initDatabaseSchema() {
       CREATE INDEX IF NOT EXISTS idx_visual_assets_proj ON visual_assets(project_id);
     `);
 
-    // 18. Legacy 'user_default' & Raw string user ID migration to UUIDs
-    try {
-      const userMappings = [
-        { from: 'user_default', to: 'a8331e01-8219-c7e0-27ba-93b91f0c20aa' },
-        { from: 'DARKNESS-DELAYED-PERSISTENCE-TEST', to: '28f9382a-dced-f01b-bbbb-b23a6c677faa' }
-      ];
-      
-      for (const map of userMappings) {
-        try {
-          db.prepare("UPDATE OR IGNORE users SET id = ? WHERE id = ?").run(map.to, map.from);
-        } catch {}
-        try {
-          db.prepare("UPDATE OR IGNORE sessions SET user_id = ? WHERE user_id = ?").run(map.to, map.from);
-        } catch {}
-        try {
-          db.prepare("UPDATE OR IGNORE projects SET user_id = ? WHERE user_id = ?").run(map.to, map.from);
-        } catch {}
-        try {
-          db.prepare("UPDATE OR IGNORE conversations SET user_id = ? WHERE user_id = ?").run(map.to, map.from);
-        } catch {}
-        try {
-          db.prepare("UPDATE OR IGNORE workspace_files SET user_id = ? WHERE user_id = ?").run(map.to, map.from);
-        } catch {}
-        try {
-          db.prepare("UPDATE OR IGNORE models SET user_id = ? WHERE user_id = ?").run(map.to, map.from);
-        } catch {}
+    // 18. Legacy 'user_default' & raw string user ID migration to UUIDs. Best effort and non-destructive, but ALL-OR-NOTHING per mapping (a
+    // SAVEPOINT): if any statement fails (typically the foreign key from sessions), the whole mapping is rolled back and logged and the old ids stay,
+    // which is a consistent state. Before, a failure part-way left some tables remapped and others not, and nothing said so.
+    const userMappings = [
+      { from: 'user_default', to: 'a8331e01-8219-c7e0-27ba-93b91f0c20aa' },
+      { from: 'DARKNESS-DELAYED-PERSISTENCE-TEST', to: '28f9382a-dced-f01b-bbbb-b23a6c677faa' }
+    ];
+    for (const map of userMappings) {
+      db.exec("SAVEPOINT user_id_remap");
+      try {
+        for (const [table, col] of [["users", "id"], ["sessions", "user_id"], ["projects", "user_id"], ["conversations", "user_id"], ["workspace_files", "user_id"], ["models", "user_id"]]) {
+          db.prepare(`UPDATE OR IGNORE ${table} SET ${col} = ? WHERE ${col} = ?`).run(map.to, map.from);
+        }
+        db.exec("RELEASE user_id_remap");
+      } catch (remapErr: any) {
+        db.exec("ROLLBACK TO user_id_remap");
+        db.exec("RELEASE user_id_remap");
+        log.warn("legacy_user_id_remap_skipped", { mapping: map.from, reason: String(remapErr?.message || remapErr).slice(0, 120) });
       }
-    } catch (migrateErr) {
-      console.error("Failed to run user id migration:", migrateErr);
     }
 
     // 19. Seed baseline system users and projects to satisfy foreign key constraints
@@ -644,10 +558,14 @@ export function initDatabaseSchema() {
           VALUES (?, ?, ?, ?, 'system', 'ready', ?, ?)
         `).run(dp.id, defaultUserId, dp.name, dp.desc, now, now);
       }
-    } catch (seedErr) {
-      console.error("Baseline seeding notice:", seedErr);
+    } catch (seedErr: any) {
+      // not "a notice": the seeded rows are the targets of foreign keys, so a failure means an unexpected schema. Stop; the transaction rolls back.
+      log.error("migration_seed_failed", { reason: String(seedErr?.message || seedErr).slice(0, 160) });
+      throw seedErr;
     }
-  });
+
+    stampSchemaVersion(db); // inside the transaction: a failed start-up never keeps a version stamp
+  }, conn);
 }
 
 /**

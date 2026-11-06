@@ -23,7 +23,7 @@ ignored: the compiler erases them).
 | Layer | Modules | Responsibility |
 |---|---|---|
 | **foundation** | `storage-manager`, `env-loader`, `upload-config`, `upload-temp`, `upload-validation`, `upload-chunks`, `provider-http`, `security/vault` + `security/secret-store` (keys at rest), `observability/*` (logger, request-context, health), `security/redact`, `csp`, `csrf`, `login-guard` | no knowledge of the application: paths, uploads, logging, HTTP policy, pure helpers |
-| **data** | `db`, `supabase`, `project-storage` | persistence: SQLite schema and queries, optional cloud mirrors, files on disk |
+| **data** | `db`, `db-migrations` (safe legacy-table rebuilds, schema version), `supabase`, `project-storage` | persistence: SQLite schema and queries, optional cloud mirrors, files on disk |
 | **domain** | analyzers and engines (`project-analyzer`, `architecture-engine`, `file-generator`, `rag-engine`, `agent-runtime`, `agent/*` (loop, tools, policy, sessions), `artifact-access`, `conversation-library`, `model-compare`, `insights`, `memory`, `prompts`, `recovery` (reset tokens, limiter), `mailer` (SMTP / Resend client), `studio/*`, `agent/*`, ...) | what the product does, independent of HTTP |
 | **routes** | `*-routes.ts` (e.g. `conversation-routes`, `compare-routes`, `insights-routes`, `memory-routes`, `prompts-routes`, `recovery-routes`), `*/routes.ts`, `security/privacy` | Express handlers: validate input, call the domain, shape the response |
 | **entry** | `server.ts` | wires middleware, state caches and every route group, starts listening |

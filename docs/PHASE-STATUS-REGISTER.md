@@ -21,9 +21,10 @@ The single place that records where the seven-phase roadmap stands. Updated afte
 | 6 Nov 2026 | Phase 1 follow-up: Render + Vercel as the intended staging architecture; platform hostnames only; Supabase off; no Aiven mirror in initial staging; mail provider unset; separate provider keys, none created; backup plan, branch-protection inspection and fix proposals to be delivered; commit documentation only after your review | planning and inspection only |
 | 6 Nov 2026 | Strict phase order and execution control | all phases |
 
+| 6 Nov 2026 (later) | "Authorized work instructions": commit exactly the 14 reviewed documentation files; implement P1-03 (highest priority) with isolated-database tests; run the full verification; separate commits on `release-hardening`; no force-push, no merge, no deploy, no Phase 2, no P1-01 / P1-09 | done: documentation commit `a088815`; P1-03 implemented and verified locally (see the Phase 1 report). Phase 2 stays unauthorised |
 | 6 Nov 2026 (later) | "If no error then automatically go for the next phase, but if any confirmation is needed then ask; if red alert, ask" | **Replaces the earlier "never advance automatically" wording** for phases that finish with no error and need no confirmation. It does **not** cover anything that needs a decision, an account, a purchase, a credential, a deployment, a merge, a settings change or a risky operation: each of those still stops and asks. Applying it: Phase 1 is *not* eligible to advance yet, because it still needs your confirmations (documentation review and commit, provider choice and caps, hosting purchases and accounts, backup route, the three fix decisions) |
 
-Not yet approved (so not done): committing the Phase 1 documentation; implementing P1-01, P1-03 or P1-09; any provider key; any Render, Vercel or Aiven resource; any GitHub setting change; Phase 2.
+Not approved (so not done): implementing P1-01 or P1-09; any provider key; any Render, Vercel or Aiven resource; any GitHub setting change; Phase 2.
 
 ## Queued items (recorded, not started, not part of Phase 1 review)
 
@@ -39,7 +40,7 @@ AI providers and their spending caps; approval of hosting purchases (Render plan
 
 ## Phase 1 findings register (summary)
 
-P1-01 MEDIUM OPEN (needs approval) · P1-02 FIXED, verification pending · **P1-03 HIGH (conditional) OPEN, needs approval: proven data loss in the `projects` boot migration for older-shaped databases; no operation affected today** · P1-04 LOW OPEN · P1-05 LOW OPEN · P1-06 MEDIUM accepted design limit · P1-07 MEDIUM OPEN (needs approval) · P1-08 LOW OPEN · P1-09 MEDIUM OPEN (needs approval) · P1-10 MEDIUM OPEN · P1-11 FIXED, verification pending. Details: [STAGING-READINESS-REPORT.md](STAGING-READINESS-REPORT.md) section 8. New since: **P1-12 LOW (OPEN)**: `main` has no branch protection and no required checks (see [STAGING-DECISION-BRIEF.md](STAGING-DECISION-BRIEF.md) section 3). No HIGH or CRITICAL issue is open.
+P1-01 MEDIUM OPEN (needs approval) · P1-02 FIXED, verification pending · **P1-03 HIGH (conditional) FIXED 6 Nov 2026 (approved), verified locally**: proven data loss in the legacy boot migrations (projects copy failure, and child rows deleted even on success) is closed by `server/db-migrations.ts`; P1-01 and P1-09 NOT approved, remain in the backlog · P1-04 LOW OPEN · P1-05 LOW OPEN · P1-06 MEDIUM accepted design limit · P1-07 MEDIUM OPEN (needs approval) · P1-08 LOW OPEN · P1-09 MEDIUM OPEN (needs approval) · P1-10 MEDIUM OPEN · P1-11 FIXED, verification pending. Details: [STAGING-READINESS-REPORT.md](STAGING-READINESS-REPORT.md) section 8. New since: **P1-12 LOW (OPEN)**: `main` has no branch protection and no required checks (see [STAGING-DECISION-BRIEF.md](STAGING-DECISION-BRIEF.md) section 3). No HIGH or CRITICAL issue is open.
 
 ## Recovery policy and checkpoints
 

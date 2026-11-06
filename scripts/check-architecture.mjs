@@ -20,7 +20,7 @@ const SRC = "server";
 /** Layers, lowest first. A module may import its own layer or lower ones, never a higher one. */
 export const LAYERS = [
   { name: "foundation", match: /^server\/(storage-manager|env-loader|upload-config|upload-temp|upload-validation|upload-chunks|provider-http|observability\/.*|security\/(redact|csp|csrf|login-guard|vault|secret-store))\.ts$/ },
-  { name: "data", match: /^server\/(db|supabase|project-storage)\.ts$/ },
+  { name: "data", match: /^server\/(db|db-migrations|supabase|project-storage)\.ts$/ },
   { name: "domain", match: /^server\/(?!server\.ts|.*-routes\.ts|.*\/routes\.ts)[^/]+\.ts$/ },
   { name: "routes", match: /^server\/(.*-routes\.ts|.*\/routes\.ts|security\/privacy\.ts)$/ },
   { name: "entry", match: /^server\/server\.ts$/ },

@@ -43,6 +43,7 @@ Columns: **Req** = R required in production, O optional, D development / test on
 | `CSP_IMG_ALLOW_ALL`, `CSP_UPGRADE_INSECURE` | weaker / stricter CSP switches | O | API | N | `CSP_UPGRADE_INSECURE=true` only when served over HTTPS; keep `CSP_IMG_ALLOW_ALL` false |
 | `CSP_CLASSIC_ALLOW_EVAL`, `CSP_CLASSIC_STYLE_INLINE` | the Classic app's exceptions | O | API | N | keep `false` unless SECURITY.md says why |
 | `AIVEN_ALLOW_PLAINTEXT` | allow the Aiven mirror without the encryption key | O | API | N | keep `false` |
+| `DARKNESS_ALLOW_NEWER_SCHEMA` | `true` lets the server start on a database stamped (`PRAGMA user_version`) by a NEWER build than this one; by default it refuses | O | API | N | leave unset; set only deliberately while rolling back, after reading OPERATIONS-VERIFICATION section 7 |
 
 ## AI providers (set at least one)
 
