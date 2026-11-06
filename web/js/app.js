@@ -414,12 +414,27 @@ window.Darkness.app = {
       cleanPath === "#/presentation-studio" ? "presentation-studio" :
       cleanPath === "#/history" ? "history" :
       cleanPath === "#/settings" ? "settings" :
+      cleanPath === "#/usage" ? "usage" :
+      cleanPath === "#/agents" ? "agents" :
+      cleanPath === "#/memory" ? "memory" :
+      cleanPath === "#/prompts" ? "prompts" :
+      cleanPath === "#/system" ? "system" :
+      cleanPath === "#/compare" ? "compare" :
+      cleanPath === "#/account" ? "account" :
       cleanPath === "#/model" || cleanPath === "#/models" ? "model" :
       cleanPath === "#/project" || cleanPath.startsWith("#/project/") ? "project" :
       "chat"
     );
 
     if (page === "chat") {
+      // "Ask" box on the Overview: start a fresh conversation and send the question once (consumed here, never replayed)
+      let pending = "";
+      try { pending = sessionStorage.getItem("darkness_pending_prompt") || ""; sessionStorage.removeItem("darkness_pending_prompt"); } catch (e) { pending = ""; }
+      if (pending.trim()) {
+        await window.Darkness.uiChat.startNewConversation();
+        setTimeout(() => { try { window.Darkness.uiChat.sendMessage(pending.trim().slice(0, 8000)); } catch (e) { /* the composer stays available */ } }, 120);
+        return;
+      }
       const cid = window.Darkness.store.get("active_conversation");
       if (cid) {
         await window.Darkness.uiChat.loadConversation(cid);

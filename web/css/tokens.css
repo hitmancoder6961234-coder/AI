@@ -146,13 +146,16 @@ html[data-theme="light"] {
   --ink: #111827;
   --ink-soft: #1F2937;
   --ink-muted: #4B5563;
-  --ink-faint: #6B7280;
+  --ink-faint: #646B79; /* was #6B7280: 4.4:1 on --surface-muted, now 4.9:1 */
 
   /* Accent (indigo) */
   --accent: #79D3ED;
   --accent-hover: #5ABFDA;
   --accent-soft: #E6F8FC;
   --accent-ink: #0F172A;
+  /* The accent as TEXT or a thin line on a light surface: the pastel accent is only 1.7:1 on white, this is 5.8:1 (WCAG AA needs 4.5:1). */
+  --accent-text: #0B6A86;
+  --studio-rose-text: #E11D48;
 
   /* Status */
   --success: #15803D;
@@ -273,12 +276,15 @@ html[data-theme="dark"] {
   --ink: #F5F5F5;
   --ink-soft: #E4E4E7;
   --ink-muted: #A1A1AA;
-  --ink-faint: #71717A;
+  --ink-faint: #9696A1; /* was #71717A: 3.9:1 on the dark background, now 6.3:1 */
 
   --accent: #7C3AED;
   --accent-hover: #8B5CF6;
   --accent-soft: rgba(124, 58, 237, 0.15);
   --accent-ink: #FFFFFF;
+  /* violet text on near-black: #7C3AED is 3.3:1 there, this is 6.8:1 */
+  --accent-text: #A78BFA;
+  --studio-rose-text: #FB7185;
   --secondary-accent: #06B6D4;
 
   --success: #22C55E;
@@ -397,12 +403,14 @@ html[data-theme="dark"] {
     --ink: #f4f4f6;
     --ink-soft: #d8d9de;
     --ink-muted: #a4a5af;
-    --ink-faint: #7a7b86;
+    --ink-faint: #8d8e99;
 
     --accent: #79D3ED;
     --accent-hover: #A5E4F5;
     --accent-soft: #082F3B;
     --accent-ink: #0F172A;
+    --accent-text: #79D3ED;
+    --studio-rose-text: #FB7185;
 
     --success: #4ade80;
     --success-soft: #14321f;

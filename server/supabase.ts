@@ -2,6 +2,7 @@ import "./env-loader.js";
 import crypto from "crypto";
 import path from "path";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { keyAad, protectSecret, revealSecret } from "./security/secret-store.js";
 
 /**
  * Ensures any identifier is formatted as a valid UUID.
@@ -217,8 +218,6 @@ export async function verifySupabaseConnection(): Promise<SupabaseHealthReport> 
       const { error: tErr } = await client.from(t).select("id").limit(1);
       if (!tErr || tErr.code === 'PGRST116' || tErr.code === 'PGRST204' || (tErr.message && (tErr.message.includes("contains 0 rows") || tErr.message.includes("Results contain 0 rows")))) {
         if (!tablesFound.includes(t)) tablesFound.push(t);
-      } else if (!tErr) {
-        if (!tablesFound.includes(t)) tablesFound.push(t);
       }
     }
     if (dbReachable) {
@@ -360,11 +359,10 @@ export async function ensureUserExistsInSupabase(rawUserId: string): Promise<str
 
     if (existingUser?.id) return validUserId;
 
-    let localUser: any = null;
-    try {
-      const { getUserById } = await import("./db.js");
-      localUser = getUserById(rawUserId) || getUserById(validUserId);
-    } catch {}
+    // The mirror stores a pseudonymous placeholder user, never the real e-mail or password hash. (This used to try
+    // `getUserById`, which db.ts does not export; the TypeError was swallowed, so the placeholder path is what has always run.
+    // Keep it that way on purpose: looking the real user up would copy their e-mail and password hash to the remote table.)
+    const localUser: any = null;
 
     const email = (localUser?.email || `user_${validUserId.slice(0, 8)}@darkness.local`).toLowerCase().trim();
     const name = (localUser?.name || "Darkness User").trim();
@@ -680,6 +678,9 @@ export async function syncRagDocumentToSupabase(doc: {
   mime_type?: string | null;
   status?: string;
   created_at?: string;
+  /** callers also pass size / chunks_count; the mirror table does not store them (accepted and ignored) */
+  size?: number;
+  chunks_count?: number;
 }): Promise<string | null> {
   const client = getSupabaseAdmin();
   if (!client) return null;
@@ -856,7 +857,7 @@ export async function syncKnowledgeChunkToSupabase(chunk: {
     };
 
     // Explicitly stringify metadata for rag_chunks to prevent TypeError: fetch failed
-    let safeMeta = meta;
+    let safeMeta: any = meta;
     if (typeof meta === "object" && meta !== null) {
       try {
         safeMeta = JSON.parse(JSON.stringify(meta));
@@ -950,7 +951,8 @@ export async function syncModelToSupabase(model: any): Promise<{ success: boolea
       temperature: Number(model.defaultTemperature ?? model.temperature ?? model.default_temperature ?? 0.7),
       top_p: Number(model.defaultTopP ?? model.top_p ?? model.default_top_p ?? 1.0),
       base_url: model.baseUrl || model.base_url || "",
-      api_secret: model.apiKey || model.api_secret || model.api_key || "",
+      // sealed (when PRIVACY_ENCRYPTION_KEY is set) before it leaves this server: the cloud copy never holds a plaintext key
+      api_secret: protectSecret(model.apiKey || model.api_secret || model.api_key || "", keyAad("cloud", uid, cleanId)) || "",
       enabled: model.enabled !== false && model.enabled !== 0 ? 1 : 0,
       status: model.status || "available",
       is_user: model.isUser || model.is_user ? 1 : 0,
@@ -1152,7 +1154,7 @@ export async function syncUserToSupabase(user: {
     } else if (authErr && (authErr.message?.includes("already") || authErr.status === 422)) {
       // User exists in Supabase Auth, update their metadata & password
       const { data: userList } = await client.auth.admin.listUsers({ page: 1, perPage: 100 });
-      const found = userList?.users?.find(u => u.email?.toLowerCase() === cleanEmail);
+      const found = userList?.users?.find((u: any) => u.email?.toLowerCase() === cleanEmail);
       if (found) {
         authUserId = found.id;
         const updatePayload: any = {
@@ -1281,7 +1283,7 @@ export async function checkSupabaseUserExists(email: string): Promise<{
     if (error && isNetworkError(error)) {
       throw new SupabaseUnreachableError(error.message);
     }
-    const found = data?.users?.find(u => u.email?.toLowerCase() === cleanEmail);
+    const found = data?.users?.find((u: any) => u.email?.toLowerCase() === cleanEmail);
     if (found) {
       const meta = found.user_metadata || {};
       return {
@@ -1631,7 +1633,7 @@ export async function hydrateAllFromSupabase(dbAdapters: {
               name: m.name,
               provider: m.provider,
               baseUrl: m.base_url || "",
-              apiKey: m.api_secret || m.api_key || "",
+              apiKey: revealSecret(m.api_secret || m.api_key || "", keyAad("cloud", modelUserId, cleanModelId), keyAad("cloud", m.user_id, cleanModelId)),
               modelName: m.provider_model_id || m.model_name || m.id,
               modelType: m.model_type || "text",
               capabilities: caps || {},

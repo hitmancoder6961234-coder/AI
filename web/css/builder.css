@@ -55,7 +55,7 @@
 
 .bld-radio { display: grid; gap: 6px; margin: 10px 0; font-size: .86rem; }
 .bld-radio label { cursor: pointer; }
-.bld-prompt summary { cursor: pointer; font-size: .84rem; color: var(--accent); }
+.bld-prompt summary { cursor: pointer; font-size: .84rem; color: var(--accent-text, var(--accent)); }
 .bld-tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .7rem; background: var(--accent-soft); color: var(--ink); border: 1px solid var(--line); vertical-align: middle; }
 .bld-tag--high { background: var(--danger-soft); } .bld-tag--medium { background: var(--warning-soft); } .bld-tag--low { background: var(--success-soft); }
 

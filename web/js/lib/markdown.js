@@ -68,6 +68,129 @@ if (typeof window !== "undefined") {
     return String(text || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
   }
 
+  /* SVG that carries its own <style> element (Mermaid does it for every diagram; models often do it in ```svg blocks).
+   *
+   * The Content-Security-Policy does not allow inline <style> elements: an injected one could restyle the whole page (fake login
+   * forms, hidden warnings). Style ATTRIBUTES and the CSSOM are allowed. So the embedded CSS is parsed with the CSSOM, the cascade is
+   * resolved the way a browser would (!important, then selector specificity, then source order), the winning declarations are applied
+   * as inline style on the elements they match INSIDE that svg, and the <style> element is dropped. As a side effect a model's
+   * `body { ... }` or `.card { ... }` can no longer leak onto the rest of the page.
+   * Limits: pseudo-class / pseudo-element rules (:hover, ::before), @keyframes and @font-face cannot be expressed as inline style and are
+   * skipped. A property already set in the element's own style="" attribute wins unless the rule is !important, as in CSS. */
+  function selectorSpecificity(sel) {
+    var a = 0, b = 0, c = 0;
+    sel = sel.replace(/"[^"]*"|'[^']*'/g, '""');
+    sel = sel.replace(/\[[^\]]*\]/g, function () { b++; return ''; });
+    sel = sel.replace(/:where\([^)]*\)/gi, '');
+    sel = sel.replace(/#[\w-]+/g, function () { a++; return ''; });
+    sel = sel.replace(/\.[\w-]+/g, function () { b++; return ''; });
+    sel = sel.replace(/::[\w-]+/g, function () { c++; return ''; });
+    sel = sel.replace(/:[\w-]+(\([^)]*\))?/g, function () { b++; return ''; });
+    sel = sel.replace(/[A-Za-z][\w-]*/g, function () { c++; return ''; });
+    return a * 1000000 + b * 1000 + c;
+  }
+
+  /** "a, b:not(c, d), e" -> ["a", "b:not(c, d)", "e"] (commas inside (), [] and strings do not split). */
+  function splitSelectorList(text) {
+    var parts = [], depth = 0, quote = '', cur = '';
+    for (var i = 0; i < text.length; i++) {
+      var ch = text.charAt(i);
+      if (quote) { cur += ch; if (ch === quote) quote = ''; continue; }
+      if (ch === '"' || ch === "'") { quote = ch; cur += ch; continue; }
+      if (ch === '(' || ch === '[') depth++;
+      else if (ch === ')' || ch === ']') depth--;
+      if (ch === ',' && depth === 0) { parts.push(cur.trim()); cur = ''; } else cur += ch;
+    }
+    if (cur.trim()) parts.push(cur.trim());
+    return parts;
+  }
+
+  function inlineStylesInPlace(root) {
+    if (!root || !root.querySelectorAll || typeof CSSStyleSheet !== 'function') return false;
+    var styles = root.querySelectorAll('svg style');
+    if (!styles.length) return false;
+    var bySvg = new Map();
+    Array.prototype.forEach.call(styles, function (st) {
+      var svg = st.closest('svg');
+      if (!svg) return;
+      if (!bySvg.has(svg)) bySvg.set(svg, []);
+      bySvg.get(svg).push(st);
+    });
+    var changed = false;
+    bySvg.forEach(function (styleEls, svg) {
+      try {
+        var cand = new Map();   // element -> { property -> { value, important, spec, order } }
+        var order = 0;
+        var collect = function (rules) {
+          for (var i = 0; i < rules.length; i++) {
+            var r = rules[i];
+            if (r.type === 4 || r.type === 12) { // @media / @supports
+              var ok = true;
+              try { ok = r.type === 4 ? window.matchMedia(r.conditionText || r.media.mediaText).matches : CSS.supports(r.conditionText); } catch (e) { ok = false; }
+              if (ok) collect(r.cssRules);
+              continue;
+            }
+            if (r.type !== 1) continue; // style rules only
+            order++;
+            splitSelectorList(r.selectorText).forEach(function (sel) {
+              var targets = [];
+              try {
+                if (svg.matches(sel)) targets.push(svg);
+                Array.prototype.push.apply(targets, svg.querySelectorAll(sel));
+              } catch (e) { return; } // :hover etc. that the engine rejects here, or an invalid selector
+              if (!targets.length) return;
+              var spec = selectorSpecificity(sel);
+              targets.forEach(function (el) {
+                if (!el.style) return;
+                var props = cand.get(el);
+                if (!props) { props = {}; cand.set(el, props); }
+                for (var j = 0; j < r.style.length; j++) {
+                  var prop = r.style[j];
+                  var important = r.style.getPropertyPriority(prop) === 'important';
+                  var cur = props[prop];
+                  if (!cur || (important && !cur.important) || (important === cur.important && (spec > cur.spec || (spec === cur.spec && order >= cur.order)))) {
+                    props[prop] = { value: r.style.getPropertyValue(prop), important: important, spec: spec, order: order };
+                  }
+                }
+              });
+            });
+          }
+        };
+        styleEls.forEach(function (st) {
+          var sheet = new CSSStyleSheet();
+          sheet.replaceSync(st.textContent || '');
+          collect(sheet.cssRules);
+        });
+        cand.forEach(function (props, el) {
+          for (var prop in props) {
+            if (!Object.prototype.hasOwnProperty.call(props, prop)) continue;
+            var w = props[prop];
+            // the element's own style="" attribute beats a normal rule; only an !important rule beats it (unless it is !important too)
+            if (el.style.getPropertyValue(prop) !== '' && (el.style.getPropertyPriority(prop) === 'important' || !w.important)) continue;
+            el.style.setProperty(prop, w.value, w.important ? 'important' : '');
+          }
+        });
+        styleEls.forEach(function (st) { st.remove(); });
+        changed = true;
+      } catch (e) { /* leave the element(s); at worst the browser ignores them */ }
+    });
+    return changed;
+  }
+
+  /** String in, string out: used before markup is inserted, so the page never sees an inline <style> (and reports no violation). */
+  function inlineEmbeddedSvgStyles(html) {
+    if (!html || String(html).indexOf('<style') < 0) return html;
+    try {
+      var tpl = document.createElement('template');
+      tpl.innerHTML = html;
+      return inlineStylesInPlace(tpl.content) ? tpl.innerHTML : html;
+    } catch (e) {
+      return html;
+    }
+  }
+  window.Darkness = window.Darkness || {};
+  window.Darkness.inlineSvgStylesInPlace = inlineStylesInPlace;
+
   function sanitizeLatexToReadable(expr) {
     if (!expr || typeof expr !== "string") return "";
     var cleaned = expr.replace(/\$/g, "").trim();
@@ -262,7 +385,7 @@ if (typeof window !== "undefined") {
       if (ch === "\\" && text[pos + 1] === "[") {
         var closeBracketDisplay = text.indexOf("\\]", pos + 2);
         if (closeBracketDisplay !== -1) {
-          var mathExpr = text.slice(pos + 2, closeBracketDisplay);
+          mathExpr = text.slice(pos + 2, closeBracketDisplay);
           result += renderMath(mathExpr, true);
           pos = closeBracketDisplay + 2;
           continue;
@@ -289,7 +412,7 @@ if (typeof window !== "undefined") {
       if (ch === "\\" && text[pos + 1] === "(") {
         var closeParenInline = text.indexOf("\\)", pos + 2);
         if (closeParenInline !== -1) {
-          var mathExpr = text.slice(pos + 2, closeParenInline);
+          mathExpr = text.slice(pos + 2, closeParenInline);
           result += renderMath(mathExpr, false);
           pos = closeParenInline + 2;
           continue;
@@ -1035,17 +1158,17 @@ if (typeof window !== "undefined") {
         '<div class="visual-card__header">' +
           '<span class="visual-card__badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> ' + svgBadge + '</span>' +
           '<div class="visual-card__actions">' +
-            '<button class="visual-card__btn visual-card__btn--fullview" type="button" onclick="if (window.Darkness && window.Darkness.openVisualFullView) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Darkness.openVisualFullView({ svgElement: c.querySelector(\'svg\'), title: \'' + svgBadge + '\' }); }" title="Open in Full View (Zoom & Pan)">' +
+            '<button class="visual-card__btn visual-card__btn--fullview" type="button" data-act="visual-fullview" data-title="' + escapeHtml(svgBadge) + '" title="Open in Full View (Zoom & Pan)">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>' +
               '<span>Full View</span>' +
             '</button>' +
-            '<button class="visual-card__btn visual-card__btn--download" type="button" onclick="if (window.Darkness && window.Darkness.downloadSvgDirect) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Darkness.downloadSvgDirect(c.querySelector(\'svg\'), \'' + svgBadge.toLowerCase().replace(/\s+/g, '_') + '\'); }" title="Download graphic">' +
+            '<button class="visual-card__btn visual-card__btn--download" type="button" data-act="visual-download" data-name="' + escapeHtml(svgBadge.toLowerCase().replace(/\s+/g, '_')) + '" title="Download graphic">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
               '<span>Download</span>' +
             '</button>' +
           '</div>' +
         '</div>' +
-        '<div class="visual-card__canvas">' + svgContent + '</div>' +
+        '<div class="visual-card__canvas">' + inlineEmbeddedSvgStyles(svgContent) + '</div>' +
       '</div>';
     }
 
@@ -1078,17 +1201,17 @@ if (typeof window !== "undefined") {
         '<div class="visual-card__header">' +
           '<span class="visual-card__badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg> ' + svgBadge + '</span>' +
           '<div class="visual-card__actions">' +
-            '<button class="visual-card__btn visual-card__btn--fullview" type="button" onclick="if (window.Darkness && window.Darkness.openVisualFullView) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Darkness.openVisualFullView({ svgElement: c.querySelector(\'svg\'), title: \'' + svgBadge + '\' }); }" title="Open in Full View (Zoom & Pan)">' +
+            '<button class="visual-card__btn visual-card__btn--fullview" type="button" data-act="visual-fullview" data-title="' + escapeHtml(svgBadge) + '" title="Open in Full View (Zoom & Pan)">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>' +
               '<span>Full View</span>' +
             '</button>' +
-            '<button class="visual-card__btn visual-card__btn--download" type="button" onclick="if (window.Darkness && window.Darkness.downloadSvgDirect) { const c = this.closest(\'.visual-card\').querySelector(\'.visual-card__canvas\'); window.Darkness.downloadSvgDirect(c.querySelector(\'svg\'), \'' + svgBadge.toLowerCase().replace(/\s+/g, '_') + '\'); }" title="Download graphic">' +
+            '<button class="visual-card__btn visual-card__btn--download" type="button" data-act="visual-download" data-name="' + escapeHtml(svgBadge.toLowerCase().replace(/\s+/g, '_')) + '" title="Download graphic">' +
               '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
               '<span>Download</span>' +
             '</button>' +
           '</div>' +
         '</div>' +
-        '<div class="visual-card__canvas">' + trimmedCode + '</div>' +
+        '<div class="visual-card__canvas">' + inlineEmbeddedSvgStyles(trimmedCode) + '</div>' +
       '</div>';
     }
 
@@ -1116,7 +1239,7 @@ if (typeof window !== "undefined") {
         <pre class="mermaid">${codeEscaped}</pre>
       </div>`;
     }
-    var cellId = block.cellId || "codecell_" + Math.random().toString(36).substring(2, 9);
+    cellId = block.cellId || "codecell_" + Math.random().toString(36).substring(2, 9);
 
     if (typeof window !== "undefined" && window.Darkness && window.Darkness.codeViewer && typeof window.Darkness.codeViewer.renderCell === "function") {
       return window.Darkness.codeViewer.renderCell({
@@ -1165,7 +1288,7 @@ if (typeof window !== "undefined") {
     var copyIcon = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
     var downloadIcon = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
 
-    var viewBtn = '<button class="code-file-card__open-btn" type="button" data-code-action="expand" data-cell-id="' + cellId + '" onclick="event.preventDefault(); event.stopPropagation(); window.Darkness.codeViewer && window.Darkness.codeViewer.openWorkspace(\'' + cellId + '\', \'code\', this); return false;" title="Open code in resizable side panel (drag left to resize)" aria-label="View code">' + expandIcon + '<span>View</span></button>';
+    var viewBtn = '<button class="code-file-card__open-btn" type="button" data-code-action="expand" data-cell-id="' + cellId + '" title="Open code in resizable side panel (drag left to resize)" aria-label="View code">' + expandIcon + '<span>View</span></button>';
     var copyBtn = '<button class="code-cell__btn code-cell__btn--copy" type="button" data-code-action="copy" data-cell-id="' + cellId + '" title="Copy code" aria-label="Copy code">' + copyIcon + '<span>Copy</span></button>';
     var downloadBtn = '<button class="code-cell__btn code-cell__btn--download" type="button" data-code-action="download" data-cell-id="' + cellId + '" title="Download ' + escapeHtml(detectedFilename) + '" aria-label="Download file">' + downloadIcon + '<span>Download</span></button>';
 
@@ -1767,7 +1890,7 @@ if (typeof window !== "undefined") {
       '        <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>',
       '        <span>Retry Render</span>',
       '      </button>',
-      '      <button type="button" class="btn btn--xs btn--outline" style="font-size:11px; padding:3px 8px;" onclick="navigator.clipboard.writeText(this.getAttribute(\'data-code\')).then(()=>{ if(window.Darkness && window.Darkness.toast) window.Darkness.toast.show(\'Diagram source copied\', \'success\'); })" data-code="' + escapeHtml(code) + '">',
+      '      <button type="button" class="btn btn--xs btn--outline" style="font-size:11px; padding:3px 8px;" data-act="copy-source" data-code="' + escapeHtml(code) + '">',
       '        Copy Source',
       '      </button>',
       '    </div>',
@@ -2166,6 +2289,7 @@ if (typeof window !== "undefined") {
             try {
               pre.textContent = repairedCode;
               await window.mermaid.run({ nodes: [pre] });
+              inlineStylesInPlace(parentContainer || pre);
               if (parentContainer) {
                 attachMermaidZoomControls(parentContainer);
               }
@@ -2177,7 +2301,7 @@ if (typeof window !== "undefined") {
 
           if (renderedSvg && parentContainer) {
             var tempDiv = document.createElement('div');
-            tempDiv.innerHTML = renderedSvg;
+            tempDiv.innerHTML = inlineEmbeddedSvgStyles(renderedSvg);
             var svgEl = tempDiv.querySelector('svg');
 
             if (svgEl) {

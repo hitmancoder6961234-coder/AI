@@ -5,7 +5,7 @@ window.Darkness = window.Darkness || {};
  *
  * Supports cross-origin production deployment between Render frontend
  * (darkness-1-6ir1.onrender.com) and Render backend (darkness-sznp.onrender.com).
- * Includes automatic URL rewriting, credential inclusion, and Bearer token fallback.
+ * Includes automatic URL rewriting and credential inclusion (the HttpOnly session cookie).
  */
 (function() {
   const getDetectedBase = function() {
@@ -22,14 +22,16 @@ window.Darkness = window.Darkness || {};
 
   const detectedBase = getDetectedBase();
 
+  // The hosted front door (Vercel) refuses request bodies over about 4.5 MB with a bare 413 page, not our JSON. Say what happened.
+  const FRONT_DOOR_413 = "This request is too large for the hosting front door (about 4 MB). Split it into smaller files or ZIP a project (ZIPs are sent in parts), or open the app directly on its API server address for big uploads.";
+  const isFrontDoor413 = (status, data) => status === 413 && !!data && typeof data.raw === "string" && /FUNCTION_PAYLOAD_TOO_LARGE|Request Entity Too Large|Payload Too Large/i.test(data.raw);
+
   window.Darkness.api = {
     base: detectedBase,
 
+    // The session is an HttpOnly cookie that the browser attaches itself (credentials: "include"). No token is kept where
+    // page scripts can read it, so there is nothing to add here. Kept as a hook for callers that still ask for headers.
     _getAuthHeaders() {
-      try {
-        const token = localStorage.getItem("darkness_token");
-        if (token) return { "Authorization": `Bearer ${token}` };
-      } catch (e) {}
       return {};
     },
 
@@ -84,7 +86,7 @@ window.Darkness = window.Darkness || {};
       }
 
       if (!resp.ok) {
-        const err = new Error((data && data.error) || resp.statusText || "Request failed");
+        const err = new Error(isFrontDoor413(resp.status, data) ? FRONT_DOOR_413 : (data && data.error) || resp.statusText || "Request failed");
         err.status = resp.status;
         err.type = (data && data.type) || null;
         err.data = data;
@@ -136,7 +138,7 @@ window.Darkness = window.Darkness || {};
         try { data = JSON.parse(text); } catch (e) { data = { raw: text }; }
       }
       if (!resp.ok) {
-        const err = new Error((data && data.error) || resp.statusText || "Upload failed");
+        const err = new Error(isFrontDoor413(resp.status, data) ? FRONT_DOOR_413 : (data && data.error) || resp.statusText || "Upload failed");
         err.status = resp.status;
         err.type = (data && data.type) || null;
         if (resp.status === 401) window.Darkness.auth?.handleSessionExpired?.();
@@ -230,26 +232,6 @@ window.Darkness = window.Darkness || {};
       init.credentials = "include";
     }
 
-    try {
-      const token = localStorage.getItem("darkness_token");
-      if (token) {
-        if (!init.headers) {
-          init.headers = { "Authorization": `Bearer ${token}` };
-        } else if (init.headers instanceof Headers) {
-          if (!init.headers.has("Authorization")) {
-            init.headers.set("Authorization", `Bearer ${token}`);
-          }
-        } else if (Array.isArray(init.headers)) {
-          if (!init.headers.some(([k]) => k.toLowerCase() === "authorization")) {
-            init.headers.push(["Authorization", `Bearer ${token}`]);
-          }
-        } else {
-          if (!init.headers["Authorization"] && !init.headers["authorization"]) {
-            init.headers["Authorization"] = `Bearer ${token}`;
-          }
-        }
-      }
-    } catch (e) {}
 
     const nativeFn = (typeof window !== "undefined" && window.fetch) ? window.fetch.bind(window) : fetch;
     return nativeFn.call(this, input, init);
@@ -283,26 +265,6 @@ window.Darkness = window.Darkness || {};
           init.credentials = "include";
         }
 
-        try {
-          const token = localStorage.getItem("darkness_token");
-          if (token) {
-            if (!init.headers) {
-              init.headers = { "Authorization": `Bearer ${token}` };
-            } else if (init.headers instanceof Headers) {
-              if (!init.headers.has("Authorization")) {
-                init.headers.set("Authorization", `Bearer ${token}`);
-              }
-            } else if (Array.isArray(init.headers)) {
-              if (!init.headers.some(([k]) => k.toLowerCase() === "authorization")) {
-                init.headers.push(["Authorization", `Bearer ${token}`]);
-              }
-            } else {
-              if (!init.headers["Authorization"] && !init.headers["authorization"]) {
-                init.headers["Authorization"] = `Bearer ${token}`;
-              }
-            }
-          }
-        } catch (e) {}
 
         return nativeFetch.call(this, input, init);
       };

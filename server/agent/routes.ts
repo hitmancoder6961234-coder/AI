@@ -10,7 +10,7 @@
 import type { Express, Request, Response } from "express";
 import { runAgent, type AgentEvent } from "./core.js";
 import { availableProviders, createLLM, type ChatMsg, type LLM } from "./providers.js";
-import { ALL_TOOLS, selectTools } from "./tools.js";
+import { SESSION_TOOLS, selectTools } from "./tools.js";
 
 export interface AgentRouteDeps {
   getUserId: (req: Request) => string | null;
@@ -20,6 +20,8 @@ export interface AgentRouteDeps {
   llmInfo?: (userId: string) => { active: string | null; providers: string[] };
   /** Search the user's own knowledge base; returns formatted text. */
   knowledgeSearch?: (userId: string, query: string) => Promise<string>;
+  /** Called once when a run ends (any outcome) with what happened, never with the goal or tool outputs. */
+  recordRun?: (r: { id: string; userId: string; startedAt: number; durationMs: number; status: "ok" | "error" | "cancelled"; steps: number; model?: string; toolCalls: Array<{ tool: string; ok: boolean }> }) => void;
 }
 
 const MAX_GOAL = 8_000;
@@ -40,7 +42,8 @@ export function registerAgentRoutes(app: Express, deps: AgentRouteDeps): void {
     if (!uid) return res.status(401).json({ error: "Authentication required", code: "AUTH_REQUIRED" });
     const info = deps.llmInfo ? deps.llmInfo(uid) : { active: availableProviders()[0] || null, providers: availableProviders() };
     res.json({
-      tools: ALL_TOOLS.map((t) => ({ name: t.name, description: t.description, args: t.args })),
+      // risk tells the page which tools change saved data ("write": always approved by the user, one call at a time)
+      tools: SESSION_TOOLS.map((t) => ({ name: t.name, description: t.description, args: t.args, risk: t.risk ?? "read", requiresApproval: t.risk === "write" })),
       providers: info.providers,
       active: info.active,
     });
@@ -72,7 +75,14 @@ export function registerAgentRoutes(app: Express, deps: AgentRouteDeps): void {
     active.set(userId, (active.get(userId) || 0) + 1);
 
     const stream = String(req.query.stream ?? "1") !== "0";
+    const startedAt = Date.now();
+    const toolCalls: Array<{ tool: string; ok: boolean }> = [];
+    let modelUsed: string | undefined;
+    let outcome: "ok" | "error" | "cancelled" = "error";
+    let stepsDone = 0;
     const send = (e: AgentEvent) => {
+      if (e.type === "start") modelUsed = e.model;
+      else if (e.type === "tool_result") toolCalls.push({ tool: e.tool, ok: e.ok });
       if (!stream || res.writableEnded) return;
       res.write(`event: ${e.type}\ndata: ${JSON.stringify(e)}\n\n`);
     };
@@ -98,9 +108,11 @@ export function registerAgentRoutes(app: Express, deps: AgentRouteDeps): void {
         onEvent: send,
         knowledgeSearch: deps.knowledgeSearch ? (q) => deps.knowledgeSearch!(userId, q) : undefined,
       });
+      outcome = "ok"; stepsDone = result.steps;
       if (stream) res.end();
       else res.json({ answer: result.answer, steps: result.steps, trace: result.trace });
     } catch (err: any) {
+      outcome = controller.signal.aborted ? "cancelled" : "error";
       const message = controller.signal.aborted ? "Cancelled" : String(err?.message || err).slice(0, 400);
       if (stream) {
         send({ type: "error", message });
@@ -109,6 +121,7 @@ export function registerAgentRoutes(app: Express, deps: AgentRouteDeps): void {
         res.status(502).json({ error: message });
       }
     } finally {
+      try { deps.recordRun?.({ id: crypto.randomUUID(), userId, startedAt, durationMs: Date.now() - startedAt, status: outcome, steps: stepsDone, model: modelUsed, toolCalls }); } catch { /* statistics must never break a run */ }
       const n = (active.get(userId) || 1) - 1;
       if (n <= 0) active.delete(userId);
       else active.set(userId, n);

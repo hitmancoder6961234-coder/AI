@@ -33,6 +33,8 @@ export type UnifiedIntent =
   | "IMAGE_GENERATION"
   | "DIAGRAM_REQUEST"
   | "ARTIFACT_GENERATION"
+  | "CONCEPT_COMPARISON"
+  | "STUDY_EXAM_NOTES"
   | "GENERAL_CHAT";
 
 export interface AnswerEngineContext {

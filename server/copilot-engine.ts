@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ExtractedFile, ProjectAnalysis } from "./project-analyzer";
+import { ExtractedFile, ProjectAnalysis } from "./project-analyzer.js";
 import { getRunStatus } from "./run-engine.js";
 import { searchKnowledge, assembleContext, getProjectKnowledge } from "./knowledge-engine.js";
 import { formatApiError, streamGeminiWithResilience } from "./gemini-resilience.js";

@@ -25,7 +25,7 @@ import type { DatabaseSync } from "node:sqlite";
 import { searchWeb } from "../agent/tools.js";
 import { safeFetch, validateUrl } from "../agent/safe-fetch.js";
 import type { ChatMsg, LLM } from "../agent/providers.js";
-import { MAX_UPLOAD_SIZE_BYTES } from "../upload-config.js";
+import { uploaders, wrapUploadMiddleware } from "../upload-config.js";
 import { RUN_ENGINE_ENABLED } from "../security/privacy.js";
 
 export interface ClassicDeps {
@@ -51,7 +51,7 @@ const MAX_CHARS_EACH = 60_000;
 const MAX_CHARS_TOTAL = 300_000;
 const ID_RE = /^[A-Za-z0-9_-]{1,80}$/;
 
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_UPLOAD_SIZE_BYTES, files: 1 } });
+const upload = uploaders.single;
 
 function systemFor(mode: string, custom?: unknown): string {
   if (typeof custom === "string" && custom.trim()) return custom.slice(0, 20_000);
@@ -180,7 +180,7 @@ export function registerClassicApi(app: Express, deps: ClassicDeps): void {
   });
 
   // --- upload -----------------------------------------------------------------------------------
-  r.post("/api/upload", upload.single("file"), async (req, res) => {
+  r.post("/api/upload", wrapUploadMiddleware(upload.single("file"), "single"), async (req, res) => {
     if (!uid(req, res)) return;
     if (!req.file) return res.status(400).json({ success: false, error: "No file uploaded" });
     try {
@@ -290,7 +290,7 @@ export function registerClassicApi(app: Express, deps: ClassicDeps): void {
   r.get("/api/conversations/:id", (req, res) => {
     const id = uid(req, res);
     if (!id) return;
-    const row = db.prepare("SELECT * FROM classic_conversations WHERE id = ? AND user_id = ?").get(req.params.id, id) as any;
+    const row = db.prepare("SELECT * FROM classic_conversations WHERE id = ? AND user_id = ?").get(String(req.params.id), id) as any;
     if (!row) return res.status(404).json({ success: false, error: "Not found" });
     res.json({ success: true, conversation: { ...row, messages: JSON.parse(row.messages) } });
   });
@@ -298,7 +298,7 @@ export function registerClassicApi(app: Express, deps: ClassicDeps): void {
   r.delete("/api/conversations/:id", (req, res) => {
     const id = uid(req, res);
     if (!id) return;
-    db.prepare("DELETE FROM classic_conversations WHERE id = ? AND user_id = ?").run(req.params.id, id);
+    db.prepare("DELETE FROM classic_conversations WHERE id = ? AND user_id = ?").run(String(req.params.id), id);
     res.json({ success: true });
   });
 
@@ -317,9 +317,9 @@ export function registerClassicApi(app: Express, deps: ClassicDeps): void {
 
   // Public by design: possession of the unguessable link is the permission.
   r.get("/api/share/:id", (req, res) => {
-    const row = db.prepare("SELECT * FROM classic_shared WHERE share_id = ?").get(req.params.id) as any;
+    const row = db.prepare("SELECT * FROM classic_shared WHERE share_id = ?").get(String(req.params.id)) as any;
     if (!row) return res.status(404).json({ success: false, error: "Shared chat not found" });
-    db.prepare("UPDATE classic_shared SET views = views + 1 WHERE share_id = ?").run(req.params.id);
+    db.prepare("UPDATE classic_shared SET views = views + 1 WHERE share_id = ?").run(String(req.params.id));
     res.json({ success: true, conversation: { title: row.title, messages: JSON.parse(row.messages), views: row.views + 1, createdAt: row.created_at } });
   });
 
@@ -391,7 +391,7 @@ export function registerClassicApi(app: Express, deps: ClassicDeps): void {
   r.delete("/api/webhooks/:id", (req, res) => {
     const id = uid(req, res);
     if (!id) return;
-    db.prepare("DELETE FROM classic_webhooks WHERE id = ? AND user_id = ?").run(req.params.id, id);
+    db.prepare("DELETE FROM classic_webhooks WHERE id = ? AND user_id = ?").run(String(req.params.id), id);
     res.json({ success: true });
   });
 

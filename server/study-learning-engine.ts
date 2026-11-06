@@ -1304,7 +1304,7 @@ export class UniversalExplanationEngine {
       problemType = "ASYMPTOTIC_NOTATIONS_AND_ANALYSIS";
     } else if (intent === "CALCULATE" || domain === "MATHEMATICS") {
       problemType = "MATHEMATICAL_CALCULATION";
-    } else if (domain === "AOA" || intent === "CODE") {
+    } else if ((domain as string) === "AOA" || intent === "CODE") {
       problemType = "ALGORITHM_DESIGN_OR_TRACE";
     } else if (intent === "DEBUG") {
       problemType = "CODE_DEBUGGING";

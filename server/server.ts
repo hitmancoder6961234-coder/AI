@@ -1,23 +1,18 @@
 import "./env-loader.js";
-import { registerProjectAndFileRoutes } from "./project-routes";
-import { 
-  generateProfessionalMermaidDiagram, 
-  renderProfessionalArchitectureSvg, 
+import { registerProjectAndFileRoutes } from "./project-routes.js";
+import {
+  renderProfessionalArchitectureSvg,
   renderProfessionalWorkflowSvg,
   renderProfessionalRagArchitectureSvg,
-  renderProfessionalFileArchitectureSvg
-} from "./architecture-diagram-renderer";
+  renderProfessionalFileArchitectureSvg,
+} from "./architecture-diagram-renderer.js";
 import {
   getAllArchitectureIcons,
-  resolveArchitectureIcon,
   getIconSvg,
-  getIconDataUri,
-  ARCHITECTURE_ICON_REGISTRY
-} from "./architecture-icon-registry";
+} from "./architecture-icon-registry.js";
 import {
   verifySupabaseConnection,
   ensureSupabaseBucketsExist,
-  ensureSupabaseTablesExist,
   isSupabaseConfigured,
   getSupabaseAdmin,
   syncModelToSupabase,
@@ -38,7 +33,7 @@ import {
   syncMessageToSupabase,
   toValidUuid,
 } from "./supabase.js";
-import { syncProjectFiles, createTerminalSession, startTerminalSession, stopTerminalSession, sendInputToSession, getProjectSessions, activeSessions, sanitizeSession, resolveProjectWorkspace, detectProject } from "./run-engine";
+import { syncProjectFiles, createTerminalSession, startTerminalSession, stopTerminalSession, sendInputToSession, getProjectSessions, stopProject, activeSessions, sanitizeSession, detectProject } from "./run-engine.js";
 import httpProxy from "http-proxy";
 import express from "express";
 import cookieParser from "cookie-parser";
@@ -58,38 +53,32 @@ import {
 import { GoogleGenAI } from "@google/genai";
 import {
   formatApiError,
-  isRetryableError,
   streamGeminiWithResilience,
   generateGeminiWithResilience,
-  shouldPerformWebResearch,
   resolveSupportedGeminiModel,
   getEffectiveGeminiApiKey,
   getEffectiveGeminiClient,
 } from "./gemini-resilience.js";
-import { extractZipSecurely, analyzeProject, ProjectAnalysis, ExtractedFile } from "./project-analyzer";
-import { executeGeneration, GeneratedArtifact, detectGenerationIntent, generateDocxReport, generatePowerPointPresentation, generatePdfReport, generateExcelWorkbook } from "./file-generator";
-import { ProjectIntentClassifier, ProjectUnderstandingEngine, ProjectKnowledgeBuilder, ProjectIntent } from "./project-understanding-engine";
-import { renderSvgToPngBuffer, renderSvgToJpgBuffer, generateArchitectureDiagramSvg, generateWorkflowDiagramSvg } from "./visual-intelligence";
-import { executeCopilotTurn } from "./copilot-engine.js";
-import { indexProject, updateFileKnowledge, deleteFileKnowledge, getProjectKnowledge, searchKnowledge, assembleContext, deleteProjectKnowledge } from "./knowledge-engine.js";
+import { analyzeProject, ProjectAnalysis, ExtractedFile } from "./project-analyzer.js";
+import { executeGeneration, GeneratedArtifact, detectGenerationIntent, generateDocxReport, generatePowerPointPresentation, generatePdfReport, generateExcelWorkbook } from "./file-generator.js";
+import "./project-understanding-engine.js";
+import { renderSvgToPngBuffer, renderSvgToJpgBuffer, generateArchitectureDiagramSvg } from "./visual-intelligence.js";
+import "./copilot-engine.js";
+import { searchKnowledge, assembleContext, deleteProjectKnowledge } from "./knowledge-engine.js";
 import { registerRagRoutes } from "./rag-routes.js";
 import { searchUserMultiDocumentRag, buildMultiDocumentKnowledgePrompt } from "./rag-engine.js";
-import { AgentRuntime } from "./agent-runtime";
-import { UniversalExplanationEngine, UniversalMathSolver, AnswerIntegrityValidator, sanitizeResponseSections, sanitizeLatexString } from "./study-learning-engine";
-import { UniversalVisualIntentRouter, VisualIntentClassification } from "./visual-intent-router";
-import { InternalVisualEngine } from "./internal-visual-engine";
+import { AgentRuntime } from "./agent-runtime.js";
+import { UniversalExplanationEngine, AnswerIntegrityValidator } from "./study-learning-engine.js";
+import { VisualIntentClassification } from "./visual-intent-router.js";
+import { InternalVisualEngine } from "./internal-visual-engine.js";
 import {
   detectModelSpecs,
   estimateTokens,
   calculateDynamicContextBudget,
-  packRagChunksIntoBudget,
   packChatHistoryIntoBudget,
   buildFormattedGeminiHistory,
-  buildFormattedOpenAiHistory,
-  isContextLimitExceededError,
-  formatSafeDiagnostics,
 } from "./model-registry-engine.js";
-import { analyzeFileDiagnostics } from "./project-diagnostics";
+import "./project-diagnostics.js";
 import { storageManager } from "./storage-manager.js";
 import AdmZip from "adm-zip";
 import {
@@ -99,6 +88,7 @@ import {
   dbGetModel,
   dbSaveModel,
   dbDeleteModel,
+  dbPurgeSharedModelCopies,
   dbRecordDeletedModel,
   dbIsModelDeleted,
   dbClearDeletedModel,
@@ -112,36 +102,19 @@ import {
   dbDeleteSession,
   getProject as dbGetProject,
   listProjects as dbListProjects,
-  updateProject as dbUpdateProject,
   deleteProject as dbDeleteProject,
   createFile as dbCreateFile,
-  getFile as dbGetFile,
-  getProjectFileByPath as dbGetProjectFileByPath,
   listFiles as dbListFiles,
   updateFile as dbUpdateFile,
-  updateFileByPath as dbUpdateFileByPath,
-  deleteFile as dbDeleteFile,
-  deleteProjectFileByPath as dbDeleteProjectFileByPath,
-  renameProjectFolderFiles as dbRenameProjectFolderFiles,
-  deleteProjectFolderFiles as dbDeleteProjectFolderFiles,
   createArtifact as dbCreateArtifact,
+  getArtifact as dbGetArtifact,
   listArtifacts as dbListArtifacts,
   deleteArtifact as dbDeleteArtifact,
-  createKnowledgeChunk as dbCreateKnowledgeChunk,
   createKnowledgeChunksBatch as dbCreateKnowledgeChunksBatch,
   upsertKnowledgeSource as dbUpsertKnowledgeSource,
-  deleteKnowledgeForProject as dbDeleteKnowledgeForProject,
-  saveArchitecture as dbSaveArchitecture,
-  getArchitecture as dbGetArchitecture,
-  deleteArchitectureForProject as dbDeleteArchitectureForProject,
-  saveDiagnostics as dbSaveDiagnostics,
-  getDiagnostics as dbGetDiagnostics,
-  deleteDiagnosticsForProject as dbDeleteDiagnosticsForProject,
   saveProjectAnalysis as dbSaveProjectAnalysis,
   getProjectAnalysis as dbGetProjectAnalysis,
   deleteProjectAnalysis as dbDeleteProjectAnalysis,
-  saveGithubConnection as dbSaveGithubConnection,
-  getGithubConnection as dbGetGithubConnection,
   saveConversation as dbSaveConversation,
   getConversation as dbGetConversation,
   listConversations as dbListConversations,
@@ -152,7 +125,6 @@ import {
   saveWorkspaceFile as dbSaveWorkspaceFile,
   getWorkspaceFile as dbGetWorkspaceFile,
   listWorkspaceFiles as dbListWorkspaceFiles,
-  deleteWorkspaceFile as dbDeleteWorkspaceFile,
   parseMetadataSafely,
   countProjectFiles,
   getConversationMessageCounts,
@@ -161,25 +133,13 @@ import {
   listVisualAssets,
   getVisualAsset,
   deleteVisualAsset,
-  dbGetModels,
-  dbSaveModel,
 } from "./db.js";
 import { generateProjectImage } from "./image-service.js";
 import {
-  PROJECTS_DIR,
-  validateProjectId,
-  getProjectStorageDir,
   sanitizeProjectPath,
-  resolveProjectFilePath,
   writeProjectFileToDisk,
-  readProjectFileFromDisk,
-  deleteProjectFileFromDisk,
-  renameProjectFileOnDisk,
   createProjectFolderOnDisk,
-  renameProjectFolderOnDisk,
-  deleteProjectFolderOnDisk,
   deleteProjectStorage,
-  listProjectDiskFiles,
   syncDiskFromDatabase,
 } from "./project-storage.js";
 import {
@@ -188,7 +148,7 @@ import {
   registerPrivacyRoutes,
 } from "./security/privacy.js";
 import { exportUserData, eraseUserData } from "./security/user-data.js";
-import { aivenStatus, eraseMirroredUser, initAiven } from "./security/aiven.js";
+import { aivenConfigured, aivenStatus, eraseMirroredUser, initAiven } from "./security/aiven.js";
 import { registerAgentRoutes } from "./agent/routes.js";
 import { availableProviders, createLLM, createLLMFromConfig, type LLM } from "./agent/providers.js";
 import { registerDocumentRoutes } from "./documents/routes.js";
@@ -196,9 +156,40 @@ import { registerClassicApi, eraseClassicUser } from "./classic/legacy-api.js";
 import { registerClassicPages } from "./classic/serve.js";
 import { registerStudioRoutes, eraseStudioUser } from "./studio/routes.js";
 import { registerCopilotRoutes, eraseCopilotUser } from "./copilot/routes.js";
+import { registerAccountRoutes } from "./account/routes.js";
+import { csrfOriginGuard } from "./security/csrf.js";
+import { cspReportRoutes } from "./security/csp.js";
+import { ensureUploadDirs, startUploadSweeper, UPLOAD_TMP_ROOT } from "./upload-temp.js";
+import "./upload-validation.js";
+import { createArtifactAccess } from "./artifact-access.js";
+import { registerDocumentExportRoutes } from "./document-export-routes.js";
+import { registerConversationLibraryRoutes } from "./conversation-routes.js";
+import { conversationMetaMap } from "./conversation-library.js";
+import { registerCompareRoutes } from "./compare-routes.js";
+import { registerInsightsRoutes } from "./insights-routes.js";
+import { registerMemoryRoutes } from "./memory-routes.js";
+import { registerPromptRoutes } from "./prompts-routes.js";
+import { ensurePromptTables } from "./prompts.js";
+import { createMemory, ensureMemoryTables, selectRelevantMemories } from "./memory.js";
+import { registerSessionRoutes } from "./agent/session-routes.js";
+import { registerRecoveryRoutes } from "./recovery-routes.js";
+import { ensureRecoveryTables, isDisabled } from "./recovery.js";
+import { mailerFromEnv } from "./mailer.js";
+import { ensureSessionTables } from "./agent/sessions.js";
+import { ensureInsightsTables, recordAgentRun } from "./insights.js";
+import { countModelKeys, keyAad, migrateModelKeys, revealSecret } from "./security/secret-store.js";
+import { vaultEnabled } from "./security/vault.js";
+import { createModelCaller } from "./model-compare.js";
+import { jsonErrorHandler, rebindRequestContext, requestContext } from "./observability/request-context.js";
+import { installConsoleRequestId, logger } from "./observability/logger.js";
+import { evaluateReadiness, isDraining, livenessHandler, markDraining, readinessHandler, type HealthCheck } from "./observability/health.js";
+import { fetchWithPolicy, iterateWithIdleTimeout } from "./provider-http.js";
+import { EMAIL_RE, LoginGuard, isCommonPassword } from "./security/login-guard.js";
 import type { StudioEngine } from "./studio/pipeline.js";
 import { extractDocumentText } from "./rag-engine.js";
 import { db as sqliteDb } from "./db.js";
+import { conversationOwnership, fileOwnership, projectOwnership } from "./ownership.js";
+import { bodyParsers, bodyTooLargeHandler } from "./body-limits.js";
 
 const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
 const SESSION_COOKIE = "darkness_session";
@@ -241,6 +232,7 @@ interface ModelItem {
   lastTestedAt?: number | null;
   lastError?: string | null;
   isUser: boolean;
+  user_id?: string; // owner; set on rows read from the database
 }
 
 interface MessageItem {
@@ -252,6 +244,7 @@ interface MessageItem {
   model_id: string | null;
   attachments?: any[];
   created_at: number;
+  project_id?: string | null;
 }
 
 interface ConversationItem {
@@ -261,9 +254,10 @@ interface ConversationItem {
   model_id: string;
   created_at: number;
   updated_at: number;
+  project_id?: string | null;
 }
 
-interface FileItem {
+export interface FileItem {
   id: string;
   user_id: string;
   conversation_id: string | null;
@@ -275,6 +269,9 @@ interface FileItem {
   content: string;
   uploaded_at: number;
   buffer?: Buffer;
+  /** extra fields some upload routes add to the object they send back to the client */
+  name?: string;
+  ok?: boolean;
 }
 
 export interface GitHubConfig {
@@ -551,7 +548,7 @@ export function mapDbRowToModelItem(row: any, fallbackUserId: string): ModelItem
     name: row.name || cleanId,
     provider: prov,
     baseUrl: row.base_url || row.baseUrl || "",
-    apiKey: row.api_secret || row.api_key || row.apiKey || "",
+    apiKey: revealSecret(row.api_secret || row.api_key || row.apiKey || "", keyAad("cloud", row.user_id || fallbackUserId, cleanId), keyAad("cloud", fallbackUserId, cleanId)),
     modelName: mName,
     modelType: row.model_type || row.modelType || "text",
     capabilities: { ...specs.capabilities, ...caps } as any,
@@ -560,7 +557,8 @@ export function mapDbRowToModelItem(row: any, fallbackUserId: string): ModelItem
     defaultTemperature: Number(row.temperature ?? row.default_temperature ?? row.defaultTemperature ?? specs.defaultTemperature),
     defaultTopP: Number(row.top_p ?? row.default_top_p ?? row.defaultTopP ?? specs.defaultTopP),
     supportsStreaming: row.supports_streaming !== undefined ? Boolean(row.supports_streaming) : true,
-    enabled: row.enabled !== undefined && row.enabled !== 0 ? Boolean(row.enabled) : true,
+    // A stored 0 / false means "disabled"; only a missing value defaults to enabled.
+    enabled: row.enabled === undefined || row.enabled === null ? true : !(row.enabled === 0 || row.enabled === false || row.enabled === "0" || row.enabled === "false"),
     status: row.status || "available",
     isUser: Boolean(row.is_user ?? row.isUser ?? true),
     user_id: validUid,
@@ -753,6 +751,14 @@ async function hydrateFromDatabase() {
         content: wf.content,
         uploaded_at: Math.floor(wf.uploaded_at / 1000),
       });
+    }
+
+    // Earlier versions saved every user-created model a second time under the shared "user_default" owner (a copy of the provider key that
+    // survived deleting the model and erasing the account). In strict mode nobody signs in as that owner, so those copies are residue: remove
+    // them BEFORE models are loaded into memory. (The server's own default model keeps its row. Open / local mode is left alone: there the
+    // default owner is the real user.)
+    if (PRIVACY_STRICT) {
+      try { const purged = dbPurgeSharedModelCopies(); if (purged) logger.warn("shared_model_copies_purged", { count: purged }); } catch (e) { logger.warn("shared_model_copies_purge_failed", { err: e }); }
     }
 
     // Load models from Supabase or SQLite
@@ -968,6 +974,17 @@ const upload = sharedMulter;
 async function startServer() {
   const app = express();
 
+  // Request ids first: every response header, error body and log line below carries one.
+  app.use(requestContext());
+
+  // Upload temp files live in one private folder: clear what a crashed run left behind, then sweep abandoned uploads regularly.
+  startUploadSweeper();
+
+  // Cookies must be parsed BEFORE the privacy middleware: its strict auth gate reads req.cookies. Mounted after it (as it used
+  // to be), req.cookies was still undefined there, so a request carrying only the HttpOnly session cookie got a 401 on every
+  // API route and the app only worked through the Bearer copy of the token kept in localStorage.
+  app.use(cookieParser());
+
   // Privacy & hardening first: headers, rate limits, log redaction, strict auth gate.
   applyPrivacyMiddleware(app, {
     cookieName: SESSION_COOKIE,
@@ -984,6 +1001,11 @@ async function startServer() {
       return Boolean(u);
     },
   });
+
+  installConsoleRequestId();
+
+  // CSP violation reports: registered before the large global JSON parser so this public endpoint only ever reads a tiny body.
+  cspReportRoutes(app);
 
   // Instance identity for debugging multi-instance issues
   const instanceId = crypto.randomUUID();
@@ -1020,8 +1042,15 @@ async function startServer() {
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"]
   }));
   app.use(cookieParser());
-  app.use(express.json({ limit: MAX_UPLOAD_SIZE_BYTES }));
-  app.use(express.urlencoded({ extended: true, limit: MAX_UPLOAD_SIZE_BYTES }));
+  // A state-changing request that relies on the session cookie alone must come from this site (CSRF); Bearer callers are unaffected.
+  app.use(csrfOriginGuard(SESSION_COOKIE, () => [
+    ...(process.env.CORS_ORIGINS || "").split(/[\s,]+/).filter(Boolean),
+    ...(process.env.NODE_ENV === "production" ? [] : allowedOrigins),
+  ]));
+  // Body-size limits per route (server/body-limits.ts): 1 MB by default, 25 MB for model requests, 100 MB only for the routes that carry file or
+  // export content. This used to be a single 100 MB limit on every route.
+  app.use(bodyParsers());
+  app.use(rebindRequestContext()); // body parsing continues from the socket's context, which drops the request id
 
   // Central upload configuration endpoint
   app.get("/api/config/upload-limits", (_req, res) => {
@@ -1068,20 +1097,39 @@ async function startServer() {
   // -------------------------------------------------------------------------
   // Strict mode: a project / conversation id in the URL must belong to the caller
   // -------------------------------------------------------------------------
+  const artifactAccess = createArtifactAccess({
+    projects,
+    artifacts: projectArtifacts,
+    getProjectRow: (id) => dbGetProject(id),
+    getArtifactRow: (id) => dbGetArtifact(id),
+    getVisualAssetRow: (id) => getVisualAsset(id),
+    isUserOwner,
+  });
+
   if (PRIVACY_STRICT) {
     const notFound = (res: express.Response) => res.status(404).json({ error: "Not found", type: "not_found" });
+    // Memory AND the database are consulted (server/ownership.ts): a record that exists but was never loaded into memory used to pass these
+    // guards, and a handler could then act on it. A record that exists nowhere still falls through, so each route keeps its own "not found".
     app.param("pid", (req, res, next, pid) => {
-      const p: any = projects.get(String(pid));
-      if (!p) return next();
       const uid = privacyUserId(req);
-      return uid && isUserOwner(p.user_id, uid) ? next() : notFound(res);
+      const who = projectOwnership(pid, uid, projects as Map<string, any>);
+      if (who === "unknown") return next();
+      return uid && who === "owned" ? next() : notFound(res);
     });
     app.param("cid", (req, res, next, cid) => {
-      const c: any = conversations.get(String(cid));
-      if (!c) return next();
       const uid = privacyUserId(req);
-      return uid && isUserOwner(c.user_id, uid) ? next() : notFound(res);
+      const who = conversationOwnership(cid, uid, conversations as Map<string, any>);
+      if (who === "unknown") return next();
+      return uid && who === "owned" ? next() : notFound(res);
     });
+
+    // Generated artifacts and images are addressed by id alone (`:id` is also used by models, files, ... so it cannot be a global param
+    // guard). They belong to the project they were generated for; the rule lives in ./artifact-access.ts (unit-tested) and is also used by
+    // the bulk download below. Unknown ids fall through to the route's own 404; known ones that are not yours are "not found" too.
+    const guardArtifactAccess = (allowed: (id: string, uid: string | null) => boolean): express.RequestHandler => (req, res, next) =>
+      allowed(String(req.params.id), privacyUserId(req)) ? next() : notFound(res);
+    app.use("/api/artifacts/:id", guardArtifactAccess((id, uid) => artifactAccess.mayUseArtifact(id, uid)));
+    app.use("/api/visual-assets/:id", guardArtifactAccess((id, uid) => artifactAccess.mayUseVisualAsset(id, uid)));
   }
 
   // -------------------------------------------------------------------------
@@ -1147,15 +1195,34 @@ async function startServer() {
     return { mimeType: String(out.mimeType || "image/png"), base64: String(out.bufferBase64) };
   };
 
+  const agentKnowledgeSearch = async (uid: string, query: string) => {
+    const owned = Array.from(projects.values()).filter((p) => isUserOwner((p as any).user_id, uid)).slice(0, 5);
+    const hits = owned.flatMap((p) => searchKnowledge((p as any).id, query, 4));
+    return hits.length ? assembleContext(hits.slice(0, 8)) : "No matching private documents.";
+  };
+
   registerAgentRoutes(app, {
     getUserId: privacyUserId,
+    recordRun: (r) => { try { recordAgentRun(sqliteDb, { ...r, userId: toValidUuid(r.userId) || r.userId }); } catch (e) { logger.warn("agent_run_record_failed", { err: e }); } },
     getLLM: getLLMForUser,
     llmInfo: llmInfoForUser,
-    knowledgeSearch: async (uid, query) => {
-      const owned = Array.from(projects.values()).filter((p) => isUserOwner((p as any).user_id, uid)).slice(0, 5);
-      const hits = owned.flatMap((p) => searchKnowledge((p as any).id, query, 4));
-      return hits.length ? assembleContext(hits.slice(0, 8)) : "No matching private documents.";
+    knowledgeSearch: agentKnowledgeSearch,
+  });
+
+  // Durable agent runs: checkpoints, pause / resume / cancel, approvals before any tool that changes saved data, and an audit trail.
+  ensureSessionTables(sqliteDb);
+  registerSessionRoutes(app, {
+    db: sqliteDb,
+    getUserId: async (req) => privacyUserId(req),
+    getUserKey: async (req) => { const id = privacyUserId(req); return id ? toValidUuid(id) || null : null; },
+    getLLM: getLLMForUser,
+    knowledgeSearch: agentKnowledgeSearch,
+    // the only agent tool that writes: it is only ever called after the user approved it, and it goes through the memory rules (duplicates, secrets, limits)
+    saveMemoryNote: (userKey, content, category) => {
+      const m = createMemory(sqliteDb, userKey, { content, category, source: "agent" });
+      return `Saved to the user's memory (${m.category}): ${m.content}`;
     },
+    recordRun: (r) => { try { recordAgentRun(sqliteDb, { ...r, userId: toValidUuid(r.userId) || r.userId }); } catch (e) { logger.warn("agent_run_record_failed", { err: e }); } },
   });
 
   registerDocumentRoutes(app, { getUserId: privacyUserId, extractText: extractDocumentText });
@@ -1181,6 +1248,39 @@ async function startServer() {
       const hits = searchKnowledge(pid, query, 6);
       return { name: p.name, text: hits.length ? assembleContext(hits.slice(0, 6)).slice(0, 12000) : "(no matching excerpts were found in this project)" };
     },
+  });
+
+  registerAccountRoutes(app, {
+    db: sqliteDb,
+    getUserId: privacyUserId,
+    getToken: (req) => req.cookies?.[SESSION_COOKIE] || (req.headers.authorization?.startsWith("Bearer ") ? req.headers.authorization.substring(7).trim() : null),
+    getUser: (uid) => {
+      const u = users.get(uid);
+      if (u) return { id: u.id, email: u.email, name: u.name, created_at: u.created_at };
+      const row = dbGetUser(uid);
+      return row ? { id: row.id, email: row.email, name: row.name, created_at: row.created_at } : null;
+    },
+    setName: (uid, name) => {
+      const u = users.get(uid);
+      if (u) u.name = name;
+      const row = dbGetUser(uid);
+      if (row) dbSaveUser({ id: row.id, email: row.email, name, password: undefined, active_model_id: row.active_model_id, created_at: row.created_at });
+    },
+    changePassword: (uid, current, next) => {
+      const u = users.get(uid);
+      const stored = u?.password || dbGetUser(uid)?.password || "";
+      if (!stored || !verifyPassword(current, stored)) return false;
+      const hash = hashPassword(next);
+      if (u) u.password = hash;
+      const row = dbGetUser(uid);
+      if (row) dbSaveUser({ id: row.id, email: row.email, name: row.name, password: hash, active_model_id: row.active_model_id, created_at: row.created_at });
+      return true;
+    },
+    dropSession: (token) => {
+      sessions.delete(token);
+      dbDeleteSession(token);
+    },
+    strict: PRIVACY_STRICT,
   });
 
   registerStudioRoutes(app, {
@@ -1267,9 +1367,16 @@ async function startServer() {
     }
     if (token) {
       if (sessions.has(token)) {
-        const uid = sessions.get(token)!;
-        const u = users.get(uid);
-        if (u) return u;
+        // The map is a process-lifetime cache. Expiry and revocation live in the database row, so confirm it is still live: without
+        // this a session stayed valid until the next restart (weeks, on a long-running host) however old or revoked it was.
+        // (The open legacy mode keeps its row-less "default_token".)
+        if (PRIVACY_STRICT && !dbGetSession(token)) {
+          sessions.delete(token);
+        } else {
+          const uid = sessions.get(token)!;
+          const u = users.get(uid);
+          if (u) return u;
+        }
       }
       const dbSess = dbGetSession(token);
       if (dbSess) {
@@ -1410,23 +1517,53 @@ async function startServer() {
   // -------------------------------------------------------------------------
   // Health & Storage Management
   // -------------------------------------------------------------------------
-  app.get("/api/health", async (_req, res) => {
-    const supabaseHealth = isSupabaseConfigured() ? await verifySupabaseConnection() : { configured: false };
-    res.json({
-      status: "ok",
-      service: "darkness",
-      supabase: supabaseHealth,
-      geminiKeyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
-      googleKeyLength: process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.length : 0,
-    });
-  });
+  // Liveness: "the process is up". Cheap and dependency-free, so an orchestrator never restarts a healthy instance because a
+  // database or provider is slow. (It used to call Supabase and report the LENGTH of the Gemini/Google API keys; it no longer does.)
+  const startedAtMs = Date.now();
+  app.get(["/api/health", "/api/healthz"], livenessHandler("darkness", startedAtMs));
+
+  // Readiness: "should this instance receive traffic?" 200 ready / 200 degraded (an optional service is down) / 503 not_ready
+  // (database, storage, disk space or upload temp folder failing) / 503 draining (shutting down). Details go to the log, not the response.
+  const minFreeBytes = (parseInt(process.env.READINESS_MIN_FREE_MB || "", 10) || 100) * 1024 * 1024;
+  const healthChecks: HealthCheck[] = [
+    { name: "database", required: true, run: () => { sqliteDb.prepare("SELECT 1 FROM sqlite_master LIMIT 1").get(); } },
+    {
+      name: "storage",
+      required: true,
+      run: () => {
+        const root = storageManager.getStorageRoot();
+        fs.accessSync(root, fs.constants.W_OK);
+        const st = (fs as any).statfsSync ? (fs as any).statfsSync(root) : null;
+        if (st) {
+          const free = Number(st.bavail) * Number(st.bsize);
+          if (free < minFreeBytes) throw new Error("low disk space");
+          return `${Math.round(free / 1048576)} MB free`;
+        }
+      },
+    },
+    { name: "uploads", required: true, run: () => { ensureUploadDirs(); fs.accessSync(UPLOAD_TMP_ROOT, fs.constants.W_OK); } },
+  ];
+  if (isSupabaseConfigured()) {
+    healthChecks.push({ name: "supabase", required: false, cacheMs: 30_000, timeoutMs: 4000, run: async () => { const r = await verifySupabaseConnection(); if (r.supabaseConnection !== "PASS") throw new Error("supabase " + r.supabaseConnection); } });
+  }
+  if (aivenConfigured()) {
+    healthChecks.push({ name: "mirror", required: false, cacheMs: 15_000, run: () => { if (aivenStatus().state !== "ready") throw new Error("mirror not ready"); } });
+  }
+  app.get(["/api/ready", "/api/readyz"], readinessHandler({ service: "darkness", checks: healthChecks, isDraining }));
 
   app.get("/api/supabase/status", async (_req, res) => {
     const health = await verifySupabaseConnection();
     res.json(health);
   });
 
-  app.get("/api/storage/status", (_req, res) => {
+  // Server-wide operations (the storage limit, the shared cache, host disk figures and the storage path). The app has no administrator role, so in
+  // strict (multi-user) mode no signed-in user may call them: any user could otherwise set the limit to 1 GB (every upload then fails for EVERY
+  // user), wipe the shared cache, or read the server's file-system path. The operator uses the host (preflight, backup, the platform's disk view).
+  const operatorOnly: express.RequestHandler = (_req, res, next) => {
+    if (!PRIVACY_STRICT) return next(); // open / local mode: the one user is the operator
+    res.status(403).json({ error: "This setting is managed by the person who runs the server.", code: "OPERATOR_ONLY" });
+  };
+  app.get("/api/storage/status", operatorOnly, (_req, res) => {
     try {
       const breakdown = storageManager.getStorageBreakdown();
       const used = storageManager.getUsedStorage();
@@ -1458,7 +1595,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/storage/limit", (req, res) => {
+  app.post("/api/storage/limit", operatorOnly, (req, res) => {
     const { limitGB } = req.body || {};
     const gb = Number(limitGB);
     if (!gb || gb <= 0 || gb > 1000) {
@@ -1473,7 +1610,7 @@ async function startServer() {
     }
   });
 
-  app.post("/api/storage/clear-cache", (_req, res) => {
+  app.post("/api/storage/clear-cache", operatorOnly, (_req, res) => {
     try {
       const cacheDir = path.join(storageManager.getStorageRoot(), "cache");
       if (fs.existsSync(cacheDir)) {
@@ -1489,6 +1626,66 @@ async function startServer() {
   // -------------------------------------------------------------------------
   // Auth API
   // -------------------------------------------------------------------------
+  // ---- sign-in hardening: structured validation errors, guess throttling, constant-ish timing ----------------
+  const intOr = (v: string | undefined, d: number) => (v && Number.isFinite(parseInt(v, 10)) && parseInt(v, 10) > 0 ? parseInt(v, 10) : d);
+  const loginGuard = new LoginGuard({ maxFails: intOr(process.env.LOGIN_MAX_FAILS, 5), baseLockMs: intOr(process.env.LOGIN_LOCK_SECONDS, 60) * 1000 });
+  const emailGuard = new LoginGuard({ maxFails: 25, baseLockMs: 30_000, maxLockMs: 5 * 60_000 });
+
+  // Account recovery by e-mail (only when a mail provider is configured through the environment; otherwise the routes say so and never pretend).
+  ensureRecoveryTables(sqliteDb);
+  const toRecoveryUser = (u: any) => (u ? { id: String(u.id), email: String(u.email), name: String(u.name || "") } : null);
+  registerRecoveryRoutes(app, {
+    db: sqliteDb,
+    getMailer: () => mailerFromEnv(process.env),
+    appUrl: () => String(process.env.PUBLIC_APP_URL || ""),
+    findUserByEmail: (email) => toRecoveryUser(dbGetUserByEmail(email) || Array.from(users.values()).find((u) => u.email.toLowerCase() === email)),
+    findUserById: (id) => toRecoveryUser(users.get(id) || dbGetUser(id)),
+    setPassword: (uid, plain) => {
+      const hash = hashPassword(plain);
+      const u = users.get(uid);
+      if (u) u.password = hash;
+      const row = dbGetUser(uid);
+      if (row) dbSaveUser({ id: row.id, email: row.email, name: row.name, password: hash, active_model_id: row.active_model_id, created_at: row.created_at });
+    },
+    revokeSessions: (uid) => {
+      let n = 0;
+      for (const [token, owner] of Array.from(sessions.entries())) if (owner === uid) { sessions.delete(token); n++; }
+      try {
+        for (const r of sqliteDb.prepare("SELECT token FROM sessions WHERE user_id = ?").all(uid) as any[]) { dbDeleteSession(String(r.token)); n++; }
+      } catch { /* the in-memory sessions are already gone */ }
+      return n;
+    },
+    clearLockout: (email) => { emailGuard.success(email); },
+    minLength: PRIVACY_STRICT ? 8 : 4,
+    isCommonPassword,
+    strict: PRIVACY_STRICT,
+    log: (event, fields) => logger.info(event, fields || {}),
+  });
+  // Verified against when the e-mail is unknown, so "no such account" costs the same time as "wrong password".
+  const DUMMY_HASH = hashPassword(crypto.randomBytes(12).toString("hex"));
+  const waitText = (s: number) => (s >= 90 ? `${Math.ceil(s / 60)} minutes` : `${s} seconds`);
+  const authError = (res: express.Response, status: number, code: string, error: string, extra: Record<string, unknown> = {}) => res.status(status).json({ error, code, ...extra });
+  /** Shared checks for sign-in and sign-up. Returns the cleaned values or a ready-to-send error. */
+  const checkAuthBody = (body: any, signup: boolean): { email: string; password: string; name: string } | { status: number; code: string; error: string; field: string } => {
+    const bad = (field: string, error: string, code = "VALIDATION_ERROR") => ({ status: 400, code, error, field });
+    if (!body || typeof body !== "object") return bad("email", "Email and password are required");
+    const { email, password, name } = body;
+    if (typeof email !== "string" || !email.trim()) return bad("email", "Enter your email address");
+    if (typeof password !== "string" || !password) return bad("password", "Enter your password");
+    const cleanEmail = email.trim().toLowerCase();
+    if (cleanEmail.length > 254 || !EMAIL_RE.test(cleanEmail) || cleanEmail.includes("..")) return bad("email", "Please provide a valid email address");
+    if (password.length > 1024) return bad("password", "That password is too long (1024 characters at most)");
+    let cleanName = "";
+    if (signup) {
+      const minPasswordLength = PRIVACY_STRICT ? 8 : 4;
+      if (password.length < minPasswordLength) return bad("password", `Please provide a valid email and a password of at least ${minPasswordLength} characters`, "WEAK_PASSWORD");
+      if (PRIVACY_STRICT && isCommonPassword(password)) return bad("password", "That password is on the list of the most common ones. Choose something less guessable.", "WEAK_PASSWORD");
+      if (name !== undefined && name !== null && typeof name !== "string") return bad("name", "Name must be text");
+      cleanName = String(name || "").replace(/[\u0000-\u001f\u007f<>]/g, "").trim().slice(0, 80);
+    }
+    return { email: cleanEmail, password, name: cleanName };
+  };
+
   app.get("/api/auth/me", async (req, res) => {
     console.log("[API] Auth Me called, path:", req.path);
     let user = (await resolveUserAsync(req)) || resolveUser(req);
@@ -1512,15 +1709,9 @@ async function startServer() {
 
   app.post("/api/auth/signup", async (req, res) => {
     console.log("[AUTH] Signup started");
-    const { email, password, name } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required" });
-    }
-    const cleanEmail = String(email).trim().toLowerCase();
-    const minPasswordLength = PRIVACY_STRICT ? 8 : 4;
-    if (!cleanEmail.includes("@") || String(password).length < minPasswordLength) {
-      return res.status(400).json({ error: `Please provide a valid email and a password of at least ${minPasswordLength} characters` });
-    }
+    const input = checkAuthBody(req.body, true);
+    if ("status" in input) return authError(res, input.status, input.code, input.error, { field: input.field });
+    const { email: cleanEmail, password, name } = input;
 
     let existing = null;
     try {
@@ -1535,12 +1726,12 @@ async function startServer() {
       return res.status(503).json({ error: "Database service temporarily unavailable", code: "DATABASE_UNAVAILABLE" });
     }
     if (existing) {
-      return res.status(409).json({ error: "An account with this email already exists" });
+      return authError(res, 409, "EMAIL_TAKEN", "An account with this email already exists", { field: "email" });
     }
 
-    let id = crypto.randomUUID();
+    let id: string = crypto.randomUUID();
     const hashedPassword = hashPassword(String(password));
-    const userName = String(name || cleanEmail.split("@")[0]).trim();
+    const userName = name || cleanEmail.split("@")[0];
     const now = Date.now();
 
     // If Supabase is configured, create the canonical account in Supabase Auth first
@@ -1593,11 +1784,17 @@ async function startServer() {
 
   app.post("/api/auth/login", async (req, res) => {
     console.log("[AUTH] Login started");
-    const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ error: "Email and password are required", code: "INVALID_CREDENTIALS" });
+    const input = checkAuthBody(req.body, false);
+    if ("status" in input) return authError(res, input.status, input.code, input.error, { field: input.field });
+    const { email: cleanEmail, password } = input;
+
+    // refuse early while this account/address is cooling down after too many wrong passwords
+    const guardKey = `${req.ip || "?"}|${cleanEmail}`;
+    const lock = [loginGuard.check(guardKey), emailGuard.check(cleanEmail)].find((g) => g.locked);
+    if (lock && lock.locked) {
+      res.setHeader("Retry-After", String(lock.retryAfter));
+      return authError(res, 429, "ACCOUNT_LOCKED", `Too many failed sign-in attempts. Please wait ${waitText(lock.retryAfter)} and try again.`, { retryAfter: lock.retryAfter });
     }
-    const cleanEmail = String(email).trim().toLowerCase();
 
     let matched: User | null = null;
     for (const u of users.values()) {
@@ -1646,7 +1843,8 @@ async function startServer() {
 
     let passwordValid = false;
     let isAutoRepairNeeded = false;
-    if (matched && (matched.password === "hashedpassword123" || matched.password === "password123")) {
+    // Legacy demo accounts only exist in the old open mode; in strict mode a stored placeholder never authenticates anyone.
+    if (!PRIVACY_STRICT && matched && (matched.password === "hashedpassword123" || matched.password === "password123")) {
       isAutoRepairNeeded = true;
     }
 
@@ -1681,6 +1879,8 @@ async function startServer() {
       passwordValid = true;
     } else if (matched && matched.password) {
       passwordValid = verifyPassword(String(password), matched.password);
+    } else {
+      verifyPassword(String(password), DUMMY_HASH); // unknown e-mail: spend the same time, answer the same way
     }
 
     // If local verification failed or user wasn't in local DB, attempt Supabase Auth direct authentication
@@ -1714,8 +1914,21 @@ async function startServer() {
     }
 
     if (!matched || !passwordValid) {
-      return res.status(401).json({ error: "Invalid email or password", code: "INVALID_CREDENTIALS" });
+      const a = loginGuard.fail(guardKey);
+      const b = emailGuard.fail(cleanEmail);
+      const locked = a.locked ? a : b.locked ? b : null;
+      if (locked && locked.locked) {
+        res.setHeader("Retry-After", String(locked.retryAfter));
+        return authError(res, 429, "ACCOUNT_LOCKED", `Too many failed sign-in attempts. Please wait ${waitText(locked.retryAfter)} and try again.`, { retryAfter: locked.retryAfter });
+      }
+      return authError(res, 401, "INVALID_CREDENTIALS", "Invalid email or password", { attemptsLeft: a.attemptsLeft });
     }
+    // an account disabled by the operator cannot sign in (checked after the password, so this does not reveal which e-mails have accounts)
+    if (isDisabled(sqliteDb, matched.id)) {
+      return authError(res, 403, "ACCOUNT_DISABLED", "This account has been disabled. Contact the person who runs this server.");
+    }
+    loginGuard.success(guardKey);
+    emailGuard.success(cleanEmail);
 
     const token = `sess_${Date.now()}_${crypto.randomBytes(16).toString("hex")}`;
     const expiresAt = Date.now() + 30 * 24 * 3600 * 1000;
@@ -1877,9 +2090,9 @@ async function startServer() {
 
     // 1. ALWAYS persist to local SQLite database as primary persistent store
     try {
+      // Exactly ONE row, owned by the caller. This handler used to save the model two more times, under "user_default" and the demo user, which
+      // left a copy of the user's provider key behind in a shared owner: it survived deleting the model and erasing the account.
       dbSaveModel(newModel);
-      dbSaveModel({ ...newModel, user_id: "user_default" });
-      dbSaveModel({ ...newModel, user_id: initialUser.id });
     } catch (err: any) {
       console.error("[MODEL TRACE] Failed to save model to SQLite:", err);
       return res.status(500).json({ error: err?.message || "Failed to persist model" });
@@ -1901,9 +2114,7 @@ async function startServer() {
       }
     }
 
-    setUserModel(user.id, newModel);
-    setUserModel(initialUser.id, newModel);
-    setUserModel("user_default", newModel);
+    setUserModel(user.id, newModel); // (no copies in the shared "user_default" / demo-user namespaces: they would hold every user's key)
 
     // If user has no active model, make this first configured model their active model
     if (!user.active_model_id) {
@@ -2250,7 +2461,9 @@ async function startServer() {
       const headers: Record<string, string> = { "Content-Type": "application/json" };
       if (m.apiKey) headers["Authorization"] = `Bearer ${m.apiKey}`;
 
-      let response = await fetch(`${effectiveBaseUrl.replace(/\/$/, "")}/models`, { method: "GET", headers });
+      // A connectivity test should answer quickly: one attempt, 20 s, and HTTP statuses are interpreted below.
+      const testPolicy = { label: "model test", timeoutMs: 20_000, maxAttempts: 1, returnErrorResponse: true } as const;
+      let response = await fetchWithPolicy(`${effectiveBaseUrl.replace(/\/$/, "")}/models`, { method: "GET", headers }, testPolicy);
       if (!response.ok) {
         // Fallback: try a tiny chat completions request to verify API connection using configured model name
         const testBody = {
@@ -2258,11 +2471,11 @@ async function startServer() {
           messages: [{ role: "user", content: "ping" }],
           max_tokens: 5,
         };
-        const fallbackRes = await fetch(`${effectiveBaseUrl.replace(/\/$/, "")}/chat/completions`, {
+        const fallbackRes = await fetchWithPolicy(`${effectiveBaseUrl.replace(/\/$/, "")}/chat/completions`, {
           method: "POST",
           headers,
           body: JSON.stringify(testBody)
-        });
+        }, testPolicy);
         if (!fallbackRes.ok) {
           throw new Error(`Models endpoint failed (${response.status}) and fallback completions failed: HTTP ${fallbackRes.status}: ${await fallbackRes.text()}`);
         }
@@ -2276,7 +2489,7 @@ async function startServer() {
   app.get("/api/models/:id/capabilities", (req, res) => {
     const user = resolveUser(req);
     if (!user) return res.status(401).json({ error: "Unauthorized" });
-    const m = getUserModel(user.id, req.params.id);
+    const m = getUserModel(user.id, String(req.params.id));
     if (!m) return res.status(404).json({ error: "Model not found", type: "model_not_found" });
     res.json({ capabilities: m.capabilities });
   });
@@ -2366,6 +2579,59 @@ async function startServer() {
   // -------------------------------------------------------------------------
   // Conversations API
   // -------------------------------------------------------------------------
+  // Search, tags / folders / pinning and branching. Registered first: "/api/conversations/search" must not be read as a conversation id.
+  registerConversationLibraryRoutes(app, {
+    db: sqliteDb,
+    getUserKey: async (req) => {
+      const u = await resolveUserAsync(req);
+      return u ? toValidUuid(u.id) || null : null;
+    },
+  });
+
+  // Prompt Studio: the user's prompt library with versions, and test runs on their own models (same guards as the Compare page).
+  ensurePromptTables(sqliteDb);
+  registerPromptRoutes(app, {
+    db: sqliteDb,
+    getUserKey: async (req) => {
+      const u = await resolveUserAsync(req);
+      return u ? toValidUuid(u.id) || null : null;
+    },
+    // models are looked up by the signed-in user's own id (as the Compare page does), the library by the database key
+    getUserId: async (req) => (await resolveUserAsync(req))?.id ?? null,
+    getModel: (uid, mid) => getUserModel(uid, mid),
+    call: createModelCaller({ resolveBaseUrl: getEffectiveBaseUrl }),
+  });
+
+  // User-controlled memory notes (create / edit / delete / pause, scoped to the user).
+  ensureMemoryTables(sqliteDb);
+  registerMemoryRoutes(app, {
+    db: sqliteDb,
+    getUserKey: async (req) => {
+      const u = await resolveUserAsync(req);
+      return u ? toValidUuid(u.id) || null : null;
+    },
+  });
+
+  // Agent workflow stats, per-model usage and system status for the signed-in user (read-only, scoped to them).
+  ensureInsightsTables(sqliteDb);
+  registerInsightsRoutes(app, {
+    db: sqliteDb,
+    getUserKey: async (req) => {
+      const u = await resolveUserAsync(req);
+      return u ? toValidUuid(u.id) || null : null;
+    },
+    readiness: () => evaluateReadiness(healthChecks, isDraining()),
+    vaultEnabled,
+    startedAt: startedAtMs,
+  });
+
+  // Same prompt on 2-3 of the user's configured models, side by side (nothing is saved to a conversation).
+  registerCompareRoutes(app, {
+    getUserId: async (req) => (await resolveUserAsync(req))?.id ?? null,
+    getModel: (uid, mid) => getUserModel(uid, mid),
+    call: createModelCaller({ resolveBaseUrl: getEffectiveBaseUrl }),
+  });
+
   app.get("/api/conversations", async (req, res) => {
     const user = await resolveUserAsync(req);
     if (!user) {
@@ -2413,9 +2679,11 @@ async function startServer() {
     // Compute message counts per conversation
     const msgCounts = getConversationMessageCounts();
 
+    // tags / folder / pinned come from the database in one query (see conversation-library.ts); pinned conversations lead the list
+    const libraryMeta = conversationMetaMap(sqliteDb, toValidUuid(user.id) || user.id);
     const list = Array.from(conversations.values())
       .filter((c) => isUserOwner(c.user_id, user.id))
-      .sort((a, b) => b.updated_at - a.updated_at)
+      .sort((a, b) => Number(libraryMeta.get(b.id)?.pinned || 0) - Number(libraryMeta.get(a.id)?.pinned || 0) || b.updated_at - a.updated_at)
       .map(c => {
         // Build correct content snippet directly from local SQLite
         const dbMsgs = dbListMessages(c.id);
@@ -2424,6 +2692,9 @@ async function startServer() {
           .join(" ");
         return {
           ...c,
+          tags: libraryMeta.get(c.id)?.tags || [],
+          folder: libraryMeta.get(c.id)?.folder || null,
+          pinned: libraryMeta.get(c.id)?.pinned || false,
           message_count: msgCounts.get(c.id) || dbMsgs.filter(m => m.role === 'user' || m.role === 'assistant').length || 0,
           content_snippet: convMsgs.slice(0, 5000),
         };
@@ -2438,8 +2709,22 @@ async function startServer() {
     }
     const body = req.body || {};
     const id = body.id ? String(body.id).trim() : crypto.randomUUID();
-    const title = String(body.title || "New Chat").trim();
+    const title = String(body.title || "New Chat").trim().slice(0, 200);
     const model_id = body.model_id || user.active_model_id || "";
+
+    // The client may choose the id, but never one that belongs to someone else: without this check, naming another user's
+    // conversation id here replaced the in-memory record and the database row and handed that conversation (and its messages)
+    // to the caller. (Found by the final audit; ids are UUIDs, so an attacker first had to learn one.)
+    if (!/^[A-Za-z0-9._:-]{1,100}$/.test(id)) {
+      return res.status(400).json({ error: "Invalid conversation id", code: "INVALID_ID" });
+    }
+    let existingOwner: string | null | undefined = (conversations.get(id) as any)?.user_id;
+    if (existingOwner === undefined) {
+      try { existingOwner = (dbGetConversation(id) as any)?.user_id; } catch { existingOwner = undefined; }
+    }
+    if (existingOwner && !isUserOwner(existingOwner, user.id)) {
+      return res.status(409).json({ error: "That conversation id is already in use", code: "ID_IN_USE" });
+    }
 
     const conv: ConversationItem = {
       id,
@@ -2538,7 +2823,7 @@ async function startServer() {
   });
 
   app.get("/api/conversations/:cid", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2606,7 +2891,7 @@ async function startServer() {
   });
 
   app.delete("/api/conversations/:cid", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2642,7 +2927,7 @@ async function startServer() {
   });
 
   app.patch("/api/conversations/:cid/title", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2687,7 +2972,7 @@ async function startServer() {
   });
 
   app.get("/api/conversations/:cid/messages", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2699,14 +2984,26 @@ async function startServer() {
     if (conv.user_id && conv.user_id !== user.id && user.id !== initialUser.id && conv.user_id !== initialUser.id) {
       return res.status(403).json({ error: "Access denied to this conversation", code: "FORBIDDEN" });
     }
-    const convMessages = Array.from(messages.values())
+    let convMessages = Array.from(messages.values())
       .filter((m) => m.conversation_id === cid)
       .sort((a, b) => a.created_at - b.created_at);
+    if (convMessages.length === 0) {
+      // Not in the in-memory cache (a conversation created straight in the database, e.g. a branch, or one not yet touched since a
+      // restart): read it from the database and cache it, exactly like the chat route does.
+      try {
+        for (const dm of dbListMessages(cid)) {
+          if (!messages.has(dm.id)) {
+            messages.set(dm.id, { id: dm.id, conversation_id: dm.conversation_id, project_id: dm.project_id || null, role: dm.role as any, content: dm.content, model_id: dm.model_id, attachments: dm.attachments || [], created_at: dm.created_at });
+          }
+        }
+        convMessages = Array.from(messages.values()).filter((m) => m.conversation_id === cid).sort((a, b) => a.created_at - b.created_at);
+      } catch { /* keep the empty list */ }
+    }
     res.json({ messages: convMessages });
   });
 
   app.post("/api/conversations/:cid/messages", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2826,7 +3123,7 @@ async function startServer() {
   });
 
   app.get("/api/conversations/:cid/files", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) {
       return res.status(401).json({ error: "Unauthorized" });
@@ -2926,6 +3223,9 @@ async function startServer() {
       // 1. Files explicitly selected or passed for this specific session
       if (Array.isArray(params.file_ids) && params.file_ids.length > 0) {
         for (const fid of params.file_ids) {
+          // Only the caller's own files may be attached by id (a foreign id is skipped, like an unknown one): the document would otherwise be
+          // placed in front of the model and the answer would hand it to the caller.
+          if (fileOwnership(fid, params.userId, files as Map<string, any>) !== "owned") continue;
           const fileObj = files.get(fid) || dbGetWorkspaceFile(fid);
           if (fileObj && fileObj.content) {
             docItems.push({ filename: fileObj.filename, content: fileObj.content });
@@ -3857,7 +4157,7 @@ Following the details block, provide your beautiful, structured final textbook r
   // -------------------------------------------------------------------------
   app.post("/api/conversations/:cid/chat", async (req, res) => {
     const requestStartMs = Date.now();
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     const authMs = Date.now() - requestStartMs;
 
@@ -3867,6 +4167,19 @@ Following the details block, provide your beautiful, structured final textbook r
 
     let conv = await getOrLoadConversation(cid, user.id);
     if (!conv) {
+      // Only a NEW, well-formed id may be created here. `getOrLoadConversation` also returns null for a conversation that exists but belongs to
+      // someone else; the strict-mode id guard only knows conversations that are in memory, so a database-only one used to reach this point and
+      // be re-created under the caller's account with the same id. Such an id is "not found", exactly as if it did not exist.
+      if (!/^[A-Za-z0-9._:-]{1,100}$/.test(cid)) {
+        return res.status(400).json({ error: "Invalid conversation id", code: "INVALID_ID" });
+      }
+      let existingOwner: string | null | undefined = (conversations.get(cid) as any)?.user_id;
+      if (existingOwner === undefined) {
+        try { existingOwner = (dbGetConversation(cid) as any)?.user_id; } catch { existingOwner = undefined; }
+      }
+      if (existingOwner && !isUserOwner(existingOwner, user.id)) {
+        return res.status(404).json({ error: "Conversation not found", type: "not_found" });
+      }
       // Auto-create conversation if not exists
       conv = {
         id: cid,
@@ -3917,9 +4230,14 @@ Following the details block, provide your beautiful, structured final textbook r
 
     // Prepare SSE stream
     res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
+    // Open the stream NOW, before the model has said anything. Behind a hosting front door (Vercel's edge proxy) the response must start
+    // within 25 seconds or the visitor gets a 504 although this server is healthy; reasoning models and cold starts routinely take
+    // longer to produce a first token. From here on every outcome, errors included, is an SSE frame (there is no status code left to send).
+    res.flushHeaders();
+    res.write(": stream open\n\n");
 
     const abortController = new AbortController();
     res.on("close", () => {
@@ -4021,9 +4339,18 @@ Following the details block, provide your beautiful, structured final textbook r
       .sort((a, b) => (a.created_at || 0) - (b.created_at || 0));
     const conversationHistory = priorMsgs.map(m => ({ role: m.role, content: m.content }));
 
+    // The user's own memory notes that are relevant to THIS question (none when memory is off); sent as quoted background data.
+    let memoryBlock = "";
+    try {
+      const pick = selectRelevantMemories(sqliteDb, toValidUuid(user.id) || user.id, String(textMsg || ""));
+      memoryBlock = pick.block;
+      if (pick.memories.length) sendSSE({ memoryUsed: pick.memories.map((m) => ({ id: m.id, content: m.content, category: m.category })) });
+    } catch (e) { logger.warn("memory_select_failed", { err: e }); }
+
     // Delegate to unified AgentRuntime
     try {
       await AgentRuntime.execute({
+        memoryBlock,
         userId: user.id,
         conversationId: cid,
         projectId: project_id || null,
@@ -4054,7 +4381,7 @@ Following the details block, provide your beautiful, structured final textbook r
 
   // Regenerate endpoint
   app.post("/api/conversations/:cid/regenerate", async (req, res) => {
-    const cid = req.params.cid;
+    const cid = String(req.params.cid);
     const user = await resolveUserAsync(req);
     if (!user) return res.status(401).json({ error: "Unauthorized" });
 
@@ -4094,7 +4421,8 @@ Following the details block, provide your beautiful, structured final textbook r
     const isGreeting = isIdentityOrGreeting(textMsg);
     const think = !!req.body?.think;
     const userName = user?.name || (user?.email ? user.email.split("@")[0] : "");
-    const sysInstruction = buildNaturalAiSystemInstruction(isGreeting, think, userName, textMsg);
+    let sysInstruction = buildNaturalAiSystemInstruction(isGreeting, think, userName, textMsg);
+    try { sysInstruction += selectRelevantMemories(sqliteDb, toValidUuid(user.id) || user.id, String(textMsg || "")).block; } catch (e) { logger.warn("memory_select_failed", { err: e }); }
 
     const modelConfig = resolveModelConfig(conv.model_id || user.active_model_id, user.id);
     if (!modelConfig) {
@@ -4134,8 +4462,14 @@ Following the details block, provide your beautiful, structured final textbook r
     let activeModelId = modelConfig.id;
     conv.model_id = activeModelId;
     res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
+    res.setHeader("X-Accel-Buffering", "no");
+    // Open the stream NOW, before the model has said anything. Behind a hosting front door (Vercel's edge proxy) the response must start
+    // within 25 seconds or the visitor gets a 504 even though this server is healthy; reasoning models and cold starts routinely take
+    // longer to produce a first token. From here on every outcome, including errors, is reported as an SSE frame (never a status code).
+    res.flushHeaders();
+    res.write(": stream open\n\n");
 
     const abortController = new AbortController();
     res.on("close", () => {
@@ -4254,21 +4588,18 @@ Following the details block, provide your beautiful, structured final textbook r
           top_p: modelConfig.defaultTopP ?? 1.0,
         };
 
-        const response = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
+        // Timeout to first byte, retries for transient failures (only before any text has arrived), an idle timeout while
+        // streaming, and cancellation when the user disconnects. Errors keep the "HTTP <status>: <provider message>" shape.
+        const response = await fetchWithPolicy(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
           method: "POST",
           headers,
           body: JSON.stringify(reqBody),
-          signal: abortController?.signal
-        });
-
-        if (!response.ok) {
-           throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-        }
+        }, { label: "model provider", stream: true, signal: abortController?.signal });
 
         if (response.body) {
            const decoder = new TextDecoder("utf-8");
            let sseBuffer = "";
-           for await (const chunk of response.body) {
+           for await (const chunk of iterateWithIdleTimeout(response.body, { signal: abortController?.signal, label: "model provider" })) {
              sseBuffer += decoder.decode(chunk, { stream: true });
              const lines = sseBuffer.split("\n");
              sseBuffer = lines.pop() || "";
@@ -4444,7 +4775,7 @@ Following the details block, provide your beautiful, structured final textbook r
       created_at: Date.now(),
       updated_at: Date.now(),
       status: "ready",
-      source: "upload"
+      source: "upload" as const
     };
 
     projects.set(pid, pItem);
@@ -4473,7 +4804,7 @@ Following the details block, provide your beautiful, structured final textbook r
   });
 
   app.delete("/api/projects/:pid", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const user = resolveUser(req) || initialUser;
 
     const proj = projects.get(pid);
@@ -4509,10 +4840,12 @@ Following the details block, provide your beautiful, structured final textbook r
       }
     }
 
-    // Stop any running process
+    // Stop every running process of this project first (it holds the project folder open) and forget its sessions
     try {
-      stopProject(pid);
-    } catch {}
+      stopProject(pid, { discard: true });
+    } catch (e) {
+      console.error("Error stopping project processes before delete:", e);
+    }
 
     // Database and disk cleanup
     try {
@@ -4538,7 +4871,7 @@ Following the details block, provide your beautiful, structured final textbook r
 
 
   app.post("/api/projects/:pid/chat", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const user = resolveUser(req) || initialUser;
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
@@ -4623,7 +4956,7 @@ Following the details block, provide your beautiful, structured final textbook r
 
   app.post("/api/projects/:pid/generate", async (req, res) => {
     const user = resolveUser(req) || initialUser;
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -4744,127 +5077,11 @@ Following the details block, provide your beautiful, structured final textbook r
     }
   });
 
-  app.post("/api/projects/:pid/diagnostics", (req, res) => {
-    const pid = req.params.pid;
-    const { path, content } = req.body || {};
-    if (!path || typeof content !== "string") return res.status(400).json({ error: "Missing path or content" });
-
-    // We can call analyzeFileDiagnostics here
-    const issues = analyzeFileDiagnostics(path, content, Array.from(files.values()).filter(f => f.project_id === pid));
-    const summary = { errors: 0, warnings: 0, suggestions: 0 };
-    issues.forEach(i => {
-       if (i.severity === 'error') summary.errors++;
-       else if (i.severity === 'warning') summary.warnings++;
-       else summary.suggestions++;
-    });
-    res.json({ issues, summary });
-  });
-
-  app.post("/api/projects/:pid/diagnostics/ai-fix", async (req, res) => {
-    const pid = req.params.pid;
-    const { path, line, issueId, issueMessage, issueExplanation, fixAll, model_id } = req.body || {};
-
-    const user = resolveUser(req);
-    if (!user) return res.status(401).json({ error: "Unauthorized" });
-
-    const modelConfig = resolveModelConfig(model_id || user.active_model_id, user.id);
-    if (!modelConfig) return res.status(400).json({ error: "No model configured." });
-
-    const projectFiles = Array.from(files.values()).filter(f => f.project_id === pid);
-    const target = projectFiles.find(f => f.filename === path || f.filename.endsWith("/" + path));
-    if (!target) return res.status(404).json({ error: "File not found" });
-
-    const issues = analyzeFileDiagnostics(path, target.content || "", projectFiles);
-    const issue = issues.find(i => i.id === issueId);
-
-    if (issue && issue.patchedContent) {
-       return res.json({ fixedContent: issue.patchedContent });
-    }
-
-    if (issue && issue.suggestedCode && issue.diff) {
-       const newContent = (target.content || "").replace(issue.diff.before, issue.diff.after);
-       return res.json({ fixedContent: newContent });
-    } else if (issue && issue.suggestedCode && issue.currentCode) {
-       const newContent = (target.content || "").replace(issue.currentCode, issue.suggestedCode);
-       return res.json({ fixedContent: newContent });
-    }
-
-    const sys = "You are a senior developer fixing code issues. Return ONLY the fully fixed file content. Do not include markdown codeblocks (```) wrapping the file, just the raw content. Do not explain anything.";
-
-    let userPrompt = "";
-    if (fixAll) {
-       const allIssues = issues.map((iss, idx) => `${idx+1}. Line ${iss.line}: ${iss.message} - ${iss.explanation}`).join("\n");
-       userPrompt = `File: ${path}
-Issues to fix:
-${allIssues}
-
-Current Content:
-${target.content || ""}
-
-Fix all these issues and output the complete fixed file content:`;
-    } else {
-       userPrompt = `File: ${path}
-Line: ${line}
-Issue: ${issueMessage}
-Explanation: ${issueExplanation}
-
-Current Content:
-${target.content || ""}
-
-Fix the issue and output the complete fixed file content:`;
-    }
-
-    try {
-      if (modelConfig.provider === "gemini") {
-        const apiKey = modelConfig.apiKey || process.env.GEMINI_API_KEY;
-        if (!apiKey) throw new Error("API key is missing.");
-
-        const resp = await generateGeminiWithResilience({
-          apiKey,
-          modelName: modelConfig.modelName,
-          contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-          systemInstruction: sys,
-        });
-
-        if (resp && resp.text) {
-           let fixed = resp.text.trim();
-           if (fixed.startsWith("```")) {
-              fixed = fixed.replace(/^```[a-z]*\n/, "").replace(/\n```$/, "");
-           }
-           return res.json({ fixedContent: fixed });
-        }
-      } else {
-        const baseUrl = getEffectiveBaseUrl(modelConfig);
-        if (!baseUrl) throw new Error("Base URL missing");
-        const headers: Record<string, string> = { "Content-Type": "application/json" };
-        if (modelConfig.apiKey) headers["Authorization"] = `Bearer ${modelConfig.apiKey}`;
-
-        const resOpenAi = await fetch(`${baseUrl.replace(/\/$/, "")}/chat/completions`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            model: modelConfig.modelName || modelConfig.id,
-            messages: [{ role: "system", content: sys }, { role: "user", content: userPrompt }]
-          })
-        });
-        if (resOpenAi.ok) {
-          const data = await resOpenAi.json();
-          let fixed = data.choices?.[0]?.message?.content?.trim() || "";
-          if (fixed.startsWith("```")) {
-              fixed = fixed.replace(/^```[a-z]*\n/, "").replace(/\n```$/, "");
-          }
-          return res.json({ fixedContent: fixed });
-        }
-      }
-    } catch (e) {
-      console.error(e);
-    }
-
-    return res.status(500).json({ error: "No automated fix available without Gemini" });
-  });
+  // (The single-file and AI-fix diagnostics routes live in project-routes.ts. Older copies that were registered after those and
+  // therefore never ran were removed here.)
 
   app.post("/api/projects/:pid/artifacts", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { filename, content, bufferBase64, category, description, source } = req.body || {};
     if (!filename || !category) return res.status(400).json({ error: "filename and category are required" });
 
@@ -4883,7 +5100,7 @@ Fix the issue and output the complete fixed file content:`;
       createdAt: Date.now(),
       updatedAt: Date.now(),
       source: source || "Upload",
-      validation: { status: "unverified", message: "Pending validation" }
+      validation: { status: "unverified" as const, message: "Pending validation" }
     };
     projectArtifacts.set(art.id, art);
     try {
@@ -4903,7 +5120,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/artifacts", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
 
     // Load and hydrate project artifacts from SQLite if they aren't already in memory
     try {
@@ -4952,7 +5169,7 @@ Fix the issue and output the complete fixed file content:`;
 
   app.get("/api/visual-assets/:id", (req, res) => {
     try {
-      const asset = getVisualAsset(req.params.id);
+      const asset = getVisualAsset(String(req.params.id));
       if (!asset || (!asset.content_base64 && !(asset as any).contentBase64)) {
         return res.status(404).send("Visual asset not found");
       }
@@ -4960,7 +5177,7 @@ Fix the issue and output the complete fixed file content:`;
       const buf = Buffer.from(b64, "base64");
       const mime = asset.mime_type || (asset as any).mimeType || "image/png";
       res.setHeader("Content-Type", mime);
-      res.setHeader("Cache-Control", "public, max-age=86400");
+      res.setHeader("Cache-Control", "private, max-age=86400"); // user data: never in a shared cache
       return res.send(buf);
     } catch (err) {
       console.error("[Visual Asset Route Error]:", err);
@@ -4969,10 +5186,10 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/artifacts/:id", (req, res) => {
-    let art = projectArtifacts.get(req.params.id);
+    let art = projectArtifacts.get(String(req.params.id));
     if (!art) {
       try {
-        const dbArt = dbGetArtifact(req.params.id);
+        const dbArt = dbGetArtifact(String(req.params.id));
         if (dbArt) {
           let parsedExtra: any = {};
           if (dbArt.content && dbArt.content.startsWith("{")) {
@@ -4981,6 +5198,7 @@ Fix the issue and output the complete fixed file content:`;
           art = {
             id: dbArt.id,
             projectId: dbArt.project_id,
+            userId: (projects.get(dbArt.project_id) as any)?.user_id || "", // owner = the project's owner
             filename: parsedExtra.filename || dbArt.name,
             extension: parsedExtra.extension || (dbArt.name.split('.').pop() || "txt"),
             mimeType: parsedExtra.mimeType || dbArt.mime_type || "application/octet-stream",
@@ -4998,7 +5216,7 @@ Fix the issue and output the complete fixed file content:`;
           projectArtifacts.set(art.id, art);
         }
       } catch (dbErr) {
-        console.warn(`[API] DB lookup failed for artifact ${req.params.id}:`, dbErr);
+        console.warn(`[API] DB lookup failed for artifact ${String(req.params.id)}:`, dbErr);
       }
     }
     if (!art) return res.status(404).json({ error: "Artifact not found", type: "not_found" });
@@ -5011,10 +5229,10 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/artifacts/:id/download", (req, res) => {
-    let art = projectArtifacts.get(req.params.id);
+    let art = projectArtifacts.get(String(req.params.id));
     if (!art) {
       try {
-        const dbArt = dbGetArtifact(req.params.id);
+        const dbArt = dbGetArtifact(String(req.params.id));
         if (dbArt) {
           let parsedExtra: any = {};
           if (dbArt.content && dbArt.content.startsWith("{")) {
@@ -5023,6 +5241,7 @@ Fix the issue and output the complete fixed file content:`;
           art = {
             id: dbArt.id,
             projectId: dbArt.project_id,
+            userId: (projects.get(dbArt.project_id) as any)?.user_id || "", // owner = the project's owner
             filename: parsedExtra.filename || dbArt.name,
             extension: parsedExtra.extension || (dbArt.name.split('.').pop() || "txt"),
             mimeType: parsedExtra.mimeType || dbArt.mime_type || "application/octet-stream",
@@ -5058,7 +5277,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.delete("/api/artifacts/:id", (req, res) => {
-    const id = req.params.id;
+    const id = String(req.params.id);
     let deleted = false;
     if (projectArtifacts.has(id)) {
       projectArtifacts.delete(id);
@@ -5078,7 +5297,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.patch("/api/artifacts/:id", (req, res) => {
-    const art = projectArtifacts.get(req.params.id);
+    const art = projectArtifacts.get(String(req.params.id));
     if (!art) return res.status(404).json({ error: "Artifact not found", type: "not_found" });
 
     const { filename, description } = req.body || {};
@@ -5090,7 +5309,7 @@ Fix the issue and output the complete fixed file content:`;
 
   app.post("/api/artifacts/:id/apply", (req, res) => {
     const user = resolveUser(req) || initialUser;
-    const art = projectArtifacts.get(req.params.id);
+    const art = projectArtifacts.get(String(req.params.id));
     if (!art) return res.status(404).json({ error: "Artifact not found", type: "not_found" });
     if (!art.content) {
       return res.status(400).json({ error: "Only text and code artifacts can be applied to workspace.", type: "invalid_type" });
@@ -5144,13 +5363,11 @@ Fix the issue and output the complete fixed file content:`;
 
   // Architecture Advisor: Get Report
   app.get("/api/projects/:pid/advisor", (req, res) => {
-    let pid = req.params.pid;
-    let proj = projects.get(pid) || dbGetProject(pid);
-    if (!proj && pid !== "global" && projects.size > 0) {
-      proj = Array.from(projects.values())[0];
-      pid = proj.id;
-    }
-    if (!proj) {
+    const pid = String(req.params.pid);
+    const user = resolveUser(req) || initialUser;
+    // An unknown or foreign id answers "no advisor", exactly as an empty workspace does. It used to return the report of the FIRST project on
+    // the server, whoever owned it.
+    if (projectOwnership(pid, user?.id, projects as Map<string, any>) !== "owned") {
       return res.json({ ok: true, advisor: null, health: null });
     }
 
@@ -5185,15 +5402,12 @@ Fix the issue and output the complete fixed file content:`;
         return { ok: false, file: cleanPath, error: "Replacement or creation content ('after') is required" };
       }
 
-      let pFiles = Array.from(files.values()).filter((f) => f.project_id === effectivePid);
-      if (pFiles.length === 0 && projects.size > 0) {
-        const firstPid = Array.from(projects.keys())[0];
-        const pFirst = Array.from(files.values()).filter((f) => f.project_id === firstPid);
-        if (pFirst.length > 0) {
-          pFiles = pFirst;
-          effectivePid = firstPid;
-        }
+      // Only the files of THIS project, and only if the caller owns it. (Two fallbacks used to live here: "the first project on the server when
+      // this one has no files" and "any file of any user whose name matches": both let a caller edit someone else's files.)
+      if (projectOwnership(effectivePid, user?.id, projects as Map<string, any>) !== "owned") {
+        return { ok: false, file: cleanPath, error: "Project not found" };
       }
+      const pFiles = Array.from(files.values()).filter((f) => f.project_id === effectivePid);
 
       let targetFile = pFiles.find(
         (f) =>
@@ -5203,19 +5417,6 @@ Fix the issue and output the complete fixed file content:`;
           cleanPath.endsWith(f.filename) ||
           path.basename(f.filename) === path.basename(cleanPath)
       );
-
-      if (!targetFile) {
-        const allFiles = Array.from(files.values());
-        targetFile = allFiles.find(
-          (f) =>
-            f.filename === cleanPath ||
-            f.filename.endsWith("/" + cleanPath) ||
-            path.basename(f.filename) === path.basename(cleanPath)
-        );
-        if (targetFile && targetFile.project_id) {
-          effectivePid = targetFile.project_id;
-        }
-      }
 
       if (targetFile) {
         let currentContent = targetFile.content || "";
@@ -5294,7 +5495,11 @@ Fix the issue and output the complete fixed file content:`;
   app.post("/api/projects/:pid/advisor/apply-fix", (req, res) => {
     try {
       const user = resolveUser(req) || initialUser;
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
+      // Only the owner may apply fixes, and only to the project named in the URL (an unknown or foreign id is "not found").
+      if (projectOwnership(pid, user?.id, projects as Map<string, any>) !== "owned") {
+        return res.status(404).json({ error: "Not found", type: "not_found" });
+      }
       let proj = projects.get(pid);
       if (!proj) {
         const dbP = dbGetProject(pid);
@@ -5313,10 +5518,6 @@ Fix the issue and output the complete fixed file content:`;
           projects.set(pid, proj);
         }
       }
-      if (!proj && pid !== "global" && projects.size > 0) {
-        proj = Array.from(projects.values())[0];
-      }
-
       const effectivePid = proj ? proj.id : pid;
       const { file: targetPath, before, after, explanation } = req.body || {};
       const result = applySingleFixHelper(effectivePid, user, { file: targetPath, before, after, explanation });
@@ -5346,7 +5547,11 @@ Fix the issue and output the complete fixed file content:`;
   app.post("/api/projects/:pid/advisor/apply-all-fixes", (req, res) => {
     try {
       const user = resolveUser(req) || initialUser;
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
+      // Only the owner may apply fixes, and only to the project named in the URL (an unknown or foreign id is "not found").
+      if (projectOwnership(pid, user?.id, projects as Map<string, any>) !== "owned") {
+        return res.status(404).json({ error: "Not found", type: "not_found" });
+      }
       let proj = projects.get(pid);
       if (!proj) {
         const dbP = dbGetProject(pid);
@@ -5365,10 +5570,6 @@ Fix the issue and output the complete fixed file content:`;
           projects.set(pid, proj);
         }
       }
-      if (!proj && pid !== "global" && projects.size > 0) {
-        proj = Array.from(projects.values())[0];
-      }
-
       const effectivePid = proj ? proj.id : pid;
       let fixesToApply = req.body?.fixes;
 
@@ -5419,7 +5620,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // Download All Project Artifacts as ZIP Archive
   app.get("/api/projects/:pid/artifacts/download-all", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     const arts = Array.from(projectArtifacts.values()).filter((a) => a.projectId === pid);
 
@@ -5457,8 +5658,11 @@ Fix the issue and output the complete fixed file content:`;
     const zip = new AdmZip();
     let addedCount = 0;
 
+    // Only the caller's own artifacts go in the archive; ids that are unknown or belong to someone else are skipped alike, so the
+    // answer reveals nothing about them (before this, listing another user's artifact ids returned their documents).
+    const callerId = privacyUserId(req);
     for (const id of artifactIds) {
-      const art = projectArtifacts.get(id);
+      const art = PRIVACY_STRICT && !artifactAccess.ownsArtifact(String(id), callerId) ? undefined : projectArtifacts.get(id);
       if (art) {
         if (art.bufferBase64) {
           const buf = Buffer.from(art.bufferBase64, "base64");
@@ -5486,7 +5690,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // Project report & presentation export routes (DOCX, PPTX, PDF, XLSX)
   app.get("/api/projects/:pid/export/docx", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5520,7 +5724,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/export/pptx", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5555,7 +5759,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/export/pdf", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5589,7 +5793,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/export/xlsx", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5708,7 +5912,7 @@ Fix the issue and output the complete fixed file content:`;
       }
 
       if (format === "png") {
-        const pngBuf = renderSvgToPngBuffer(svgStr, 1920);
+        const pngBuf = await renderSvgToPngBuffer(svgStr, 1920);
         res.setHeader("Content-Disposition", `attachment; filename="${baseFileName}.png"`);
         res.setHeader("Content-Type", "image/png");
         return res.send(pngBuf);
@@ -5730,7 +5934,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // Project architecture diagram export routes (SVG & high-res PNG)
   app.get(["/api/projects/:pid/export/svg", "/api/projects/:pid/export/diagram.svg"], async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5764,7 +5968,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get(["/api/projects/:pid/export/png", "/api/projects/:pid/export/diagram.png"], async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5799,7 +6003,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get(["/api/projects/:pid/export/jpg", "/api/projects/:pid/export/jpeg", "/api/projects/:pid/export/diagram.jpg"], async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5854,7 +6058,7 @@ Fix the issue and output the complete fixed file content:`;
         res.setHeader("Content-Type", "image/jpeg");
         return res.send(jpgBuf);
       } else {
-        const pngBuf = renderSvgToPngBuffer(svg, targetWidth);
+        const pngBuf = await renderSvgToPngBuffer(svg, targetWidth);
         if (!pngBuf || pngBuf.length === 0) {
           throw new Error("Failed to rasterize SVG into PNG");
         }
@@ -5870,7 +6074,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // --- Visual Asset Management & Image Generation API Routes ---
   app.post("/api/projects/:pid/assets/generate-image", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -5902,8 +6106,9 @@ Fix the issue and output the complete fixed file content:`;
       try {
         const sourceAsset = getVisualAsset(sourceImageId);
         if (sourceAsset) {
-          sourceImageBase64 = sourceAsset.contentBase64;
-          sourceImageMimeType = sourceAsset.mimeType;
+          // DbVisualAsset uses snake_case; the camelCase names read here were undefined, so the source image was silently dropped
+          sourceImageBase64 = sourceAsset.content_base64;
+          sourceImageMimeType = sourceAsset.mime_type;
         }
       } catch (err) {
         console.warn(`[API] Failed to fetch source asset ${sourceImageId}:`, err);
@@ -5965,7 +6170,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/assets", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     try {
       const dbAssets = listVisualAssets(pid);
       const assets = dbAssets.map(a => ({
@@ -5987,7 +6192,7 @@ Fix the issue and output the complete fixed file content:`;
 
   app.delete("/api/projects/:pid/assets/:id", async (req, res) => {
     try {
-      deleteVisualAsset(req.params.id);
+      deleteVisualAsset(String(req.params.id));
       res.json({ success: true, message: "Visual asset deleted successfully" });
     } catch (err: any) {
       res.status(500).json({ error: formatApiError(err) || "Failed to delete visual asset" });
@@ -5995,7 +6200,7 @@ Fix the issue and output the complete fixed file content:`;
   });
 
   app.get("/api/projects/:pid/export/xlsx", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -6030,7 +6235,7 @@ Fix the issue and output the complete fixed file content:`;
 
   // Project comprehensive report export (Markdown & JSON)
   app.get("/api/projects/:pid/report", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj) return res.status(404).json({ error: "Project not found", type: "not_found" });
 
@@ -6174,14 +6379,14 @@ ${vq.answer}
   });
 
   app.use("/api/preview/:port", (req, res) => {
-    const port = parseInt(req.params.port, 10);
+    const port = parseInt(String(req.params.port), 10);
     if (!port || isNaN(port)) return res.status(400).send("Invalid port");
     previewProxy.web(req, res, { target: `http://127.0.0.1:${port}` });
   });
 
   app.post("/api/projects/:pid/terminals", async (req, res) => {
     try {
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
       const { command, title } = req.body;
 
       const dbFiles = dbListFiles(pid);
@@ -6199,7 +6404,7 @@ ${vq.answer}
 
   app.get("/api/projects/:pid/detect", (req, res) => {
     try {
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
       const detection = detectProject(pid);
       res.json(detection);
     } catch (err: any) {
@@ -6208,17 +6413,17 @@ ${vq.answer}
   });
 
   app.get("/api/projects/:pid/terminals", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const sessions = getProjectSessions(pid);
     res.json(sessions.map(s => sanitizeSession(s)));
   });
 
   app.post("/api/terminals/:tid/stop", (req, res) => {
     try {
-      const session = stopTerminalSession(req.params.tid);
+      const session = stopTerminalSession(String(req.params.tid));
       // Clean up from memory if explicitly requested (e.g., closing tab)
       if (req.query.delete === 'true') {
-          activeSessions.delete(req.params.tid);
+          activeSessions.delete(String(req.params.tid));
       }
       res.json(sanitizeSession(session));
     } catch (err: any) {
@@ -6228,8 +6433,8 @@ ${vq.answer}
 
   app.post("/api/terminals/:tid/restart", async (req, res) => {
     try {
-      stopTerminalSession(req.params.tid);
-      const session = await startTerminalSession(req.params.tid);
+      stopTerminalSession(String(req.params.tid));
+      const session = await startTerminalSession(String(req.params.tid));
       res.json(sanitizeSession(session));
     } catch (err: any) {
       res.status(404).json({ error: err.message });
@@ -6238,7 +6443,7 @@ ${vq.answer}
 
   app.post("/api/terminals/:tid/input", (req, res) => {
     try {
-      if (req.body.input) sendInputToSession(req.params.tid, req.body.input);
+      if (req.body.input) sendInputToSession(String(req.params.tid), req.body.input);
       res.json({ ok: true });
     } catch (err: any) {
       res.status(404).json({ error: err.message });
@@ -6247,7 +6452,7 @@ ${vq.answer}
 
   // Legacy fallback for run buttons
   app.post("/api/projects/:pid/run", async (req, res) => {
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
       const dbFiles = dbListFiles(pid);
       const projFiles = dbFiles.map(f => ({ filename: f.path, content: f.content, project_id: f.project_id }));
       syncProjectFiles(pid, projFiles);
@@ -6259,7 +6464,7 @@ ${vq.answer}
   });
 
   app.get("/api/projects/:pid/run/status", (req, res) => {
-      const pid = req.params.pid;
+      const pid = String(req.params.pid);
       const sessions = getProjectSessions(pid);
       if (sessions.length > 0) {
           res.json(sanitizeSession(sessions[sessions.length-1]));
@@ -6269,12 +6474,8 @@ ${vq.answer}
   });
 
   app.post("/api/projects/:pid/stop", (req, res) => {
-      const pid = req.params.pid;
-      const sessions = getProjectSessions(pid);
-      for (const s of sessions) {
-          if (s.status === "running" || s.status === "starting") stopTerminalSession(s.id);
-      }
-      res.json({ ok: true });
+      const stopped = stopProject(String(req.params.pid));
+      res.json({ ok: true, stopped });
   });
 
   // Project analysis versions & runs
@@ -6283,16 +6484,16 @@ ${vq.answer}
     res.json({ versions: [] });
   });
   app.post("/api/projects/:pid/versions", (req, res) => {
-    res.status(201).json({ id: `ver_${Date.now()}`, project_id: req.params.pid });
+    res.status(201).json({ id: `ver_${Date.now()}`, project_id: String(req.params.pid) });
   });
   app.get("/api/projects/:pid/runs", (_req, res) => {
     res.json({ runs: [] });
   });
   app.post("/api/projects/:pid/runs", (req, res) => {
-    res.status(201).json({ id: `run_${Date.now()}`, project_id: req.params.pid });
+    res.status(201).json({ id: `run_${Date.now()}`, project_id: String(req.params.pid) });
   });
   app.get("/api/runs/:run_id", (req, res) => {
-    res.json({ id: req.params.run_id, status: "completed", stage: "done" });
+    res.json({ id: String(req.params.run_id), status: "completed", stage: "done" });
   });
   app.patch("/api/runs/:run_id", (req, res) => {
     res.json({ ok: true });
@@ -6304,402 +6505,8 @@ ${vq.answer}
 
   // A. WORD DOCUMENT STUDIO ENDPOINTS
 
-  // 1. Import DOCX via Mammoth
-  app.post("/api/document/import-docx", upload.single("file"), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
-      const mammoth = await import("mammoth");
-      const result = await mammoth.convertToHtml({ buffer: req.file.buffer });
-      res.json({
-        html: result.value,
-        warnings: result.messages.map(m => m.message)
-      });
-    } catch (err: any) {
-      console.error("DOCX import error:", err);
-      res.status(500).json({ error: err.message || "Failed to import DOCX" });
-    }
-  });
-
-  // 2. Export DOCX via Docx Library
-  app.post("/api/document/export-docx", async (req, res) => {
-    try {
-      const { title, orientation, marginSize } = req.body || {};
-      const contentHtml = req.body?.contentHtml || req.body?.html || "";
-      const docx = await import("docx");
-
-      const children: any[] = [];
-
-      // Cover Page Title
-      children.push(
-        new docx.Paragraph({
-          text: title || "Untitled Document",
-          heading: docx.HeadingLevel.TITLE,
-          alignment: docx.AlignmentType.CENTER,
-          spacing: { before: 800, after: 600 }
-        })
-      );
-
-      // Helper to clean HTML text
-      const cleanTextTags = (htmlStr: string): string => {
-        return htmlStr
-          .replace(/<[^>]*>/g, "")
-          .replace(/&nbsp;/g, " ")
-          .replace(/&amp;/g, "&")
-          .replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">")
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .trim();
-      };
-
-      // Extract top-level elements cleanly (including tables, headings, paragraphs, and explicit page breaks)
-      let processed = (contentHtml || "")
-        .replace(/<div[^>]*page-break-after:\s*always[^>]*><\/div>/gi, "\n[PAGE_BREAK]\n")
-        .replace(/<br\s*\/?>/gi, "\n");
-
-      // Regex split on top-level block elements (h1-h3, p, lists, tables, explicit page breaks)
-      const blockRegex = /(<h[1-3][^>]*>[\s\S]*?<\/h[1-3]>|<p[^>]*>[\s\S]*?<\/p>|<ul[^>]*>[\s\S]*?<\/ul>|<ol[^>]*>[\s\S]*?<\/ol>|<table[^>]*>[\s\S]*?<\/table>|\[PAGE_BREAK\])/gi;
-      
-      let match;
-      let lastIndex = 0;
-      const blocks: string[] = [];
-
-      while ((match = blockRegex.exec(processed)) !== null) {
-        const textBefore = processed.substring(lastIndex, match.index).trim();
-        if (textBefore) {
-          blocks.push(textBefore);
-        }
-        blocks.push(match[1]);
-        lastIndex = blockRegex.lastIndex;
-      }
-      const remainingText = processed.substring(lastIndex).trim();
-      if (remainingText) {
-        blocks.push(remainingText);
-      }
-
-      for (const block of blocks) {
-        const trimmedBlock = block.trim();
-        if (!trimmedBlock) continue;
-
-        if (trimmedBlock === "[PAGE_BREAK]") {
-          children.push(
-            new docx.Paragraph({
-              children: [new docx.PageBreak()]
-            })
-          );
-          continue;
-        }
-
-        // H1
-        const h1Match = trimmedBlock.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
-        if (h1Match) {
-          children.push(
-            new docx.Paragraph({
-              text: cleanTextTags(h1Match[1]),
-              heading: docx.HeadingLevel.HEADING_1,
-              keepNext: true,
-              keepLines: true,
-              spacing: { before: 240, after: 120 }
-            })
-          );
-          continue;
-        }
-
-        // H2
-        const h2Match = trimmedBlock.match(/<h2[^>]*>([\s\S]*?)<\/h2>/i);
-        if (h2Match) {
-          children.push(
-            new docx.Paragraph({
-              text: cleanTextTags(h2Match[1]),
-              heading: docx.HeadingLevel.HEADING_2,
-              keepNext: true,
-              keepLines: true,
-              spacing: { before: 180, after: 80 }
-            })
-          );
-          continue;
-        }
-
-        // H3
-        const h3Match = trimmedBlock.match(/<h3[^>]*>([\s\S]*?)<\/h3>/i);
-        if (h3Match) {
-          children.push(
-            new docx.Paragraph({
-              text: cleanTextTags(h3Match[1]),
-              heading: docx.HeadingLevel.HEADING_3,
-              keepNext: true,
-              keepLines: true,
-              spacing: { before: 140, after: 60 }
-            })
-          );
-          continue;
-        }
-
-        // Lists
-        const listMatch = trimmedBlock.match(/<(ul|ol)[^>]*>([\s\S]*?)<\/\1>/i);
-        if (listMatch) {
-          const listContent = listMatch[2];
-          const liRegex = /<li[^>]*>([\s\S]*?)<\/li>/gi;
-          let liMatch;
-          while ((liMatch = liRegex.exec(listContent)) !== null) {
-            children.push(
-              new docx.Paragraph({
-                text: cleanTextTags(liMatch[1]),
-                bullet: { level: 0 },
-                keepLines: true,
-                spacing: { after: 100 }
-              })
-            );
-          }
-          continue;
-        }
-
-        // Tables
-        const tableMatch = trimmedBlock.match(/<table[^>]*>([\s\S]*?)<\/table>/i);
-        if (tableMatch) {
-          const tableContent = tableMatch[1];
-          const rows: any[] = [];
-          const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
-          let trMatch;
-
-          while ((trMatch = trRegex.exec(tableContent)) !== null) {
-            const rowContent = trMatch[1];
-            const cells: any[] = [];
-            const tdRegex = /<(td|th)[^>]*>([\s\S]*?)<\/\1>/gi;
-            let tdMatch;
-
-            while ((tdMatch = tdRegex.exec(rowContent)) !== null) {
-              const isHeader = tdMatch[1].toLowerCase() === "th";
-              cells.push(
-                new docx.TableCell({
-                  children: [
-                    new docx.Paragraph({
-                      text: cleanTextTags(tdMatch[2]),
-                      keepLines: true,
-                      spacing: { before: 100, after: 100 }
-                    })
-                  ],
-                  shading: isHeader ? { fill: "F3F4F6" } : undefined
-                })
-              );
-            }
-
-            if (cells.length > 0) {
-              rows.push(
-                new docx.TableRow({
-                  children: cells,
-                  cantSplit: true // Prevent row from splitting across pages
-                })
-              );
-            }
-          }
-
-          if (rows.length > 0) {
-            children.push(
-              new docx.Table({
-                rows,
-                width: {
-                  size: 100,
-                  type: docx.WidthType.PERCENTAGE
-                }
-              })
-            );
-          }
-          continue;
-        }
-
-        // Images in DOCX
-        const imgMatch = trimmedBlock.match(/<img[^>]+src=["']([^"']+)["'][^>]*>/i);
-        if (imgMatch) {
-          const imgSrc = imgMatch[1];
-          let imageBuffer: Buffer | null = null;
-          try {
-            if (imgSrc.startsWith("data:image/")) {
-              const base64Data = imgSrc.replace(/^data:image\/\w+;base64,/, "");
-              imageBuffer = Buffer.from(base64Data, "base64");
-            } else if (imgSrc.startsWith("/uploads/") || imgSrc.startsWith("uploads/")) {
-              const cleanPath = imgSrc.startsWith("/") ? imgSrc.slice(1) : imgSrc;
-              const fullPath = path.join(process.cwd(), "web", "public", cleanPath);
-              if (fs.existsSync(fullPath)) {
-                imageBuffer = fs.readFileSync(fullPath);
-              }
-            }
-          } catch (imgErr) {
-            console.warn("Failed to process DOCX image:", imgErr);
-          }
-
-          if (imageBuffer) {
-            children.push(
-              new docx.Paragraph({
-                children: [
-                  new docx.ImageRun({
-                    data: imageBuffer,
-                    transformation: {
-                      width: 480,
-                      height: 270
-                    }
-                  })
-                ],
-                alignment: docx.AlignmentType.CENTER,
-                spacing: { before: 200, after: 200 }
-              })
-            );
-            continue;
-          }
-        }
-
-        // Default Paragraph
-        const pMatch = trimmedBlock.match(/<p[^>]*>([\s\S]*?)<\/p>/i);
-        const textContent = pMatch ? pMatch[1] : trimmedBlock;
-        const cleanText = cleanTextTags(textContent);
-        if (cleanText) {
-          children.push(
-            new docx.Paragraph({
-              text: cleanText,
-              keepLines: true,
-              spacing: { after: 140 }
-            })
-          );
-        }
-      }
-
-      // Determine correct twips dimensions to prevent MS Word corruption on landscape
-      let width = 11906; // standard A4 width
-      let height = 16838; // standard A4 height
-      if (orientation === "landscape") {
-        width = 16838;
-        height = 11906;
-      }
-
-      const doc = new docx.Document({
-        sections: [{
-          properties: {
-            page: {
-              size: {
-                orientation: orientation === "landscape" ? docx.PageOrientation.LANDSCAPE : docx.PageOrientation.PORTRAIT,
-                width,
-                height
-              },
-              margins: {
-                top: marginSize === "wide" ? 2000 : marginSize === "narrow" ? 800 : 1440,
-                bottom: marginSize === "wide" ? 2000 : marginSize === "narrow" ? 800 : 1440,
-                left: marginSize === "wide" ? 2000 : marginSize === "narrow" ? 800 : 1440,
-                right: marginSize === "wide" ? 2000 : marginSize === "narrow" ? 800 : 1440,
-              }
-            }
-          },
-          children: children
-        }]
-      });
-
-      const buffer = await docx.Packer.toBuffer(doc);
-      res.setHeader("Content-Disposition", `attachment; filename="${(title || "document").toLowerCase().replace(/[^a-z0-9]/g, "_")}.docx"`);
-      res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-      res.send(buffer);
-    } catch (err: any) {
-      console.error("DOCX export error:", err);
-      res.status(500).json({ error: err.message || "Failed to export DOCX" });
-    }
-  });
-
-  // 3. Export PDF via Puppeteer PDF Generation
-  app.post("/api/document/export-pdf", async (req, res) => {
-    try {
-      const { title, orientation, marginSize } = req.body || {};
-      const contentHtml = req.body?.contentHtml || req.body?.html || "";
-      const puppeteer = await import("puppeteer");
-      
-      const padding = marginSize === "wide" ? "2.5cm 3cm" : marginSize === "narrow" ? "1cm 1.2cm" : "1.8cm 2cm";
-
-      const html = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <title>${title || "Document"}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-            @page {
-              size: ${orientation === "landscape" ? "A4 landscape" : "A4 portrait"};
-              margin: 0;
-            }
-            body {
-              font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-              color: #111827;
-              background: #ffffff;
-              margin: 0;
-              padding: ${padding};
-              -webkit-print-color-adjust: exact;
-              print-color-adjust: exact;
-              font-size: 15px;
-              line-height: 1.6;
-            }
-            h1 { font-size: 24px; font-weight: 700; margin-top: 24px; margin-bottom: 12px; color: #111827; page-break-after: avoid; break-after: avoid; }
-            h2 { font-size: 18px; font-weight: 700; margin-top: 18px; margin-bottom: 8px; color: #1f2937; page-break-after: avoid; break-after: avoid; }
-            h3 { font-size: 15px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; color: #374151; page-break-after: avoid; break-after: avoid; }
-            p { margin-top: 0; margin-bottom: 12px; page-break-inside: avoid; break-inside: avoid; }
-            ul, ol { margin-top: 0; margin-bottom: 12px; padding-left: 20px; }
-            li { margin-bottom: 4px; page-break-inside: avoid; break-inside: avoid; }
-            table { width: 100%; border-collapse: collapse; margin: 16px 0; page-break-inside: auto; break-inside: auto; }
-            tr { page-break-inside: avoid; break-inside: avoid; }
-            th, td { border: 1px solid #d1d5db; padding: 8px 12px; text-align: left; }
-            th { background-color: #f3f4f6; font-weight: 600; }
-            img { max-width: 100%; height: auto; border-radius: 4px; page-break-inside: avoid; break-inside: avoid; }
-            .no-print {
-              page-break-after: always;
-              break-after: page;
-              height: 0;
-              margin: 0;
-              padding: 0;
-              border: none;
-              visibility: hidden;
-            }
-            .message__content--code-explanation {
-              border-left: 4px solid #4f46e5;
-              padding: 12px;
-              margin: 12px 0;
-              background: #f9fafb;
-              border-radius: 4px;
-            }
-          </style>
-        </head>
-        <body>
-          ${contentHtml || ""}
-        </body>
-        </html>
-      `;
-
-      const browser = await puppeteer.default.launch({
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
-      });
-      const page = await browser.newPage();
-      
-      // Use 'load' and set a lower timeout to prevent hanging on slow network requests (like fonts or external images)
-      try {
-        await page.setContent(html, { waitUntil: "load", timeout: 8000 });
-      } catch (timeoutErr) {
-        console.warn("Puppeteer content loading timed out (partial assets might not load), continuing to PDF export anyway", timeoutErr);
-      }
-      
-      const buffer = await page.pdf({
-        format: "A4",
-        landscape: orientation === "landscape",
-        printBackground: true
-      });
-
-      await browser.close();
-
-      res.setHeader("Content-Disposition", `attachment; filename="${(title || "document").toLowerCase().replace(/[^a-z0-9]/g, "_")}.pdf"`);
-      res.setHeader("Content-Type", "application/pdf");
-      res.send(buffer);
-    } catch (err: any) {
-      console.error("PDF export error:", err);
-      res.status(500).json({ error: err.message || "Failed to export PDF" });
-    }
-  });
+  // Word document import / export (DOCX, PDF): ./document-export-routes.ts
+  registerDocumentExportRoutes(app);
 
   // -------------------------------------------------------------------------
   // Server-Side Diagnostic Telemetry Logger for /api/chat & /api/studio/chat
@@ -6755,7 +6562,7 @@ ${vq.answer}
   // Universal /api/chat route with full request/response cycle telemetry
   app.post("/api/chat", async (req, res) => {
     const startTime = performance.now();
-    const requestId = `srv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const requestId = (req as any).id || `srv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`; // the id every response header and log line already carries
     const timestamp = new Date().toISOString();
     const { message, prompt, history, messages, studioType, stream, professorMode } = req.body || {};
     const textMsg = String(message || prompt || "").trim();
@@ -7549,6 +7356,10 @@ USER TRANSFORMATION INSTRUCTION:
       const promptText = String(prompt || "").trim();
       if (!promptText) {
         return res.status(400).json({ error: "Instruction prompt is required" });
+      }
+      // a missing or non-string studioType used to throw below (a 500 with an internal message)
+      if (typeof studioType !== "string" || !studioType.trim() || studioType.length > 40) {
+        return res.status(400).json({ error: "studioType is required (\"presentation\" or \"document\")" });
       }
 
       const isPresentation = studioType === "presentation";
@@ -8435,7 +8246,9 @@ Do NOT reuse, merge, or carry over any content, facts, figures, or titles from p
   // -------------------------------------------------------------------------
   // Authoritative Error Handling (Payload Too Large 413)
   // -------------------------------------------------------------------------
+  app.use(bodyTooLargeHandler);
   app.use((err: any, _req: express.Request, res: express.Response, next: express.NextFunction) => {
+    // (a JSON / form body over its route's limit is answered by bodyTooLargeHandler, registered just before this one)
     if (
       err &&
       (err.code === "LIMIT_FILE_SIZE" ||
@@ -8452,6 +8265,11 @@ Do NOT reuse, merge, or carry over any content, facts, figures, or titles from p
   // -------------------------------------------------------------------------
   // Vite Integration (Dev) vs Static Serving (Production)
   // -------------------------------------------------------------------------
+  // An unknown API path is a JSON 404, not the app's HTML page with a 200 (the single-page fallback below must never answer for /api).
+  app.use(["/api", "/classic-api"], (req, res) => {
+    res.status(404).json({ error: "Not found", type: "not_found", requestId: res.getHeader("x-request-id") || undefined });
+  });
+
   console.log("NODE_ENV is:", process.env.NODE_ENV);
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
@@ -8468,11 +8286,52 @@ Do NOT reuse, merge, or carry over any content, facts, figures, or titles from p
     });
   }
 
+  // Anything that reached here unhandled: a JSON answer with the request id, never a stack trace or HTML.
+  app.use(jsonErrorHandler());
+
   console.log("[Boot] Hydrating Darkness database and cloud persistence...");
   await initAiven();
+
+  // Provider keys at rest (docs: SECURITY.md "Provider API keys"). Counts only are ever logged. A conversion happens only when the operator
+  // asks for it with SECRETS_MIGRATE=encrypt|rotate (then unsets it): a consistent snapshot is written first and nothing is changed if any value fails.
+  try {
+    const mode = (process.env.SECRETS_MIGRATE || "").trim().toLowerCase();
+    if (mode === "encrypt" || mode === "rotate") {
+      const dir = path.join(storageManager.getStorageRoot(), "backups");
+      fs.mkdirSync(dir, { recursive: true });
+      const backupPath = path.join(dir, `pre-secrets-${mode}-${new Date().toISOString().replace(/[:.]/g, "-")}.db`);
+      const r = migrateModelKeys(sqliteDb, mode, { backupPath });
+      logger.info("secrets_migrated", { mode, examined: r.examined, changed: r.changed, skipped: r.skipped, failed: r.failed, backup: path.basename(backupPath) });
+    }
+    const counts = countModelKeys(sqliteDb);
+    logger.info("secrets_status", { ...counts, encryption: vaultEnabled() ? "on" : "off" });
+    if (counts.plaintext > 0) logger.warn("secrets_plaintext", { plaintext: counts.plaintext, hint: vaultEnabled() ? "start once with SECRETS_MIGRATE=encrypt to seal them" : "set PRIVACY_ENCRYPTION_KEY to encrypt provider keys at rest" });
+    if (counts.unreadable > 0) logger.error("secrets_unreadable", { unreadable: counts.unreadable, hint: "PRIVACY_ENCRYPTION_KEY (and _PREVIOUS after a rotation) must be able to open every sealed key" });
+  } catch (err: any) {
+    logger.error("secrets_migration_failed", { error: String(err?.message || err).slice(0, 200) });
+  }
+
   await hydrateFromDatabase();
 
-  app.listen(PORT, "0.0.0.0", async () => {
+  // Graceful shutdown: on SIGTERM (a deploy, a scale-down) readiness flips to "draining" so the load balancer stops sending
+  // traffic, running project processes are stopped (no orphans), and in-flight requests get SHUTDOWN_GRACE_MS to finish.
+  let httpServer: ReturnType<typeof app.listen> | undefined;
+  const shutdown = (signal: string) => {
+    if (isDraining()) return;
+    markDraining();
+    const graceMs = parseInt(process.env.SHUTDOWN_GRACE_MS || "", 10) || 10_000;
+    logger.warn("shutdown_started", { signal, graceMs });
+    for (const pid of new Set([...activeSessions.values()].map((s) => s.projectId))) {
+      try { stopProject(pid); } catch { /* best effort */ }
+    }
+    httpServer?.close(() => { logger.info("shutdown_complete"); process.exit(0); });
+    httpServer?.closeIdleConnections?.();
+    setTimeout(() => { logger.warn("shutdown_forced", { reason: "grace period elapsed" }); process.exit(0); }, graceMs).unref();
+  };
+  process.once("SIGTERM", () => shutdown("SIGTERM"));
+  process.once("SIGINT", () => shutdown("SIGINT"));
+
+  httpServer = app.listen(PORT, "0.0.0.0", async () => {
     console.log(`Darkness server listening on http://0.0.0.0:${PORT}`);
     if (isSupabaseConfigured()) {
       console.log("[Supabase] Environment credentials loaded.");

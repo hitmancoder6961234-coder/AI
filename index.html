@@ -11,9 +11,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="DARKNESS" />
 <meta name="mobile-web-app-capable" content="yes" />
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/vendor/fonts/inter/inter.css">
+<link rel="stylesheet" href="/vendor/fonts/jetbrains-mono/jetbrains-mono.css">
 
   <!-- Google Identity Services (official Google Sign-In SDK) -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -5585,7 +5584,7 @@
   <h2 class="reveal">Ready to build something <span class="grad" style="background: linear-gradient(135deg, var(--blue), var(--purple), var(--magenta)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">extraordinary</span>?</h2>
   <p class="reveal">Join the early access program and turn your next idea into a real product — without writing a single line of code.</p>
   <div class="cta-buttons reveal">
-    <button class="btn btn-primary btn-lg" onclick="document.getElementById('prompt').focus(); window.scrollTo({top:0, behavior:'smooth'});">Start Building Free</button>
+    <button class="btn btn-primary btn-lg" data-act="focus-prompt">Start Building Free</button>
     <button class="btn btn-outline btn-lg">View Documentation</button>
   </div>
 </section>
@@ -5913,6 +5912,23 @@
 </main>
 
 <script>
+  // Delegated click actions (replaces inline onclick="..." attributes, which the Content-Security-Policy forbids).
+  document.addEventListener('click', function (e) {
+    const el = e.target && e.target.closest ? e.target.closest('[data-act]') : null;
+    if (!el) return;
+    const act = el.getAttribute('data-act');
+    if (act === 'focus-prompt') {
+      const p = document.getElementById('prompt');
+      if (p) p.focus();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (act === 'remove-chat-msg') {
+      const m = el.closest('.chat-msg');
+      if (m) m.remove();
+    } else if (act === 'google-setup-help') {
+      alert('To enable real Google Sign-In:\n\n1. Go to https://console.cloud.google.com/apis/credentials\n2. Create an OAuth 2.0 Client ID (type: Web application)\n3. Add this URL to Authorized JavaScript origins:\n   ' + location.origin + '\n4. Open index.html and replace YOUR_GOOGLE_CLIENT_ID with your Client ID\n\nThe button and verification flow are already wired — just paste your ID.');
+    }
+  });
+
   // Example prompt click → fill textarea
   const examples = document.querySelectorAll('#examples button');
   const prompt = document.getElementById('prompt');
@@ -6258,7 +6274,7 @@
                   <span>${icon}</span>
                   <span><strong>${escapeHtml(data.filename)}</strong></span>
                   <span style="color:var(--text-faint);font-size:12px;">${data.fileType} · ${(data.size/1024).toFixed(1)}KB</span>
-                  <button class="chat-code-btn" style="margin-left:8px;" onclick="this.closest('.chat-msg').remove()">✕</button>
+                  <button class="chat-code-btn" style="margin-left:8px;" data-act="remove-chat-msg">✕</button>
                 </div>
                 <p style="margin-top:8px;font-size:12px;color:var(--text-dim);">File ready. Ask me anything about it — I'll use its content as context.</p>
               </div>
@@ -8167,7 +8183,7 @@
       if (GOOGLE_CLIENT_ID.startsWith('YOUR_')) {
         // Fallback: custom Google-style button that explains setup needed
         container.innerHTML = `
-          <button class="google-fallback-btn" onclick="alert('To enable real Google Sign-In:\\n\\n1. Go to https://console.cloud.google.com/apis/credentials\\n2. Create an OAuth 2.0 Client ID (type: Web application)\\n3. Add this URL to Authorized JavaScript origins:\\n   ${location.origin}\\n4. Open index.html and replace YOUR_GOOGLE_CLIENT_ID with your Client ID\\n\\nThe button and verification flow are already wired — just paste your ID.')">
+          <button class="google-fallback-btn" data-act="google-setup-help">
             <svg viewBox="0 0 48 48"><path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8c-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C12.955 4 4 12.955 4 24s8.955 20 20 20s20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/><path fill="#FF3D00" d="M6.306 14.691l6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4C16.318 4 9.656 8.337 6.306 14.691z"/><path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238C29.211 35.091 26.715 36 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/><path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303c-.792 2.237-2.231 4.166-4.087 5.571c.003-.002 6.19 5.238 6.19 5.238C36.971 36.852 44 31.131 44 24C44 22.659 43.862 21.35 43.611 20.083z"/></svg>
             Sign in with Google
           </button>`;
@@ -9280,7 +9296,10 @@
           if (pgOutput) pgOutput.textContent = logs.join('\n') + (result !== undefined ? '\n→ ' + String(result) : '');
           if (pgStatus) { pgStatus.textContent = '✓ Done (local)'; pgStatus.style.color = 'var(--green)'; }
         } catch(e) {
-          if (pgOutput) pgOutput.textContent = '❌ Error: ' + e.message;
+          const blocked = e && (e.name === 'EvalError' || /Content Security Policy|unsafe-eval/i.test(String(e.message)));
+          if (pgOutput) pgOutput.textContent = blocked
+            ? '❌ Running code inside the page is blocked by this site' + String.fromCharCode(39) + 's Content-Security-Policy. Connect a backend (Settings) to run code in the server sandbox.'
+            : '❌ Error: ' + e.message;
           if (pgStatus) { pgStatus.textContent = '✕ Error'; pgStatus.style.color = 'var(--red)'; }
         }
         return;

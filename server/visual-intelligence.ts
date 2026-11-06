@@ -1,13 +1,13 @@
 import { Resvg } from "@resvg/resvg-js";
 import sharp from "sharp";
-import { ProjectAnalysis, ExtractedFile } from "./project-analyzer";
+import { ProjectAnalysis, ExtractedFile } from "./project-analyzer.js";
 import { 
   renderProfessionalArchitectureSvg, 
   renderProfessionalWorkflowSvg, 
   renderProfessionalRagArchitectureSvg, 
   renderProfessionalFileArchitectureSvg 
-} from "./architecture-diagram-renderer";
-import { resolveArchitectureIcon } from "./architecture-icon-registry";
+} from "./architecture-diagram-renderer.js";
+import "./architecture-icon-registry.js";
 
 export interface DetectedScreenshot {
   id: string;
@@ -506,10 +506,10 @@ export function generateTechStackVisualSvg(analysis: ProjectAnalysis): string {
 /**
  * Generate complete Project Visual Intelligence package (PNG buffers for all diagrams + screenshots)
  */
-export function buildProjectVisualIntelligence(
+export async function buildProjectVisualIntelligence(
   analysis: ProjectAnalysis,
   files: ExtractedFile[] = []
-): ProjectVisualIntelligence {
+): Promise<ProjectVisualIntelligence> {
   const safeFiles = Array.isArray(files) ? files : [];
   const screenshots = detectProjectScreenshots(safeFiles);
 
@@ -518,13 +518,15 @@ export function buildProjectVisualIntelligence(
   const ragSvg = generateRagPipelineDiagramSvg(analysis);
   const techSvg = generateTechStackVisualSvg(analysis);
 
-  return {
-    screenshots,
-    architecturePng: renderSvgToPngBuffer(archSvg, 1200),
-    workflowPng: renderSvgToPngBuffer(flowSvg, 1200),
-    ragPipelinePng: renderSvgToPngBuffer(ragSvg, 1200),
-    techStackPng: renderSvgToPngBuffer(techSvg, 1200),
-  };
+  // renderSvgToPngBuffer is async (it never throws: it falls back to an empty buffer). These used to be stored un-awaited, so every
+  // consumer received a Promise where it expected a Buffer.
+  const [architecturePng, workflowPng, ragPipelinePng, techStackPng] = await Promise.all([
+    renderSvgToPngBuffer(archSvg, 1200),
+    renderSvgToPngBuffer(flowSvg, 1200),
+    renderSvgToPngBuffer(ragSvg, 1200),
+    renderSvgToPngBuffer(techSvg, 1200),
+  ]);
+  return { screenshots, architecturePng, workflowPng, ragPipelinePng, techStackPng };
 }
 
 /**

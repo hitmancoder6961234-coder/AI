@@ -1,0 +1,5 @@
+/* Cytoscape adds this one rule at run time as an injected <style> element, unless an element with id "__________cytoscape_stylesheet"
+ * already exists (see node_modules/cytoscape/src/extensions/renderer/base/index.mjs). The <link> in index.html carries that id, so the
+ * library skips its injection (which the Content-Security-Policy would block) and this file provides the identical rule.
+ * If a Cytoscape upgrade changes the rule or the id, tests/csp.test.ts fails. */
+.__________cytoscape_container { position: relative; }

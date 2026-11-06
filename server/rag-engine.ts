@@ -12,11 +12,8 @@ import {
   listFiles,
   listKnowledgeChunks,
   createKnowledgeChunksBatch,
-  deleteKnowledgeForProject,
   deleteKnowledgeChunksForFile,
   deleteProjectFileByPath,
-  createProjectFile,
-  getProjectFileByPath,
   listKnowledgeSources,
   upsertKnowledgeSource,
   getKnowledgeSource,
@@ -29,7 +26,6 @@ import {
   parseAndNormalizeMultilingualQuery,
   scoreChunkMultilingual,
   buildMultilingualGroundedPrompt,
-  ParsedMultilingualQuery,
 } from "./multilingual-rag.js";
 import { deleteKnowledgeChunksFromSupabase, isSupabaseConfigured } from "./supabase.js";
 
@@ -325,7 +321,7 @@ export async function extractDocumentText(filename: string, buffer: Buffer | any
     if (ext === ".xlsx" || ext === ".xls") {
       try {
         const workbook = new ExcelJS.Workbook();
-        await workbook.xlsx.load(buf);
+        await workbook.xlsx.load(buf as any);
         const sheetSections: string[] = [];
 
         workbook.eachSheet((worksheet, sheetId) => {

@@ -4,8 +4,13 @@
  */
 import { htmlToText, safeFetch } from "./safe-fetch.js";
 
+/** What a tool can do to the world: "read" only reads or computes, "network" sends a request to the internet, "write" changes the user's saved data. */
+export type ToolRisk = "read" | "network" | "write";
+
 export interface ToolContext {
   signal?: AbortSignal;
+  /** Host-provided: save one note to the user's private memory (only ever called after the user approved it). */
+  saveMemoryNote?: (content: string, category?: string) => Promise<string> | string;
   /** Per-run scratchpad. */
   memory: Map<string, string>;
   /** Optional private-knowledge search injected by the host (user's own documents). */
@@ -17,6 +22,8 @@ export interface Tool {
   description: string;
   /** Human-readable argument schema shown to the model. */
   args: string;
+  /** Defaults to "read". A "write" tool ALWAYS needs the user's approval, whatever the run's approval mode (see agent/policy.ts). */
+  risk?: ToolRisk;
   run(args: Record<string, any>, ctx: ToolContext): Promise<string>;
 }
 
@@ -246,10 +253,48 @@ export const knowledgeSearch: Tool = {
   },
 };
 
+// --- remember (the one tool that changes saved data) --------------------------------------------
+
+export const rememberNote: Tool = {
+  name: "remember",
+  risk: "write",
+  description: "Save ONE short note about the user (a preference or fact THEY told you) to their private memory. The user must approve every call. Never include secrets or contact details.",
+  args: '{"content": "string, 3-500 characters", "category"?: "preference|fact|project|style|other"}',
+  async run({ content, category }, ctx) {
+    if (!ctx.saveMemoryNote) throw new Error("Saving notes is not available in this run.");
+    return String(await ctx.saveMemoryNote(String(content ?? ""), category == null ? undefined : String(category)));
+  },
+};
+
+// --- risk levels and argument checks -------------------------------------------------------------
+
+for (const t of [calculator, datetime, scratchpad, knowledgeSearch]) t.risk = "read";
+for (const t of [webSearch, fetchUrl]) t.risk = "network";
+
+const str = (v: unknown, min: number, max: number) => typeof v === "string" && v.trim().length >= min && v.length <= max;
+/** A cheap shape check before a tool runs (the model's arguments are untrusted input). Returns an error message, or null when the call is well formed. */
+export function validateToolArgs(name: string, args: Record<string, any>): string | null {
+  switch (name) {
+    case "calculator": return str(args.expression, 1, 500) ? null : "expression must be a string of 1-500 characters";
+    case "web_search": return str(args.query, 1, 500) ? null : "query must be a string of 1-500 characters";
+    case "fetch_url": return str(args.url, 8, 2000) ? null : "url must be a string of 8-2000 characters";
+    case "knowledge_search": return str(args.query, 1, 500) ? null : "query must be a string of 1-500 characters";
+    case "datetime": return null;
+    case "scratchpad": return ["set", "get", "list"].includes(args.action) ? null : "action must be set, get or list";
+    case "remember":
+      if (!str(args.content, 3, 500)) return "content must be a string of 3-500 characters";
+      return args.category == null || ["preference", "fact", "project", "style", "other"].includes(args.category) ? null : "category must be preference, fact, project, style or other";
+    default: return null;
+  }
+}
+
 export const ALL_TOOLS: Tool[] = [calculator, datetime, webSearch, fetchUrl, scratchpad, knowledgeSearch];
 
-export function selectTools(names?: string[]): Tool[] {
-  if (!names || !names.length) return ALL_TOOLS;
+/** Tools of agent sessions (durable runs with approvals): everything in ALL_TOOLS plus the write tool. The stateless /api/agent/run never gets the write tool. */
+export const SESSION_TOOLS: Tool[] = [...ALL_TOOLS, rememberNote];
+
+export function selectTools(names?: string[], pool: Tool[] = ALL_TOOLS): Tool[] {
+  if (!names || !names.length) return pool;
   const wanted = new Set(names);
-  return ALL_TOOLS.filter((t) => wanted.has(t.name));
+  return pool.filter((t) => wanted.has(t.name));
 }

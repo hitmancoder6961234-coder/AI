@@ -11,6 +11,8 @@
  * Keys are never logged or returned to the browser.
  */
 
+import { ProviderError, fetchWithPolicy, iterateWithIdleTimeout } from "../provider-http.js";
+
 export interface ChatMsg {
   role: "system" | "user" | "assistant";
   content: string;
@@ -38,62 +40,52 @@ export interface LLMConfig {
 }
 
 const TIMEOUT_MS = 120_000;
+const STREAM_TIMEOUT_MS = 300_000;
 
-function withTimeout(signal?: AbortSignal): AbortSignal {
-  const t = AbortSignal.timeout(TIMEOUT_MS);
-  return signal ? AbortSignal.any([signal, t]) : t;
+/**
+ * Re-label a provider failure in this module's long-standing shape, "LLM request failed (<status>): <provider message>", so
+ * every caller and test that reads that message keeps working. The timeout, retry (transient failures only, before any answer
+ * has started), classification and cancellation all come from server/provider-http.ts.
+ */
+function asLlmError(e: unknown): never {
+  if (e instanceof ProviderError && e.status) {
+    const detail = e.message.replace(/^HTTP \d+: /, "");
+    throw new ProviderError(`LLM request failed (${e.status}): ${detail}`, { kind: e.kind, status: e.status, retryable: e.retryable, attempts: e.attempts, retryAfterMs: e.retryAfterMs });
+  }
+  throw e;
 }
 
 async function postJson(url: string, headers: Record<string, string>, body: unknown, signal?: AbortSignal): Promise<any> {
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json", ...headers },
-    body: JSON.stringify(body),
-    signal: withTimeout(signal),
-  });
-  const text = await res.text();
-  let json: any = null;
+  let res: Response;
   try {
-    json = JSON.parse(text);
+    res = await fetchWithPolicy(url, { method: "POST", headers: { "content-type": "application/json", ...headers }, body: JSON.stringify(body) }, { label: "LLM provider", signal, timeoutMs: TIMEOUT_MS });
+  } catch (e) {
+    return asLlmError(e);
+  }
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
   } catch {
-    /* non-JSON error body */
+    return null; /* non-JSON body */
   }
-  if (!res.ok) {
-    const detail = json?.error?.message || json?.error || text.slice(0, 300);
-    throw new Error(`LLM request failed (${res.status}): ${typeof detail === "string" ? detail : JSON.stringify(detail)}`);
-  }
-  return json;
 }
-
-const STREAM_TIMEOUT_MS = 300_000;
 
 /** POST and yield each server-sent-event `data:` payload as a string (without the prefix). */
 async function* postSse(url: string, headers: Record<string, string>, body: unknown, signal?: AbortSignal): AsyncGenerator<string> {
-  const t = AbortSignal.timeout(STREAM_TIMEOUT_MS);
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json", accept: "text/event-stream", ...headers },
-    body: JSON.stringify(body),
-    signal: signal ? AbortSignal.any([signal, t]) : t,
-  });
-  if (!res.ok || !res.body) {
-    const text = await res.text().catch(() => "");
-    let detail = text.slice(0, 300);
-    try {
-      const j = JSON.parse(text);
-      detail = j?.error?.message || (typeof j?.error === "string" ? j.error : detail);
-    } catch {
-      /* not JSON */
-    }
-    throw new Error(`LLM request failed (${res.status}): ${detail}`);
+  const total = AbortSignal.timeout(STREAM_TIMEOUT_MS);
+  const sig = signal ? AbortSignal.any([signal, total]) : total;
+  let res: Response;
+  try {
+    res = await fetchWithPolicy(url, { method: "POST", headers: { "content-type": "application/json", accept: "text/event-stream", ...headers }, body: JSON.stringify(body) }, { label: "LLM provider", stream: true, signal: sig });
+  } catch (e) {
+    if (total.aborted && !signal?.aborted) throw new ProviderError(`LLM provider did not finish within ${Math.round(STREAM_TIMEOUT_MS / 1000)}s`, { kind: "timeout", retryable: false });
+    return asLlmError(e);
   }
-  const reader = res.body.getReader();
+  if (!res.body) throw new ProviderError("LLM request failed: the provider sent no body", { kind: "bad_request", retryable: false });
   const decoder = new TextDecoder();
   let buf = "";
   try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    for await (const value of iterateWithIdleTimeout(res.body, { signal: sig, label: "LLM provider" })) {
       buf += decoder.decode(value, { stream: true });
       let idx: number;
       while ((idx = buf.search(/\r?\n\r?\n/)) !== -1) {
@@ -103,11 +95,12 @@ async function* postSse(url: string, headers: Record<string, string>, body: unkn
         if (data) yield data;
       }
     }
-    const tail = buf.split(/\r?\n/).filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trimStart()).join("\n");
-    if (tail) yield tail;
-  } finally {
-    reader.cancel().catch(() => {});
+  } catch (e) {
+    if (total.aborted && !signal?.aborted) throw new ProviderError(`LLM provider did not finish within ${Math.round(STREAM_TIMEOUT_MS / 1000)}s`, { kind: "timeout", retryable: false });
+    throw e;
   }
+  const tail = buf.split(/\r?\n/).filter((l) => l.startsWith("data:")).map((l) => l.slice(5).trimStart()).join("\n");
+  if (tail) yield tail;
 }
 
 /** Stream if the provider adapter supports it, otherwise deliver the full answer as one chunk. */

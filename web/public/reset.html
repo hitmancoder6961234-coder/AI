@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="robots" content="noindex" />
+  <meta name="theme-color" content="#08080f" />
+  <title>Reset your password - Darkness AI</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="stylesheet" href="/atmosphere/atmosphere.css" />
+  <link rel="stylesheet" href="/reset-page.css" />
+</head>
+<body>
+<main>
+  <header>
+    <img src="/brand/darkness-logo.svg" alt="" />
+    <div><h1 id="title">Reset your password</h1><p id="sub">We will e-mail you a link that works once.</p></div>
+  </header>
+
+  <section class="card" id="loading" role="status">Checking how password reset works on this server…</section>
+
+  <section class="card" id="unavailable" hidden aria-labelledby="unavTitle">
+    <h2 id="unavTitle">Reset by e-mail is not set up here</h2>
+    <p>This server has no e-mail service configured, so it cannot send reset links. Ask the person who runs this server for a <b>one-time reset link</b>, then open it: it brings you back to this page to choose a new password.</p>
+    <p class="hint">(For the administrator: run <code>node scripts/admin.mjs reset-link &lt;email&gt;</code> on the server, or configure a mail provider; see DEPLOY.md.)</p>
+    <p><a href="/">Back to sign in</a></p>
+  </section>
+
+  <form class="card" id="request" hidden novalidate aria-labelledby="reqTitle">
+    <h2 id="reqTitle">Send me a reset link</h2>
+    <label for="email">E-mail address of your account</label>
+    <input id="email" type="email" autocomplete="email" required maxlength="320" />
+    <p class="error" id="reqError" role="alert" hidden></p>
+    <button class="primary" id="reqSubmit" type="submit">Send reset link</button>
+    <p class="hint">The link is valid for <span id="minutes">30</span> minutes and works once. We never say whether an address has an account.</p>
+    <p><a href="/">Back to sign in</a></p>
+  </form>
+
+  <section class="card" id="sent" hidden role="status" aria-live="polite">
+    <h2>Check your e-mail</h2>
+    <p id="sentText"></p>
+    <p><a href="/">Back to sign in</a></p>
+  </section>
+
+  <form class="card" id="reset" hidden novalidate aria-labelledby="resetTitle">
+    <h2 id="resetTitle">Choose a new password</h2>
+    <label for="pw1">New password</label>
+    <input id="pw1" type="password" autocomplete="new-password" required maxlength="1024" aria-describedby="pwHint" />
+    <label for="pw2">Repeat the new password</label>
+    <input id="pw2" type="password" autocomplete="new-password" required maxlength="1024" />
+    <label class="check"><input type="checkbox" id="show"> Show passwords</label>
+    <p class="hint" id="pwHint">Use at least 8 characters that are not a common password. Every device will be signed out when you save.</p>
+    <p class="error" id="resetError" role="alert" hidden></p>
+    <button class="primary" id="resetSubmit" type="submit">Save new password</button>
+  </form>
+
+  <section class="card" id="done" hidden role="status" aria-live="polite">
+    <h2>Password changed</h2>
+    <p>Your password has been updated and all devices were signed out. Sign in with your new password.</p>
+    <p><a class="primary link" href="/">Go to sign in</a></p>
+  </section>
+</main>
+<script src="/reset-page.js"></script>
+<script src="/atmosphere/atmosphere.js" defer></script>
+</body>
+</html>

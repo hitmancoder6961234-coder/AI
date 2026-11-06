@@ -14,6 +14,7 @@ import {
   listMessages,
   listProjects,
   listWorkspaceFiles,
+  toValidUuid,
 } from "../db.js";
 
 function maskModel(m: any) {
@@ -51,6 +52,10 @@ export function exportUserData(userId: string) {
       ...c,
       messages: db.prepare("SELECT role, content, created_at FROM copilot_messages WHERE conversation_id = ? AND user_id = ? ORDER BY seq").all(c.id, userId),
     })),
+    memories: tableRows("SELECT content, category, always_use, enabled, source, created_at, updated_at, last_used_at, use_count FROM memories WHERE user_id = ? ORDER BY updated_at DESC", toValidUuid(userId) || userId),
+    prompts: tableRows("SELECT id, title, category, description, tags, body, favorite, version, created_at, updated_at FROM prompts WHERE user_id = ? ORDER BY updated_at DESC", toValidUuid(userId) || userId),
+    agentRuns: tableRows("SELECT id, status, goal, steps, model, created_at, updated_at, finished_at FROM agent_sessions WHERE user_id = ? ORDER BY updated_at DESC", toValidUuid(userId) || userId),
+    memorySettings: tableRows("SELECT enabled, updated_at FROM memory_settings WHERE user_id = ?", toValidUuid(userId) || userId),
     originalApp: {
       conversations: tableRows("SELECT id, title, messages, created_at, updated_at FROM classic_conversations WHERE user_id = ?", userId),
       analyticsEvents: tableRows("SELECT event, data, created_at FROM classic_analytics WHERE user_id = ?", userId),
@@ -70,7 +75,11 @@ export function eraseUserData(userId: string): Record<string, number> {
     dbDeleteModel(m.id, userId);
     removed.models++;
   }
+  for (const t of ["memories", "memory_settings", "agent_runs", "agent_sessions", "agent_events", "prompts", "prompt_versions"]) {
+    try { removed[t] = Number((db.prepare(`DELETE FROM ${t} WHERE user_id = ?`).run(toValidUuid(userId) || userId) as any).changes || 0); } catch { removed[t] = 0; }
+  }
   removed.sessions = Number((db.prepare("DELETE FROM sessions WHERE user_id = ?").run(userId) as any).changes || 0);
+  try { removed.password_resets = Number((db.prepare("DELETE FROM password_resets WHERE user_id = ?").run(userId) as any).changes || 0); } catch { removed.password_resets = 0; /* the table exists only once recovery has been set up */ }
   removed.account = Number((db.prepare("DELETE FROM users WHERE id = ?").run(userId) as any).changes || 0);
   return removed;
 }

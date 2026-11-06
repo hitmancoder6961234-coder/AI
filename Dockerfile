@@ -18,6 +18,8 @@ COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/web/public ./web/public
 # The original Darkness app (served at /classic by the API server)
 COPY --from=build --chown=node:node /app/index.html /app/manifest.json /app/sw.js ./
+# Operator tools, runnable inside the container where the data is:  docker exec darkness-ai node scripts/preflight.mjs   or   docker exec darkness-ai node scripts/backup.mjs create --out /data/backups
+COPY --from=build --chown=node:node /app/scripts/preflight.mjs /app/scripts/backup.mjs /app/scripts/admin.mjs ./scripts/
 RUN mkdir -p /data /app/web/public/uploads && chown -R node:node /data /app/web/public/uploads
 USER node
 VOLUME ["/data"]

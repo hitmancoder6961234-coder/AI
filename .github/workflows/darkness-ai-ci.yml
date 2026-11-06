@@ -1,16 +1,65 @@
 name: darkness-ai-ci
 
+# Every job below is a required check. Nothing here is `continue-on-error`: a failing lint, type check, test, build, smoke run,
+# lockfile check, dependency audit or secret scan fails the pipeline. (tests/ci-config.test.ts fails if someone weakens that.)
+
 on:
   push:
     branches: [main]
     paths-ignore: ["legacy/**", "site/**", "download/**", "*.md"]
   pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PUPPETEER_SKIP_DOWNLOAD: "true"   # tests never need a browser download
+  NPM_CONFIG_AUDIT: "false"
+  NPM_CONFIG_FUND: "false"
 
 jobs:
-  test:
+  quality:
+    name: lint, types, tests, build, smoke (Node ${{ matrix.node }})
     runs-on: ubuntu-latest
-    env:
-      PUPPETEER_SKIP_DOWNLOAD: "true"
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22, 24]          # package.json "engines": ">=22.13"; both supported majors are exercised
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      # package-lock.json must list the native binaries of every platform, or npm ci on Windows/macOS installs none (see scripts/lockfile-platforms.mjs)
+      - run: npm run check:lockfile
+      # no import cycles, no layering violations in server/ (scripts/check-architecture.mjs)
+      - run: npm run check:architecture
+      # 0 errors required; the number of warnings may only go down (lint:ci passes --max-warnings with the current count)
+      - run: npm run lint:ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - run: npm run smoke
+      # every state-changing route, attacked as another user (and with unknown ids); fails on any change to other users' data
+      - run: npm run authz
+
+  cross-platform:
+    name: build and tests on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,7 +67,37 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: package-lock.json
-      - run: npm ci --no-audit --no-fund
-      - run: npm test
+      # The point of this job: `npm ci` must install the right esbuild / rollup / sharp binaries on every developer OS.
+      - run: npm ci
+      - run: npm run check:lockfile
       - run: npm run build
-      - run: node scripts/smoke.mjs
+      - run: npm test
+      - run: npm run smoke
+
+  security:
+    name: dependency audit and secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci --ignore-scripts
+      # Production dependencies: any advisory fails the build.
+      - run: npm audit --omit=dev --audit-level=low
+      # Everything (build and lint tooling included): high and critical fail the build. Lower severities in dev-only tooling are
+      # shown in the log by the next step and tracked in docs/IMPROVEMENT-LOG.md; they never hide.
+      - run: npm audit --audit-level=high
+      - name: Show every remaining advisory (all severities)
+        run: npm audit || true
+      # Registry signatures and provenance of what was installed.
+      - run: npm audit signatures
+      # Secrets committed to the repository (keys, tokens, passwords, also in history).
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

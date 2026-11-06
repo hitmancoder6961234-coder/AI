@@ -45,7 +45,7 @@ export interface DeckInput {
 const W = 13.333;
 const H = 7.5;
 
-function placeImage(slide: PptxGenJS.Slide, img: GeneratedImage, box: { x: number; y: number; w: number; h: number }) {
+function placeImage(slide: any, img: GeneratedImage, box: { x: number; y: number; w: number; h: number }) {
   const iw = img.width || 1280;
   const ih = img.height || 720;
   const k = Math.min(box.w / iw, box.h / ih);
@@ -56,18 +56,18 @@ function placeImage(slide: PptxGenJS.Slide, img: GeneratedImage, box: { x: numbe
 
 export async function renderDeck(input: DeckInput): Promise<Buffer> {
   const t = THEMES[input.theme] || THEMES.midnight;
-  const pptx = new PptxGenJS();
+  const pptx = new (PptxGenJS as any)();
   pptx.layout = "LAYOUT_WIDE";
   pptx.title = input.title;
   pptx.author = input.author || "Darkness AI";
   pptx.company = input.institution || "";
 
-  const base = (): PptxGenJS.Slide => {
+  const base = (): any => {
     const s = pptx.addSlide();
     s.background = { color: t.bg };
     return s;
   };
-  const chrome = (s: PptxGenJS.Slide, n: number) => {
+  const chrome = (s: any, n: number) => {
     s.addShape("rect" as any, { x: 0, y: 0, w: 0.16, h: H, fill: { color: t.accent }, line: { color: t.accent, width: 0 } });
     if (input.footer) s.addText(input.footer, { x: 0.6, y: H - 0.5, w: 8, h: 0.3, fontSize: 10, color: t.muted, fontFace: t.bodyFont });
     s.addText(String(n), { x: W - 1.1, y: H - 0.5, w: 0.6, h: 0.3, fontSize: 10, color: t.muted, align: "right", fontFace: t.bodyFont });

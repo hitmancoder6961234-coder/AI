@@ -1,16 +1,43 @@
 window.Darkness = window.Darkness || {};
 
 /**
- * Authentication Gate:
- * Exact Pose Matching Uploaded Reference:
- * - Confident 3D robot standing on left
- * - 4 Fingers hooked naturally over the top horizontal border of the Login Card
- * - Thumbs-up hand held outward to the left with comfortable spacing from the head
- * - Happy glowing curved arch eyes & bright cyan smile
+ * Authentication service.
+ *
+ * Every failure is turned into an AuthError with a `kind` the sign-in screen can act on:
+ *   offline | timeout | network | aborted | parse | http
+ * and, for `http`, the HTTP `status`, the server's `code`, the offending `field`, `retryAfter` seconds and
+ * `attemptsLeft`. Nothing here renders UI; js/ui/auth-gate.js does that.
  */
+function AuthError(kind, message, extra) {
+  this.name = "AuthError";
+  this.kind = kind;
+  this.message = message;
+  if (extra) Object.assign(this, extra);
+}
+AuthError.prototype = Object.create(Error.prototype);
+AuthError.prototype.constructor = AuthError;
+
+const STATUS_CODES = { 400: "VALIDATION_ERROR", 401: "UNAUTHORIZED", 403: "FORBIDDEN", 404: "NOT_FOUND", 409: "CONFLICT", 413: "TOO_LARGE", 429: "RATE_LIMITED", 502: "BAD_GATEWAY", 503: "SERVICE_UNAVAILABLE", 504: "GATEWAY_TIMEOUT" };
+const STATUS_TEXT = {
+  403: "The request was blocked before it reached the sign-in service.",
+  404: "The sign-in service could not be found at this address.",
+  413: "The request was too large.",
+  429: "Too many attempts. Please wait a moment.",
+  502: "The sign-in service is not responding.",
+  503: "The sign-in service is temporarily unavailable.",
+  504: "The sign-in service took too long to respond.",
+};
+
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(k, v); return true; } catch (e) { return false; } };
+const lsDel = (k) => { try { localStorage.removeItem(k); } catch (e) { /* storage blocked */ } };
+
+window.Darkness.AuthError = AuthError;
 window.Darkness.auth = {
   _user: null,
   _listeners: new Set(),
+  _reason: null, // why the gate is showing: "logout" | "expired" | "other-tab" | null
+  _lastCheck: 0,
 
   get user() {
     return this._user;
@@ -26,17 +53,17 @@ window.Darkness.auth = {
   },
 
   _emit() {
-    this._listeners.forEach(fn => {
+    this._listeners.forEach((fn) => {
       try { fn(this._user); } catch (e) { console.error(e); }
     });
   },
 
   _fetch(path, options) {
     const opts = Object.assign({ credentials: "include" }, options || {});
-    let token = null;
-    try { token = localStorage.getItem("darkness_token"); } catch (e) {}
-    const authHeaders = token ? { "Authorization": `Bearer ${token}` } : {};
-    opts.headers = Object.assign({}, authHeaders, opts.headers || {});
+    const anon = opts.anon;
+    delete opts.anon;
+    // The session is an HttpOnly cookie (sent because of credentials: "include"); no token is kept for scripts to read.
+    opts.headers = Object.assign({}, opts.headers || {});
 
     let url = path;
     if (window.Darkness?.api?._url) {
@@ -45,77 +72,134 @@ window.Darkness.auth = {
     return fetch(url, opts);
   },
 
-  async refresh() {
+  /** One JSON request with a timeout, cancellation and every failure mapped to an AuthError. */
+  async _request(path, { method = "GET", body, signal, timeoutMs = 20000, anon = false } = {}) {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) throw new AuthError("offline", "You appear to be offline.");
+    const ctrl = new AbortController();
+    let timedOut = false;
+    let cancelled = false;
+    const timer = setTimeout(() => { timedOut = true; ctrl.abort(); }, timeoutMs);
+    if (signal) {
+      if (signal.aborted) { cancelled = true; ctrl.abort(); }
+      else signal.addEventListener("abort", () => { cancelled = true; ctrl.abort(); }, { once: true });
+    }
+    let resp;
+    let text = "";
     try {
-      const resp = await this._fetch("/api/auth/me", { credentials: "include" });
-      const json = await resp.json().catch(() => ({}));
-      this._user = json.user || null;
-      if (json.token) {
-        try { localStorage.setItem("darkness_token", json.token); } catch (e) {}
-      }
-      if (this._user) {
-        try { localStorage.setItem("darkness_user", JSON.stringify(this._user)); } catch (e) {}
-      }
+      resp = await this._fetch(path, {
+        method,
+        anon,
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+        signal: ctrl.signal,
+      });
+      text = await resp.text();
     } catch (e) {
+      if (cancelled) throw new AuthError("aborted", "Cancelled.");
+      if (timedOut) throw new AuthError("timeout", "The server took too long to answer.");
+      if (typeof navigator !== "undefined" && navigator.onLine === false) throw new AuthError("offline", "You appear to be offline.");
+      throw new AuthError("network", "Could not reach the server.", { cause: e });
+    } finally {
+      clearTimeout(timer);
+    }
+    let data = null;
+    if (text) { try { data = JSON.parse(text); } catch (e) { data = null; } }
+    if (!resp.ok) {
+      const status = resp.status;
+      const header = parseInt(resp.headers.get("retry-after") || "", 10);
+      throw new AuthError("http", (data && data.error) || STATUS_TEXT[status] || `Request failed (${status}).`, {
+        status,
+        code: (data && data.code) || STATUS_CODES[status] || (status >= 500 ? "SERVER_ERROR" : "REQUEST_FAILED"),
+        field: data && data.field,
+        retryAfter: (Number.isFinite(header) && header > 0 ? header : data && data.retryAfter) || 0,
+        attemptsLeft: data && typeof data.attemptsLeft === "number" ? data.attemptsLeft : undefined,
+        nonJson: data === null,
+      });
+    }
+    if (!data || typeof data !== "object") throw new AuthError("parse", "The server sent a reply this app could not read.", { status: resp.status });
+    return data;
+  },
+
+  /** Is there a live session right now? null when the check itself could not be made. */
+  async _verify() {
+    try {
+      const r = await this._fetch("/api/auth/me");
+      if (!r.ok) return null;
+      const j = await r.json().catch(() => null);
+      return !!(j && j.user);
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async refresh() {
+    // One-time migration: older versions kept the session token in localStorage. If one is still there, present it ONCE so
+    // the server re-issues the HttpOnly cookie, then delete it so scripts can never read a session token again.
+    const legacy = lsGet("darkness_token");
+    let resp;
+    try {
+      resp = await this._fetch("/api/auth/me", { credentials: "include", headers: legacy ? { Authorization: `Bearer ${legacy}` } : undefined });
+    } catch (e) {
+      return this._user; // offline or a network blip: keep what we know instead of signing the user out
+    }
+    if (!resp.ok && resp.status !== 401) return this._user; // a server hiccup is not a sign-out
+    if (legacy) lsDel("darkness_token");
+    const json = resp.ok ? await resp.json().catch(() => ({})) : {};
+    const before = this._user;
+    this._user = (resp.ok && json.user) || null;
+    if (this._user) lsSet("darkness_user", JSON.stringify(this._user));
+    else if (before) {
+      lsDel("darkness_user");
+      if (!this._reason) this._reason = "expired";
+    }
+    this._lastCheck = Date.now();
+    if (before && (!this._user || this._user.id !== before.id)) this._emit();
+    return this._user;
+  },
+
+  /** Store the session the server just granted, and make sure the browser really kept it. */
+  async _accept(data, fallbackEmail, opts) {
+    const user = data.user || (data.token ? { email: fallbackEmail, name: String(fallbackEmail).split("@")[0] } : null);
+    if (!user) throw new AuthError("parse", "The server accepted the request but sent no account.", { status: 200 });
+    lsSet("darkness_user", JSON.stringify(user)); // the profile (not a secret); the session itself is the HttpOnly cookie
+    this._user = user;
+    // Blocked cookies and storage mean the next request would be anonymous: catch that now, not after the animation.
+    if ((await this._verify()) === false) {
       this._user = null;
+      lsDel("darkness_token");
+      lsDel("darkness_user");
+      throw new AuthError("http", "Your browser did not keep the session.", { status: 200, code: "SESSION_NOT_SAVED" });
     }
-    this._emit();
-    return this._user;
+    this._reason = null;
+    if (!opts || !opts.deferEmit) this._emit();
+    return user;
   },
 
-  async signup(email, password, name) {
-    const r = await this._fetch("/api/auth/signup", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name }),
-    });
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({}));
-      throw new Error(err.error || "Sign up failed");
-    }
-    const data = await r.json();
-    this._user = data.user || { email, name };
-    if (data.token) {
-      try { localStorage.setItem("darkness_token", data.token); } catch (e) {}
-    }
-    if (this._user) {
-      try { localStorage.setItem("darkness_user", JSON.stringify(this._user)); } catch (e) {}
-    }
-    this._emit();
-    return this._user;
+  async signup(email, password, name, opts) {
+    const data = await this._request("/api/auth/signup", { method: "POST", body: { email, password, name }, signal: opts && opts.signal, anon: true });
+    return this._accept(data, email, opts);
   },
 
-  async login(email, password) {
-    const r = await this._fetch("/api/auth/login", {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    if (!r.ok) {
-      const err = await r.json().catch(() => ({}));
-      throw new Error(err.error || "Login failed");
-    }
-    const data = await r.json();
-    this._user = data.user || { email, name: email.split("@")[0] };
-    if (data.token) {
-      try { localStorage.setItem("darkness_token", data.token); } catch (e) {}
-    }
-    if (this._user) {
-      try { localStorage.setItem("darkness_user", JSON.stringify(this._user)); } catch (e) {}
-    }
+  async login(email, password, opts) {
+    const data = await this._request("/api/auth/login", { method: "POST", body: { email, password }, signal: opts && opts.signal, anon: true });
+    return this._accept(data, email, opts);
+  },
+
+  /** Let the app know a deferred sign-in is complete (the gate plays its success animation first). */
+  commit() {
     this._emit();
-    return this._user;
+    const app = window.Darkness.app;
+    if (app && app.afterLogin) app.afterLogin();
   },
 
   async logout() {
     try {
       await this._fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-    } catch (e) {}
-    try { localStorage.removeItem("darkness_token"); } catch (e) {}
-    try { localStorage.removeItem("darkness_user"); } catch (e) {}
+    } catch (e) { /* the server may be unreachable; the local session is cleared regardless */ }
+    lsDel("darkness_token");
+    lsDel("darkness_user");
     this._user = null;
+    this._reason = "logout";
     this._emit();
   },
 
@@ -126,608 +210,35 @@ window.Darkness.auth = {
       app.hidden = false;
       app.removeAttribute("hidden");
     }
+    if (window.Darkness.authGate) window.Darkness.authGate.destroy();
   },
 
-  /** Render the exact reference pose matching user's image */
-                renderGate() {
-    const main = document.getElementById("main");
+  renderGate() {
     const app = document.getElementById("app");
     if (app) {
       app.classList.add("is-gated");
       app.hidden = false;
       app.removeAttribute("hidden");
     }
-    if (!main) return;
-
-    main.innerHTML = `
-      <div class="auth-gate-scene" id="authGateScene">
-        <!-- Studio White Floor & Ambient Lighting -->
-        <div class="auth-studio-bg">
-          <div class="studio-light--top"></div>
-          <div class="studio-light--side"></div>
-          <div class="studio-floor-reflection"></div>
-        </div>
-
-        <div class="auth-stage-container" id="authStageContainer">
-
-          <!-- Confident 3D Standing Robot on the Left with Spaced-Out Thumbs Up -->
-          <div class="auth-robot-standing-wrap" id="authRobotStandingWrap">
-            <div class="robot-standing-mesh">
-              <svg id="robotSvgRoot" viewBox="0 0 460 560" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" class="robot-svg">
-  <defs>
-    <!-- Soft Black Floor Contact Shadows -->
-    <radialGradient id="groundShadowL" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#000000" stop-opacity="0.42"/>
-      <stop offset="40%" stop-color="#000000" stop-opacity="0.20"/>
-      <stop offset="75%" stop-color="#000000" stop-opacity="0.05"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="groundShadowR" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#000000" stop-opacity="0.38"/>
-      <stop offset="40%" stop-color="#000000" stop-opacity="0.18"/>
-      <stop offset="75%" stop-color="#000000" stop-opacity="0.04"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-    </radialGradient>
-    <radialGradient id="groundShadowAmbient" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#000000" stop-opacity="0.14"/>
-      <stop offset="55%" stop-color="#000000" stop-opacity="0.05"/>
-      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
-    </radialGradient>
-    <filter id="shadowBlur" x="-30%" y="-30%" width="160%" height="160%">
-      <feGaussianBlur stdDeviation="2.5"/>
-    </filter>
-
-    <!-- 3D White Chassis & Head Shading -->
-    <radialGradient id="headShading" cx="30%" cy="20%" r="80%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="35%" stop-color="#f8fafc"/>
-      <stop offset="70%" stop-color="#e2e8f0"/>
-      <stop offset="95%" stop-color="#94a3b8"/>
-      <stop offset="100%" stop-color="#64748b"/>
-    </radialGradient>
-
-    <radialGradient id="torsoShading" cx="35%" cy="25%" r="75%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="45%" stop-color="#f1f5f9"/>
-      <stop offset="80%" stop-color="#cbd5e1"/>
-      <stop offset="100%" stop-color="#64748b"/>
-    </radialGradient>
-
-    <radialGradient id="limbShading" cx="30%" cy="20%" r="70%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="50%" stop-color="#e2e8f0"/>
-      <stop offset="100%" stop-color="#94a3b8"/>
-    </radialGradient>
-
-    <linearGradient id="fingerShading" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="40%" stop-color="#f1f5f9"/>
-      <stop offset="85%" stop-color="#cbd5e1"/>
-      <stop offset="100%" stop-color="#94a3b8"/>
-    </linearGradient>
-
-    <!-- Dark Metal Joint Shading -->
-    <linearGradient id="metalJoint" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#64748b"/>
-      <stop offset="40%" stop-color="#334155"/>
-      <stop offset="80%" stop-color="#1e293b"/>
-      <stop offset="100%" stop-color="#0f172a"/>
-    </linearGradient>
-
-    <!-- Vibrant Cyan Accent Rings & Glow -->
-    <linearGradient id="cyanAccent" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#7dd3fc"/>
-      <stop offset="50%" stop-color="#0ea5e9"/>
-      <stop offset="100%" stop-color="#0284c7"/>
-    </linearGradient>
-
-    <!-- Visor Screen -->
-    <radialGradient id="visorScreen" cx="40%" cy="30%" r="70%">
-      <stop offset="0%" stop-color="#1e293b"/>
-      <stop offset="60%" stop-color="#0f172a"/>
-      <stop offset="100%" stop-color="#020617"/>
-    </radialGradient>
-
-    <!-- Glowing Cyan Face Filter -->
-    <filter id="cyanGlow" x="-20%" y="-20%" width="140%" height="140%">
-      <feGaussianBlur stdDeviation="3.5" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-
-    <style>
-      /* 1. Periodic Expressive "Ishara" Gesture towards Email Box */
-      @keyframes robotSuggestiveLoginGesture {
-        0%, 55% {
-          /* Default: looking straight at the user */
-          transform: translate(0px, 0px);
-        }
-        60% {
-          /* Quick lively glance towards the email box */
-          transform: translate(22px, 12px);
-        }
-        67% {
-          /* Expressive suggestive nod / ishara pulse */
-          transform: translate(26px, 15px);
-        }
-        72% {
-          transform: translate(22px, 12px);
-        }
-        82% {
-          /* Hold glance at card */
-          transform: translate(22px, 12px);
-        }
-        88%, 100% {
-          /* Smoothly return to looking straight at the user */
-          transform: translate(0px, 0px);
-        }
-      }
-
-      /* 2. Head Tilt synchronized with the gesture */
-      @keyframes headSuggestiveNod {
-        0%, 55% {
-          transform: rotate(0deg) translate(0px, 0px);
-        }
-        60% {
-          transform: rotate(2.5deg) translate(5px, 2px);
-        }
-        67% {
-          transform: rotate(4deg) translate(8px, 4px);
-        }
-        72%, 82% {
-          transform: rotate(2.5deg) translate(5px, 2px);
-        }
-        88%, 100% {
-          transform: rotate(0deg) translate(0px, 0px);
-        }
-      }
-
-      /* 3. Natural Eye Blinking */
-      @keyframes eyeBlinkCycle {
-        0%, 25%, 31%, 56%, 80%, 86%, 92%, 100% {
-          transform: scaleY(1);
-          opacity: 1;
-        }
-        28%, 83% {
-          /* Quick natural blink */
-          transform: scaleY(0.08);
-          opacity: 0.95;
-        }
-      }
-
-      .rig-head-gesture {
-        transform-origin: 225px 190px;
-        animation: headSuggestiveNod 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-      }
-
-      .robo-face-gesture {
-        transform-origin: 225px 135px;
-        animation: robotSuggestiveLoginGesture 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-      }
-
-      .robo-eyes-blink {
-        transform-origin: 225px 125px;
-        animation: eyeBlinkCycle 7s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-      }
-
-      /* Live Input Focus State */
-      .is-focused-input .rig-head-gesture {
-        animation: none !important;
-        transform: rotate(3deg) translate(6px, 3px) !important;
-      }
-      .is-focused-input .robo-face-gesture {
-        animation: none !important;
-        transform: translate(24px, 14px) !important;
-      }
-    </style>
-  </defs>
-
-  <!-- Soft Black Ground Contact Shadows -->
-  <g class="ground-shadows-ambient">
-    <ellipse cx="205" cy="510" rx="98" ry="15" fill="url(#groundShadowAmbient)"/>
-  </g>
-  <g class="ground-shadow-left">
-    <!-- Diffuse soft black foot shadow -->
-    <ellipse cx="140" cy="515" rx="56" ry="14" fill="url(#groundShadowL)"/>
-    <!-- Direct sole contact black shadow -->
-    <ellipse cx="143" cy="514" rx="42" ry="7" fill="#000000" opacity="0.32" filter="url(#shadowBlur)"/>
-  </g>
-  <g class="ground-shadow-right">
-    <!-- Diffuse soft black foot shadow -->
-    <ellipse cx="266" cy="505" rx="48" ry="12" fill="url(#groundShadowR)"/>
-    <!-- Direct sole contact black shadow -->
-    <ellipse cx="264" cy="503" rx="36" ry="6" fill="#000000" opacity="0.28" filter="url(#shadowBlur)"/>
-  </g>
-
-  <!-- ================= 1. RIGHT LEG ================= -->
-  <g class="rig-leg-right">
-    <circle cx="265" cy="328" r="14" fill="url(#metalJoint)"/>
-    <circle cx="265" cy="328" r="7" fill="url(#cyanAccent)"/>
-    <rect x="254" y="332" width="22" height="56" rx="10" fill="url(#limbShading)" stroke="#cbd5e1"/>
-
-    <g class="rig-knee-right">
-      <circle cx="265" cy="392" r="15" fill="url(#metalJoint)"/>
-      <circle cx="265" cy="392" r="8" fill="url(#cyanAccent)"/>
-      <path d="M 252 402 Q 248 442 252 472 L 278 468 Q 282 438 278 402 Z" fill="url(#limbShading)" stroke="#cbd5e1" stroke-width="1.5"/>
-      <path d="M 256 426 Q 265 432 274 422" fill="none" stroke="#0ea5e9" stroke-width="3"/>
-
-      <g class="rig-foot-right">
-        <circle cx="258" cy="468" r="5" fill="#0ea5e9"/>
-        <path d="M 244 472 L 288 466 Q 298 490 286 500 L 238 502 Q 232 485 244 472 Z" fill="url(#limbShading)" stroke="#cbd5e1"/>
-        <path d="M 236 498 Q 262 508 288 497 L 288 503 Q 262 514 236 504 Z" fill="url(#cyanAccent)"/>
-      </g>
-    </g>
-  </g>
-
-  <!-- ================= 2. LEFT LEG ================= -->
-  <g class="rig-leg-left">
-    <circle cx="185" cy="328" r="15" fill="url(#metalJoint)"/>
-    <circle cx="185" cy="328" r="8" fill="url(#cyanAccent)"/>
-    <path d="M 174 334 L 146 388 Q 158 396 172 388 L 194 334 Z" fill="url(#limbShading)" stroke="#cbd5e1"/>
-
-    <g class="rig-knee-left">
-      <circle cx="158" cy="394" r="16" fill="url(#metalJoint)"/>
-      <circle cx="158" cy="394" r="8.5" fill="url(#cyanAccent)"/>
-      <path d="M 144 404 Q 130 448 128 482 L 166 476 Q 172 440 170 404 Z" fill="url(#torsoShading)" stroke="#cbd5e1" stroke-width="1.5"/>
-      <path d="M 140 436 Q 152 444 162 432" fill="none" stroke="#0ea5e9" stroke-width="3"/>
-
-      <g class="rig-foot-left">
-        <circle cx="146" cy="472" r="5" fill="#0ea5e9"/>
-        <path d="M 124 482 L 174 476 Q 186 502 174 512 L 112 514 Q 106 495 124 482 Z" fill="url(#headShading)" stroke="#cbd5e1"/>
-        <path d="M 110 510 Q 142 522 174 508 L 174 515 Q 142 528 110 517 Z" fill="url(#cyanAccent)"/>
-      </g>
-    </g>
-  </g>
-
-  <!-- ================= 3. PELVIS & TORSO ================= -->
-  <ellipse cx="225" cy="318" rx="38" ry="16" fill="url(#metalJoint)"/>
-  <ellipse cx="225" cy="321" rx="30" ry="10" fill="url(#cyanAccent)"/>
-
-  <g class="rig-torso">
-    <path d="M 172 205 Q 158 245 168 295 Q 225 316 282 292 Q 292 240 276 205 Q 225 195 172 205 Z" fill="url(#torsoShading)" stroke="#cbd5e1" stroke-width="2"/>
-
-    <circle cx="226" cy="242" r="20" fill="url(#metalJoint)" stroke="#cbd5e1" stroke-width="2"/>
-    <circle cx="226" cy="242" r="16" fill="#ffffff" stroke="#0ea5e9" stroke-width="4.5"/>
-    <circle cx="226" cy="242" r="10" fill="url(#torsoShading)"/>
-
-    <g stroke="#334155" stroke-width="3.2" stroke-linecap="round">
-      <line x1="210" y1="272" x2="242" y2="272"/>
-      <line x1="212" y1="279" x2="240" y2="279"/>
-      <line x1="216" y1="286" x2="236" y2="286"/>
-    </g>
-
-    <path d="M 170 225 Q 182 235 178 252" stroke="#0ea5e9" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-    <path d="M 278 225 Q 266 235 270 252" stroke="#0ea5e9" stroke-width="3.5" fill="none" stroke-linecap="round"/>
-  </g>
-
-  <!-- ================= 4. CARD-HOLDING RIGHT HAND (4 FINGERS BEHIND CARD BACK) ================= -->
-  <g class="rig-arm-card">
-    <circle cx="280" cy="230" r="17" fill="url(#metalJoint)"/>
-    <circle cx="280" cy="230" r="9" fill="url(#cyanAccent)"/>
-
-    <path d="M 280 230 Q 312 240 338 250" stroke="url(#metalJoint)" stroke-width="16" stroke-linecap="round" fill="none"/>
-    <path d="M 284 229 Q 312 239 336 249" stroke="url(#limbShading)" stroke-width="12" stroke-linecap="round" fill="none"/>
-
-    <g class="rig-forearm-card">
-      <circle cx="338" cy="250" r="14" fill="url(#metalJoint)"/>
-      <circle cx="338" cy="250" r="7" fill="url(#cyanAccent)"/>
-
-      <path d="M 338 250 Q 365 258 392 262" stroke="url(#metalJoint)" stroke-width="16" stroke-linecap="round" fill="none"/>
-      <path d="M 338 250 Q 365 257 390 261" stroke="url(#limbShading)" stroke-width="12" stroke-linecap="round" fill="none"/>
-
-      <g class="rig-hand-card">
-        <ellipse cx="400" cy="262" rx="14" ry="10" fill="url(#metalJoint)" stroke="#cbd5e1" stroke-width="1.5"/>
-
-        <!-- 4 REAR FINGERS BEHIND CARD -->
-        <g class="finger-1">
-          <rect x="396" y="222" width="10.5" height="38" rx="5.2" fill="url(#fingerShading)" stroke="#94a3b8" stroke-width="1.4"/>
-          <ellipse cx="401.2" cy="226" rx="4.2" ry="5" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
-          <circle cx="400" cy="224" r="1.2" fill="#ffffff"/>
-          <line x1="397" y1="244" x2="406" y2="244" stroke="#94a3b8" stroke-width="1.2"/>
-        </g>
-
-        <g class="finger-2">
-          <rect x="408" y="214" width="11" height="46" rx="5.5" fill="url(#fingerShading)" stroke="#94a3b8" stroke-width="1.4"/>
-          <ellipse cx="413.5" cy="218" rx="4.4" ry="5.2" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
-          <circle cx="412" cy="216" r="1.3" fill="#ffffff"/>
-          <line x1="409" y1="240" x2="418.5" y2="240" stroke="#94a3b8" stroke-width="1.2"/>
-        </g>
-
-        <g class="finger-3">
-          <rect x="420.5" y="220" width="10.5" height="40" rx="5.2" fill="url(#fingerShading)" stroke="#94a3b8" stroke-width="1.4"/>
-          <ellipse cx="425.7" cy="224.5" rx="4.2" ry="5" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="2"/>
-          <circle cx="424.5" cy="222.5" r="1.2" fill="#ffffff"/>
-          <line x1="421.5" y1="243" x2="430.5" y2="243" stroke="#94a3b8" stroke-width="1.2"/>
-        </g>
-
-        <g class="finger-4">
-          <rect x="432.5" y="228" width="9.5" height="32" rx="4.7" fill="url(#fingerShading)" stroke="#94a3b8" stroke-width="1.4"/>
-          <ellipse cx="437.2" cy="232" rx="3.8" ry="4.5" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="1.8"/>
-          <circle cx="436" cy="230.5" r="1" fill="#ffffff"/>
-          <line x1="433.5" y1="248" x2="441" y2="248" stroke="#94a3b8" stroke-width="1.2"/>
-        </g>
-
-        <circle cx="390" cy="263" r="12" fill="url(#metalJoint)" stroke="#cbd5e1" stroke-width="1.5"/>
-        <circle cx="390" cy="263" r="6" fill="url(#cyanAccent)"/>
-      </g>
-    </g>
-  </g>
-
-  <!-- ================= 5. CONFIDENT THUMBS-UP OUTER HAND ================= -->
-  <g class="rig-arm-thumbsup">
-    <circle cx="165" cy="225" r="18" fill="url(#metalJoint)"/>
-    <circle cx="165" cy="225" r="9" fill="url(#cyanAccent)"/>
-
-    <path d="M 165 225 L 108 266" stroke="url(#limbShading)" stroke-width="16" stroke-linecap="round"/>
-    <path d="M 165 225 L 108 266" stroke="url(#metalJoint)" stroke-width="11" stroke-linecap="round"/>
-
-    <g class="rig-forearm-thumbsup">
-      <circle cx="106" cy="268" r="14" fill="url(#metalJoint)"/>
-      <circle cx="106" cy="268" r="7" fill="url(#cyanAccent)"/>
-
-      <path d="M 106 268 L 84 218" stroke="url(#limbShading)" stroke-width="17" stroke-linecap="round"/>
-      <path d="M 104 246 L 94 242" stroke="#0ea5e9" stroke-width="3.5" stroke-linecap="round"/>
-
-      <g class="rig-hand-thumbsup">
-        <circle cx="84" cy="216" r="12" fill="url(#metalJoint)" stroke="#cbd5e1" stroke-width="1.6"/>
-
-        <rect x="66" y="197" width="28" height="28" rx="8" fill="url(#headShading)" stroke="#94a3b8" stroke-width="1.8"/>
-        <line x1="69" y1="204" x2="91" y2="204" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
-        <line x1="68" y1="211" x2="92" y2="211" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
-        <line x1="69" y1="218" x2="91" y2="218" stroke="#475569" stroke-width="2" stroke-linecap="round"/>
-        <line x1="72" y1="199.5" x2="88" y2="199.5" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
-        <line x1="72" y1="206.5" x2="88" y2="206.5" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
-        <line x1="72" y1="213.5" x2="88" y2="213.5" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
-        <line x1="72" y1="220.5" x2="88" y2="220.5" stroke="#ffffff" stroke-width="1.2" stroke-linecap="round"/>
-
-        <path d="M 78 197 L 78 167 Q 78 160 84 160 Q 90 160 90 167 L 90 197 Z" fill="url(#headShading)" stroke="#94a3b8" stroke-width="1.8"/>
-        <ellipse cx="84" cy="164" rx="5.5" ry="6.5" fill="url(#cyanAccent)" stroke="#38bdf8" stroke-width="1.4"/>
-        <circle cx="82.5" cy="162" r="2" fill="#ffffff" opacity="0.9"/>
-      </g>
-    </g>
-  </g>
-
-  <!-- ================= 6. RIGGED HEAD WITH PERIODIC "ISHARA" GESTURE ================= -->
-  <ellipse cx="225" cy="195" rx="24" ry="9" fill="url(#cyanAccent)"/>
-  <ellipse cx="225" cy="190" rx="18" ry="7" fill="url(#metalJoint)"/>
-
-  <g class="rig-head rig-head-gesture">
-    <!-- Left Ear Pod -->
-    <g class="ear-pod-left">
-      <ellipse cx="134" cy="122" rx="18" ry="30" fill="url(#headShading)" stroke="#cbd5e1" stroke-width="2"/>
-      <ellipse cx="134" cy="122" rx="10" ry="20" fill="url(#cyanAccent)"/>
-      <circle cx="134" cy="122" r="6" fill="#0f172a"/>
-    </g>
-
-    <!-- Right Ear Pod -->
-    <g class="ear-pod-right">
-      <ellipse cx="316" cy="122" rx="18" ry="30" fill="url(#headShading)" stroke="#cbd5e1" stroke-width="2"/>
-      <ellipse cx="316" cy="122" rx="10" ry="20" fill="url(#cyanAccent)"/>
-      <circle cx="316" cy="122" r="6" fill="#0f172a"/>
-    </g>
-
-    <!-- Outer White Head Pod -->
-    <path d="M 152 82 Q 225 60 298 82 Q 330 114 324 155 Q 308 196 225 196 Q 142 196 126 155 Q 120 114 152 82 Z" fill="url(#headShading)" stroke="#cbd5e1" stroke-width="2.5"/>
-
-    <!-- Top Antenna / Cap Accent -->
-    <path d="M 210 68 Q 225 64 240 68" stroke="#0ea5e9" stroke-width="4.5" fill="none" stroke-linecap="round"/>
-
-    <!-- Cyan Visor Outer Frame -->
-    <rect x="146" y="84" width="158" height="106" rx="36" fill="none" stroke="#0ea5e9" stroke-width="7"/>
-    <!-- Deep Glass Visor Inner Screen -->
-    <rect x="151" y="89" width="148" height="96" rx="31" fill="url(#visorScreen)" stroke="#0f172a" stroke-width="3"/>
-
-    <!-- Visor Glass Diagonal Reflection -->
-    <path d="M 164 96 Q 225 88 286 96 Q 272 120 286 134 Q 225 108 164 134 Z" fill="#ffffff" opacity="0.18"/>
-
-    <!-- Glowing Cyan Face: Defaults to looking directly at USER, then periodic gesture towards card -->
-    <g filter="url(#cyanGlow)">
-      <g class="robo-face-gesture">
-        <g class="robo-eyes-blink">
-          <!-- Left Eye (Straightforward symmetrical cheerful arch looking at USER) -->
-          <g class="eye-front-left">
-            <path d="M 172 130 Q 188 108 204 130" fill="none" stroke="#38bdf8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M 172 130 Q 188 108 204 130" fill="none" stroke="#e0f2fe" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
-            <!-- Bright Pupil Highlight looking directly at user -->
-            <circle cx="188" cy="118" r="2.8" fill="#ffffff" opacity="0.95"/>
-          </g>
-
-          <!-- Right Eye (Straightforward symmetrical cheerful arch looking at USER) -->
-          <g class="eye-front-right">
-            <path d="M 246 130 Q 262 108 278 130" fill="none" stroke="#38bdf8" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M 246 130 Q 262 108 278 130" fill="none" stroke="#e0f2fe" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.95"/>
-            <!-- Bright Pupil Highlight looking directly at user -->
-            <circle cx="262" cy="118" r="2.8" fill="#ffffff" opacity="0.95"/>
-          </g>
-        </g>
-
-        <!-- Symmetrical Friendly Smile -->
-        <path d="M 205 156 Q 225 174 245 156" fill="none" stroke="#38bdf8" stroke-width="6.5" stroke-linecap="round"/>
-        <path d="M 208 156 Q 225 170 242 156" fill="none" stroke="#e0f2fe" stroke-width="3.5" stroke-linecap="round" opacity="0.95"/>
-      </g>
-    </g>
-  </g>
-</svg>
-            </div>
-          </div>
-
-          <!-- Exact Reference Login & Sign Up Card -->
-          <div class="auth-card-stage" id="authCardStage">
-            <!-- Front Thumb Firmly Clamping Over Front Face of Card (Compact & Proportional) -->
-            <div class="robot-card-front-thumb" aria-hidden="true">
-              <svg viewBox="0 0 50 28" width="44" height="24" xmlns="http://www.w3.org/2000/svg">
-                <defs>
-                  <linearGradient id="thumbGradFront" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#ffffff"/>
-                    <stop offset="35%" stop-color="#f8fafc"/>
-                    <stop offset="70%" stop-color="#e2e8f0"/>
-                    <stop offset="100%" stop-color="#94a3b8"/>
-                  </linearGradient>
-                  <linearGradient id="metalJointFront" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#64748b"/>
-                    <stop offset="40%" stop-color="#334155"/>
-                    <stop offset="100%" stop-color="#0f172a"/>
-                  </linearGradient>
-                  <filter id="thumbDropShadow" x="-30%" y="-30%" width="160%" height="160%">
-                    <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.22"/>
-                  </filter>
-                </defs>
-                <g filter="url(#thumbDropShadow)">
-                  <!-- Dark metal wrist/knuckle ring connecting to robot arm -->
-                  <rect x="0" y="6" width="10" height="15" rx="4" fill="url(#metalJointFront)" stroke="#cbd5e1" stroke-width="1"/>
-                  <circle cx="5" cy="13.5" r="3" fill="#0ea5e9"/>
-
-                  <!-- Compact Glossy White Robot Thumb Capsule -->
-                  <rect x="6" y="7" width="34" height="13" rx="6.5" fill="url(#thumbGradFront)" stroke="#94a3b8" stroke-width="1.3"/>
-                  <!-- Top specular white highlight -->
-                  <line x1="10" y1="10" x2="33" y2="10" stroke="#ffffff" stroke-width="1.6" stroke-linecap="round"/>
-                  <!-- Thumb joint knuckle line -->
-                  <line x1="20" y1="7.5" x2="20" y2="19.5" stroke="#cbd5e1" stroke-width="1"/>
-                  <!-- Luminous Cyan Thumb Tip Ring Sensor -->
-                  <ellipse cx="33" cy="13.5" rx="3" ry="4.2" fill="#e0f2fe" stroke="#0ea5e9" stroke-width="1.6"/>
-                  <circle cx="32" cy="12.2" r="1.1" fill="#ffffff"/>
-                </g>
-              </svg>
-            </div>
-            <div class="auth-card-3d">
-
-              <!-- Brand Header matching reference with Darkness logo & wordmark -->
-              <div class="auth-card-header">
-                <div class="auth-brand-badge">
-                  <img src="/brand/darkness-logo.svg" alt="Darkness AI" class="auth-brand-logo" />
-                  <span class="auth-brand-title">Darkness</span>
-                </div>
-              </div>
-
-              <!-- Pill Tabs: Sign in & Create account -->
-              <div class="auth-card-tabs" role="tablist">
-                <button class="auth-card-tab is-active" type="button" data-tab="login" role="tab" aria-selected="true">Sign in</button>
-                <button class="auth-card-tab" type="button" data-tab="signup" role="tab" aria-selected="false">Create account</button>
-              </div>
-
-              <!-- Interactive Form -->
-              <form id="authForm" class="auth-card-form" autocomplete="on">
-                <div class="auth-input-group" data-show="signup" hidden>
-                  <label for="authName">Full Name</label>
-                  <div class="auth-input-wrap">
-                    <input type="text" id="authName" name="name" autocomplete="name" placeholder="John Doe" />
-                  </div>
-                </div>
-
-                <div class="auth-input-group">
-                  <label for="authEmail">Email</label>
-                  <div class="auth-input-wrap">
-                    <input type="email" id="authEmail" name="email" required autocomplete="email" placeholder="you@example.com" />
-                  </div>
-                </div>
-
-                <div class="auth-input-group">
-                  <label for="authPassword">Password</label>
-                  <div class="auth-input-wrap">
-                    <input type="password" id="authPassword" name="password" required minlength="6" autocomplete="current-password" placeholder="At least 6 characters" />
-                  </div>
-                </div>
-
-                <div class="auth-error-badge" id="authError" hidden></div>
-
-                <button class="btn btn--primary auth-action-btn" type="submit" id="authSubmit">
-                  <span>Sign in</span>
-                </button>
-              </form>
-
-              <div class="auth-card-footer">
-                <span>Secure access to your AI workspace & projects</span>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
-      </div>
-    `;
-
-    this._bindFormEvents();
+    const reason = this._reason;
+    this._reason = null;
+    if (window.Darkness.authGate) window.Darkness.authGate.render({ reason });
   },
-
-  _bindFormEvents() {
-    const form = document.getElementById("authForm");
-    const errEl = document.getElementById("authError");
-    const submit = document.getElementById("authSubmit");
-    const nameGroup = form ? form.querySelector('[data-show="signup"]') : null;
-    if (!form || !submit) return;
-
-    // Tab Switching: Login vs Signup
-    const setMode = (mode) => {
-      submit.querySelector("span").textContent = mode === "login" ? "Sign in" : "Create account";
-      if (nameGroup) nameGroup.hidden = mode !== "signup";
-      if (form.elements.email) form.elements.email.autocomplete = mode === "login" ? "email" : "email";
-      if (form.elements.password) form.elements.password.autocomplete = mode === "login" ? "current-password" : "new-password";
-      if (errEl) {
-        errEl.hidden = true;
-        errEl.textContent = "";
-      }
-    };
-
-    document.querySelectorAll(".auth-card-tab").forEach(btn => {
-      btn.addEventListener("click", () => {
-        const tab = btn.getAttribute("data-tab");
-        document.querySelectorAll(".auth-card-tab").forEach(b => {
-          const active = b === btn;
-          b.classList.toggle("is-active", active);
-          b.setAttribute("aria-selected", String(active));
-        });
-        setMode(tab);
-      });
-    });
-
-    // Interactive Robot Eye Tracking: Glance towards form inputs on focus
-    const robotStandingWrap = document.querySelector('.auth-robot-standing-wrap');
-    const authInputs = form.querySelectorAll('input');
-    authInputs.forEach(input => {
-      input.addEventListener('focus', () => {
-        if (robotStandingWrap) robotStandingWrap.classList.add('is-focused-input');
-      });
-      input.addEventListener('blur', () => {
-        if (robotStandingWrap) robotStandingWrap.classList.remove('is-focused-input');
-      });
-    });
-
-    // Form Submission
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (errEl) errEl.hidden = true;
-      submit.disabled = true;
-      submit.classList.add("is-loading");
-
-      const activeTab = document.querySelector(".auth-card-tab.is-active");
-      const mode = activeTab ? activeTab.getAttribute("data-tab") : "login";
-      const fd = new FormData(form);
-      const payload = {
-        email: String(fd.get("email") || "").trim(),
-        password: String(fd.get("password") || ""),
-        name: String(fd.get("name") || "").trim(),
-      };
-
-      try {
-        if (mode === "signup") {
-          await window.Darkness.auth.signup(payload.email, payload.password, payload.name);
-        } else {
-          await window.Darkness.auth.login(payload.email, payload.password);
-        }
-      } catch (err) {
-        if (errEl) {
-          errEl.textContent = err.message || "Authentication failed";
-          errEl.hidden = false;
-        }
-        submit.disabled = false;
-        submit.classList.remove("is-loading");
-        return;
-      }
-
-      submit.disabled = false;
-      submit.classList.remove("is-loading");
-
-      // Clear gate and navigate into workspace
-      window.Darkness.app && window.Darkness.app.afterLogin && window.Darkness.app.afterLogin();
-    });
-  }
 };
+
+// Session watchdogs: a session can end while the tab sits in the background, or in another tab.
+(function () {
+  const auth = window.Darkness.auth;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && auth._user && Date.now() - auth._lastCheck > 15000) auth.refresh();
+  });
+  window.addEventListener("storage", (e) => {
+    if (e.key !== "darkness_user") return; // the cached profile appears/disappears with sign-in/out; the token itself is no longer stored
+    if (e.newValue && !auth._user) location.reload(); // signed in from another tab: load the app properly
+    else if (!e.newValue && auth._user) {
+      auth._user = null;
+      auth._reason = "other-tab";
+      auth._emit();
+    }
+  });
+})();

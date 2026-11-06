@@ -56,8 +56,8 @@ export type {
   MindMapItem,
   DataFlowStep,
   ArchitectureSystemResult,
-} from "./architecture-engine";
-import { buildProjectArchitecture, ArchitectureNode, ArchitectureEdge, DataFlowStep } from "./architecture-engine";
+} from "./architecture-engine.js";
+import { buildProjectArchitecture, ArchitectureNode, ArchitectureEdge, DataFlowStep } from "./architecture-engine.js";
 
 export interface ApiEndpoint {
   method: string;
@@ -127,10 +127,10 @@ export interface ProjectAnalysis {
     symbolEdges?: ArchitectureEdge[];
     fileNodes?: ArchitectureNode[];
     fileEdges?: ArchitectureEdge[];
-    flows?: import("./architecture-engine").ArchitectureFlow[];
-    health?: import("./architecture-engine").ArchitectureHealthSummary;
-    advisor?: import("./architecture-engine").ArchitectureAdvisorReport;
-    mindMap?: { root: import("./architecture-engine").MindMapItem };
+    flows?: import("./architecture-engine.js").ArchitectureFlow[];
+    health?: import("./architecture-engine.js").ArchitectureHealthSummary;
+    advisor?: import("./architecture-engine.js").ArchitectureAdvisorReport;
+    mindMap?: { root: import("./architecture-engine.js").MindMapItem };
     orphans?: string[];
     brokenReferences?: Array<{ fromFile: string; target: string; line: number }>;
   };
@@ -174,6 +174,26 @@ export interface ProjectAnalysis {
   projectIntelligence?: ProjectIntelligence;
 }
 
+/** Plain-language understanding of a project, derived from its README, manifest and code (the interface was lost; fields are those the UI and engines read). */
+export interface ProjectIntelligence {
+  tagline?: string;
+  elevatorPitch?: string;
+  keyFeatures?: string[];
+  problemStatement?: string;
+  solutionSummary?: string;
+  targetAudience?: string;
+  keyInnovations?: string[];
+  deploymentModels?: string[];
+  potentialUseCases?: string[];
+  businessImpact?: string;
+  architectureSummary?: string;
+  dataFlowOverview?: string;
+  apiOverview?: string;
+  dbOverview?: string;
+  testSummary?: string;
+  [key: string]: any;
+}
+
 const TEXT_EXTENSIONS = new Set([
   ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
   ".py", ".pyw", ".ipynb",
@@ -199,13 +219,36 @@ const IGNORED_PATH_SEGMENTS = new Set([
   ".turbo", ".cache", ".output", ".gradle", "bin", "obj", "vendor", "bower_components", "pods", "deriveddata", ".yarn", ".pnpm-store"
 ]);
 
+/** Archive limits. The defaults are the product limits; tests pass small ones so they can run at small scale. */
+export interface ZipLimits {
+  /** most entries the archive may declare (before junk/ignored folders are skipped) */
+  maxEntries?: number;
+  /** most bytes all kept entries may expand to, judged from the DECLARED sizes before anything is inflated */
+  maxTotalBytes?: number;
+  /** expanded-to-compressed size above which a large archive is refused */
+  maxCompressionRatio?: number;
+  /** ratio checks only apply above this expanded size (tiny archives can be extremely compressible legitimately) */
+  minBytesForRatioCheck?: number;
+}
+export const DEFAULT_ZIP_MAX_ENTRIES = 50_000;
+export const DEFAULT_ZIP_MAX_RATIO = 250;
+const MIN_BYTES_FOR_RATIO_CHECK = 20 * 1024 * 1024;
+
 /**
- * Safely extracts a ZIP buffer, preventing Zip-Slip path traversal and sanitizing paths.
+ * Safely extracts a ZIP buffer, preventing Zip-Slip path traversal and sanitizing paths. Also refuses: things that are
+ * not ZIP files (magic bytes), archives with an absurd number of entries, and archives whose declared expanded size is
+ * over the limit (decided from the headers, so a zip bomb is rejected before any of it is decompressed).
  */
-export function extractZipSecurely(buffer: Buffer): { files: ExtractedFile[]; error?: string } {
+export function extractZipSecurely(buffer: Buffer, limits: ZipLimits = {}): { files: ExtractedFile[]; error?: string } {
+  const maxEntries = limits.maxEntries ?? DEFAULT_ZIP_MAX_ENTRIES;
+  const maxTotalBytes = limits.maxTotalBytes ?? MAX_UPLOAD_SIZE_BYTES;
   try {
     if (buffer && isFileTooLarge(buffer.length)) {
       return { files: [], error: "FILE_TOO_LARGE: Archive exceeds the maximum allowed size of 100 MB." };
+    }
+    // Content check, not just the file name: a ZIP starts with "PK" (local header, or end-of-archive for an empty one).
+    if (!buffer || buffer.length < 4 || buffer[0] !== 0x50 || buffer[1] !== 0x4b) {
+      return { files: [], error: "The uploaded file is not a valid ZIP archive." };
     }
 
     const zip = new AdmZip(buffer);
@@ -213,8 +256,13 @@ export function extractZipSecurely(buffer: Buffer): { files: ExtractedFile[]; er
     if (!zipEntries || zipEntries.length === 0) {
       return { files: [], error: "The provided ZIP file is empty." };
     }
+    if (zipEntries.length > maxEntries) {
+      return { files: [], error: `The archive has too many entries (${zipEntries.length}; the limit is ${maxEntries}).` };
+    }
 
     let totalExtractedBytes = 0;
+    let declaredTotal = 0;
+    let compressedTotal = 0;
     const rawFiles: Array<{ entryName: string; isDirectory: boolean; getData: () => Buffer }> = [];
     for (const entry of zipEntries) {
       // Early check on entry header uncompressed size if available
@@ -222,9 +270,9 @@ export function extractZipSecurely(buffer: Buffer): { files: ExtractedFile[]; er
         return { files: [], error: "FILE_TOO_LARGE: Archive contains a file exceeding the maximum allowed size of 100 MB." };
       }
 
-      // Security: check for zip-slip / directory traversal
+      // Security: check for zip-slip / directory traversal (also NUL bytes and Windows drive paths like C:\x)
       const norm = path.normalize(entry.entryName).replace(/\\/g, "/");
-      if (norm.startsWith("..") || norm.includes("/../") || path.isAbsolute(entry.entryName)) {
+      if (norm.startsWith("..") || norm.includes("/../") || path.isAbsolute(entry.entryName) || /^[a-zA-Z]:/.test(entry.entryName) || entry.entryName.includes("\0")) {
         continue; // Skip dangerous entries
       }
       if (norm.startsWith("__MACOSX/") || norm.includes("/.DS_Store") || norm.endsWith("Thumbs.db")) {
@@ -238,6 +286,14 @@ export function extractZipSecurely(buffer: Buffer): { files: ExtractedFile[]; er
         continue;
       }
 
+      if (!entry.isDirectory) {
+        declaredTotal += entry.header && typeof entry.header.size === "number" ? entry.header.size : 0;
+        compressedTotal += entry.header && typeof entry.header.compressedSize === "number" ? entry.header.compressedSize : 0;
+        if (declaredTotal > maxTotalBytes) {
+          return { files: [], error: "FILE_TOO_LARGE: The archive would expand to more than the allowed size (rejected before extracting)." };
+        }
+      }
+
       rawFiles.push({
         entryName: norm,
         isDirectory: entry.isDirectory,
@@ -247,6 +303,11 @@ export function extractZipSecurely(buffer: Buffer): { files: ExtractedFile[]; er
 
     if (rawFiles.length === 0) {
       return { files: [], error: "No valid files found in ZIP." };
+    }
+    // A zip bomb squeezes gigabytes into kilobytes. Real source trees compress 5-20x; text can reach ~100x. Beyond the
+    // ratio below, on anything large enough to matter, the archive is refused before it is decompressed.
+    if (declaredTotal > (limits.minBytesForRatioCheck ?? MIN_BYTES_FOR_RATIO_CHECK) && compressedTotal > 0 && declaredTotal / compressedTotal > (limits.maxCompressionRatio ?? DEFAULT_ZIP_MAX_RATIO)) {
+      return { files: [], error: "The archive has a suspiciously high compression ratio (possible zip bomb) and was refused." };
     }
 
     // Check if everything is nested under a single top-level directory (e.g. project-main/)
@@ -295,7 +356,7 @@ export function extractZipSecurely(buffer: Buffer): { files: ExtractedFile[]; er
       }
 
       totalExtractedBytes += size;
-      if (isFileTooLarge(totalExtractedBytes)) {
+      if (totalExtractedBytes > maxTotalBytes) {
         return { files: [], error: "FILE_TOO_LARGE: Total extracted content exceeds the maximum allowed size of 100 MB." };
       }
 

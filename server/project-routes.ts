@@ -1,51 +1,47 @@
 import express from "express";
 import path from "path";
+import { looksBinary } from "./upload-validation.js";
+import type { FileItem } from "./server.js";
 import fs from "fs";
 import os from "os";
 import multer from "multer";
 import AdmZip from "adm-zip";
 import mammoth from "mammoth";
-import { GoogleGenAI } from "@google/genai";
+import "@google/genai";
 import { generateGeminiWithResilience } from "./gemini-resilience.js";
 import {
   extractZipSecurely,
   analyzeProject,
   ProjectAnalysis,
   ExtractedFile,
-} from "./project-analyzer";
+} from "./project-analyzer.js";
 import {
   indexProject,
   updateFileKnowledge,
   deleteFileKnowledge,
   searchKnowledge,
-  deleteProjectKnowledge,
-} from "./knowledge-engine";
-import { analyzeFileDiagnostics } from "./project-diagnostics";
+} from "./knowledge-engine.js";
+import { analyzeFileDiagnostics } from "./project-diagnostics.js";
 import { extractDocumentText } from "./rag-engine.js";
 import { storageManager } from "./storage-manager.js";
+import { acceptChunk, discardChunks } from "./upload-chunks.js";
 import {
   MAX_UPLOAD_SIZE_BYTES,
-  MAX_UPLOAD_SIZE_MB,
   FILE_TOO_LARGE_PAYLOAD,
   isFileTooLarge,
-  hasOversizedFile,
   sharedMulter,
+  uploaders,
   wrapUploadMiddleware,
 } from "./upload-config.js";
 import {
   createProject as dbCreateProject,
   getProject as dbGetProject,
-  listProjects as dbListProjects,
   updateProject as dbUpdateProject,
-  deleteProject as dbDeleteProject,
   createFile as dbCreateFile,
   createFilesBatch as dbCreateFilesBatch,
-  getFile as dbGetFile,
   getProjectFileByPath as dbGetProjectFileByPath,
   listFiles as dbListFiles,
-  updateFile as dbUpdateFile,
   updateFileByPath as dbUpdateFileByPath,
-  deleteFile as dbDeleteFile,
   deleteProjectFileByPath as dbDeleteProjectFileByPath,
   renameProjectFolderFiles as dbRenameProjectFolderFiles,
   deleteProjectFolderFiles as dbDeleteProjectFolderFiles,
@@ -53,9 +49,6 @@ import {
   saveDiagnostics as dbSaveDiagnostics,
   saveProjectAnalysis as dbSaveProjectAnalysis,
   getProjectAnalysis as dbGetProjectAnalysis,
-  deleteProjectAnalysis as dbDeleteProjectAnalysis,
-  saveGithubConnection as dbSaveGithubConnection,
-  getGithubConnection as dbGetGithubConnection,
   listKnowledgeChunks as dbListKnowledgeChunks,
   saveWorkspaceFile as dbSaveWorkspaceFile,
   getWorkspaceFile as dbGetWorkspaceFile,
@@ -63,10 +56,10 @@ import {
   deleteWorkspaceFile as dbDeleteWorkspaceFile,
   parseMetadataSafely,
   countProjectFiles,
-} from "./db";
-import { syncProjectToSupabase, deleteProjectFromSupabase, isSupabaseConfigured } from "./supabase.js";
+} from "./db.js";
+import { syncProjectToSupabase, isSupabaseConfigured } from "./supabase.js";
+import { fileOwnership, projectOwnership, sameOwner } from "./ownership.js";
 import {
-  validateProjectId,
   getProjectStorageDir,
   sanitizeProjectPath,
   resolveProjectFilePath,
@@ -76,13 +69,10 @@ import {
   deleteProjectFileFromDisk,
   renameProjectFileOnDisk,
   createProjectFolderOnDisk,
-  resolveProjectWorkspace,
   renameProjectFolderOnDisk,
   deleteProjectFolderOnDisk,
-  deleteProjectStorage,
   listProjectDiskFiles,
-  syncDiskFromDatabase,
-} from "./project-storage";
+} from "./project-storage.js";
 
 const upload = sharedMulter;
 
@@ -281,9 +271,8 @@ export function registerProjectAndFileRoutes(
       console.warn("Could not sync db workspace files:", e);
     }
 
-    const shared = Array.from(files.values()).filter(
-      (f) => (!f.project_id && !f.conversation_id) || f.user_id === user?.id
-    );
+    // Only the caller's own files. This used to include EVERY user's files that were not attached to a project or conversation.
+    const shared = Array.from(files.values()).filter((f) => sameOwner(f.user_id, user?.id));
     res.json({ files: shared, total: shared.length, success: true });
   });
 
@@ -332,13 +321,12 @@ export function registerProjectAndFileRoutes(
 
   app.get("/api/files", (req, res) => {
     const user = resolveUser(req) || initialUser;
-    const userFiles = Array.from(files.values()).filter(
-      (f) => f.user_id === user.id || !f.project_id
-    );
+    // Only the caller's own files (the old `|| !f.project_id` listed everyone's unattached files, content included).
+    const userFiles = Array.from(files.values()).filter((f) => sameOwner(f.user_id, user?.id));
     res.json(userFiles);
   });
 
-  app.post("/api/files/upload", wrapUploadMiddleware(sharedMulter.any()), async (req, res) => {
+  app.post("/api/files/upload", wrapUploadMiddleware(uploaders.folder.any(), "folder"), async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     try {
       const user = resolveUser(req) || initialUser;
@@ -446,7 +434,10 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/files/:id/content", (req, res) => {
-    const fid = req.params.id;
+    const fid = String(req.params.id);
+    const user = resolveUser(req) || initialUser;
+    // a file that belongs to someone else is "not found", exactly like one that does not exist
+    if (fileOwnership(fid, user?.id, files) !== "owned") return res.status(404).json({ error: "File not found" });
     const file = files.get(fid) || dbGetWorkspaceFile(fid);
     if (!file) return res.status(404).json({ error: "File not found" });
     res.json({
@@ -458,12 +449,19 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/files/:id/raw", (req, res) => {
-    const fid = req.params.id;
+    const fid = String(req.params.id);
+    const user = resolveUser(req) || initialUser;
+    if (fileOwnership(fid, user?.id, files) !== "owned") return res.status(404).send("File not found");
     const file = files.get(fid) || dbGetWorkspaceFile(fid);
     if (!file) return res.status(404).send("File not found");
 
-    res.setHeader("Content-Type", file.mime || "application/octet-stream");
-    res.setHeader("Content-Disposition", `inline; filename="${file.filename}"`);
+    // The file is the user's own upload, but a page that can run script (HTML, SVG, XML) must never be rendered from the app's origin: it is
+    // sent as a download. The file name cannot break out of the header (quotes, line breaks and non-ASCII are replaced).
+    const mime = String(file.mime || "application/octet-stream");
+    const risky = /html|svg|xml|javascript|ecmascript/i.test(mime) || /\.(html?|svg|xml|xhtml|js|mjs)$/i.test(String(file.filename || ""));
+    const safeName = String(file.filename || "file").replace(/[^A-Za-z0-9._ -]/g, "_").slice(0, 120) || "file";
+    res.setHeader("Content-Type", risky ? "application/octet-stream" : mime);
+    res.setHeader("Content-Disposition", `${risky ? "attachment" : "inline"}; filename="${safeName}"`);
     if (file.buffer && Buffer.isBuffer(file.buffer)) {
       res.send(file.buffer);
     } else if (file.data && typeof file.data === "string" && file.data.startsWith("data:")) {
@@ -475,7 +473,12 @@ export function registerProjectAndFileRoutes(
   });
 
   app.delete("/api/files/:id", (req, res) => {
-    const fid = req.params.id;
+    const fid = String(req.params.id);
+    const user = resolveUser(req) || initialUser;
+    // only the owner can delete; someone else's file answers "not found" and is left untouched
+    const who = fileOwnership(fid, user?.id, files);
+    if (who === "foreign") return res.status(404).json({ error: "File not found" });
+    if (who === "unknown") return res.json({ success: true, id: fid });
     files.delete(fid);
     try {
       dbDeleteWorkspaceFile(fid);
@@ -488,17 +491,7 @@ export function registerProjectAndFileRoutes(
   // -------------------------------------------------------------------------
   // Project Uploads (ZIP & Multiple Files / Folders)
   // -------------------------------------------------------------------------
-  async function cleanUpUploadParts(uploadId: string, totChunks: number) {
-    const maxToClean = Math.max(totChunks || 0, 100);
-    for (let i = 0; i < maxToClean; i++) {
-      const p = path.join(os.tmpdir(), `upload_${uploadId}_${i}.part`);
-      await fs.promises.unlink(p).catch(() => {});
-    }
-    const mergedZipPath = path.join(os.tmpdir(), `upload_${uploadId}.zip`);
-    await fs.promises.unlink(mergedZipPath).catch(() => {});
-  }
-
-  app.post("/api/projects/upload-zip/chunk", wrapUploadMiddleware(sharedMulter.any()), async (req, res) => {
+  app.post("/api/projects/upload-zip/chunk", wrapUploadMiddleware(uploaders.archive.any(), "archive"), async (req, res) => {
     const user = resolveUser(req) || initialUser;
     const reqFiles = (req.files as Express.Multer.File[]) || [];
     const chunkFile = req.file || reqFiles.find((f) => f.fieldname === "file") || reqFiles[0];
@@ -512,72 +505,35 @@ export function registerProjectAndFileRoutes(
       return res.status(400).json({ error: "Missing chunk metadata (chunkIndex, totalChunks, uploadId)" });
     }
 
-    const cIdx = parseInt(chunkIndex, 10);
-    const totChunks = parseInt(totalChunks, 10);
+    const cIdx = Number(chunkIndex);
+    const totChunks = Number(totalChunks);
+    const upId = String(uploadId);
 
-    const cSize = chunkFile.size || chunkFile.buffer?.length || 0;
+    const cSize = chunkFile.size || 0;
     if (isFileTooLarge(cSize)) {
-      await cleanUpUploadParts(uploadId, totChunks);
+      await discardChunks(user.id, upId);
       return res.status(413).json(FILE_TOO_LARGE_PAYLOAD);
     }
 
     try {
-      // 1. Write chunk to a temporary part file
-      const tempPartPath = path.join(os.tmpdir(), `upload_${uploadId}_${cIdx}.part`);
-      await fs.promises.writeFile(tempPartPath, chunkFile.buffer);
-
-      // 2. Check if all chunks have been uploaded
-      let allChunksUploaded = true;
-      const partPaths: string[] = [];
-      let totalPartBytes = 0;
-
-      for (let i = 0; i < totChunks; i++) {
-        const p = path.join(os.tmpdir(), `upload_${uploadId}_${i}.part`);
-        partPaths.push(p);
-        if (fs.existsSync(p)) {
-          try {
-            const st = await fs.promises.stat(p);
-            totalPartBytes += st.size;
-          } catch {}
-        } else {
-          allChunksUploaded = false;
-        }
+      // 1. Store this chunk in the caller's OWN upload folder (strictly validated id, bounded chunk numbers, size checked as
+      //    parts arrive). When the last chunk arrives the parts are joined by streaming and the result must be a real ZIP.
+      const chunk = await acceptChunk({ userKey: user.id, uploadId: upId, index: cIdx, total: totChunks, tmpPath: chunkFile.path, maxBytes: MAX_UPLOAD_SIZE_BYTES });
+      if (chunk.status === "error") {
+        return res.status(chunk.http).json(chunk.http === 413 ? FILE_TOO_LARGE_PAYLOAD : { error: chunk.code, message: chunk.message });
       }
-
-      if (isFileTooLarge(totalPartBytes)) {
-        await cleanUpUploadParts(uploadId, totChunks);
-        return res.status(413).json(FILE_TOO_LARGE_PAYLOAD);
-      }
-
-      if (!allChunksUploaded) {
+      if (chunk.status === "uploading") {
         // More chunks remaining
         return res.json({ success: true, status: "uploading", chunkIndex: cIdx });
       }
 
-      // 3. All chunks are present! Merge them into a single zip file on disk
-      const mergedZipPath = path.join(os.tmpdir(), `upload_${uploadId}.zip`);
-      const writeStream = fs.createWriteStream(mergedZipPath);
-
-      for (const partPath of partPaths) {
-        if (fs.existsSync(partPath)) {
-          const data = await fs.promises.readFile(partPath);
-          writeStream.write(data);
-          // Clean up part file immediately to free disk space
-          await fs.promises.unlink(partPath).catch(() => {});
-        }
+      // 2. Read the joined archive (the extractor needs it whole) and remove the upload folder straight away
+      let zipBuffer: Buffer;
+      try {
+        zipBuffer = await fs.promises.readFile(chunk.zipPath);
+      } finally {
+        await discardChunks(user.id, upId);
       }
-      writeStream.end();
-
-      // Wait for writeStream to finish writing to disk
-      await new Promise<void>((resolve, reject) => {
-        writeStream.on("finish", resolve);
-        writeStream.on("error", reject);
-      });
-
-      // 4. Read the merged zip file into a buffer
-      const zipBuffer = await fs.promises.readFile(mergedZipPath);
-      // Clean up merged zip file immediately
-      await fs.promises.unlink(mergedZipPath).catch(() => {});
 
       if (isFileTooLarge(zipBuffer.length)) {
         return res.status(413).json(FILE_TOO_LARGE_PAYLOAD);
@@ -690,8 +646,8 @@ export function registerProjectAndFileRoutes(
         dbSaveArchitecture(pid, analysis.architecture.nodes, analysis.architecture.edges);
         dbSaveDiagnostics(pid, (analysis.securityAnalysis?.findings || []).map(f => ({
           file_id: f.file,
-          rule_id: f.type,
-          severity: f.severity === "high" ? "error" : "warning",
+          rule_id: f.category,
+          severity: f.severity === "CONFIRMED" ? "error" : "warning", // findings carry CONFIRMED / POTENTIAL RISK / NEEDS MANUAL VERIFICATION (never "high"), and have `category`, not `type`
           message: f.description,
           line_number: f.line || 1,
         } as any)));
@@ -744,7 +700,7 @@ export function registerProjectAndFileRoutes(
     }
   });
 
-  app.post("/api/projects/upload-zip", wrapUploadMiddleware(sharedMulter.any()), async (req, res) => {
+  app.post("/api/projects/upload-zip", wrapUploadMiddleware(uploaders.archive.any(), "archive"), async (req, res) => {
     const user = resolveUser(req) || initialUser;
     const reqFiles = (req.files as Express.Multer.File[]) || [];
     const zipFile = req.file || reqFiles.find((f) => f.fieldname === "file") || reqFiles[0];
@@ -871,8 +827,8 @@ export function registerProjectAndFileRoutes(
         dbSaveArchitecture(projectId, analysis.architecture.nodes, analysis.architecture.edges);
         dbSaveDiagnostics(projectId, (analysis.securityAnalysis?.findings || []).map(f => ({
           file_id: f.file,
-          rule_id: f.type,
-          severity: f.severity === "high" ? "error" : "warning",
+          rule_id: f.category,
+          severity: f.severity === "CONFIRMED" ? "error" : "warning", // findings carry CONFIRMED / POTENTIAL RISK / NEEDS MANUAL VERIFICATION (never "high"), and have `category`, not `type`
           message: f.description,
           line_number: f.line || 1,
         } as any)));
@@ -923,7 +879,7 @@ export function registerProjectAndFileRoutes(
     }
   });
 
-  app.post("/api/projects/upload-files", wrapUploadMiddleware(sharedMulter.array("files")), async (req, res) => {
+  app.post("/api/projects/upload-files", wrapUploadMiddleware(uploaders.folder.array("files"), "folder"), async (req, res) => {
     const user = resolveUser(req) || initialUser;
     let reqFiles = (req.files as Express.Multer.File[]) || [];
 
@@ -1157,7 +1113,7 @@ export function registerProjectAndFileRoutes(
   // Project Details, Analysis, & Tree
   // -------------------------------------------------------------------------
   app.get("/api/projects/:pid", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     let proj = projects.get(pid);
     if (!proj) {
       const dbP = dbGetProject(pid);
@@ -1194,7 +1150,9 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/projects/:pid/analysis", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
+    // only an existing project of the caller: an id that exists nowhere used to be analysed and SAVED, creating a project row under the default owner
+    if (projectOwnership(pid, (resolveUser(req) || initialUser)?.id, projects) !== "owned") return res.status(404).json({ error: "Project not found" });
     let analysis = projectAnalyses.get(pid) || dbGetProjectAnalysis(pid);
     if (!analysis) {
       const pFiles = dbListFiles(pid);
@@ -1218,7 +1176,8 @@ export function registerProjectAndFileRoutes(
   });
 
   app.post("/api/projects/:pid/analyze", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
+    if (projectOwnership(pid, (resolveUser(req) || initialUser)?.id, projects) !== "owned") return res.status(404).json({ error: "Project not found" });
     const pFiles = dbListFiles(pid);
     const extracted: ExtractedFile[] = pFiles.map((f) => ({
       path: f.path,
@@ -1241,7 +1200,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/projects/:pid/tree", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     let pFiles = dbListFiles(pid);
 
     // Auto-sync if project has files on physical disk that weren't in SQLite yet
@@ -1251,20 +1210,24 @@ export function registerProjectAndFileRoutes(
         if (diskFiles && diskFiles.length > 0) {
           const now = Date.now();
           const batchToInsert = diskFiles.map(df => {
-            const diskContent = readProjectFileFromDisk(pid, df.relativePath, df.isBinary);
-            const contentStr = typeof diskContent === "string" ? diskContent : (df.isBinary ? null : diskContent?.toString("utf-8") || null);
+            // listProjectDiskFiles returns { path, size }. This used to read relativePath / isBinary / hash, which do not exist, so
+            // the auto-sync always threw inside the surrounding try and silently imported nothing.
+            const raw = readProjectFileFromDisk(pid, df.path, true);
+            const buf = Buffer.isBuffer(raw) ? raw : null;
+            const isBinary = buf ? looksBinary(buf) : false;
+            const contentStr = buf && !isBinary ? buf.toString("utf-8") : null;
             return {
               id: `file_${pid}_${Math.random().toString(36).substring(2, 9)}`,
               project_id: pid,
-              path: df.relativePath,
-              name: path.basename(df.relativePath),
-              extension: path.extname(df.relativePath),
-              language: df.isBinary ? "binary" : "code",
+              path: df.path,
+              name: path.basename(df.path),
+              extension: path.extname(df.path),
+              language: isBinary ? "binary" : "code",
               size: df.size,
-              hash: df.hash || "",
+              hash: "",
               version: 1,
               content: contentStr,
-              is_binary: df.isBinary ? 1 : 0,
+              is_binary: isBinary ? 1 : 0,
               created_at: now,
               updated_at: now,
             };
@@ -1336,7 +1299,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/projects/:pid/search", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const query = String(req.query.q || "").toLowerCase().trim();
     const category = String(req.query.category || "all").toLowerCase();
 
@@ -1382,7 +1345,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/projects/:pid/file", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const filePath = String(req.query.path || "");
     if (!filePath) return res.status(400).json({ error: "path parameter is required" });
 
@@ -1427,7 +1390,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/projects/:pid/file/docx-html", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const filePath = String(req.query.path || "");
     if (!filePath) return res.status(400).json({ error: "path parameter is required" });
 
@@ -1471,7 +1434,7 @@ export function registerProjectAndFileRoutes(
         path: cleanPath,
         name: path.basename(cleanPath),
         html,
-        warnings: result.warnings || [],
+        warnings: (result.messages || []).map((m: any) => m.message), // mammoth reports `messages` (there is no `warnings`)
       });
     } catch (err: any) {
       console.error("Error parsing DOCX file:", err);
@@ -1482,7 +1445,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.post("/api/projects/:pid/files", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { path: rawPath, content = "" } = req.body || {};
     if (!rawPath) return res.status(400).json({ error: "Path is required" });
 
@@ -1530,7 +1493,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.put("/api/projects/:pid/files", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { path: rawPath, content = "" } = req.body || {};
     if (!rawPath) return res.status(400).json({ error: "Path is required" });
 
@@ -1558,7 +1521,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.post("/api/projects/:pid/folders", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const rawFolder = req.body?.path || req.body?.folderPath;
     if (!rawFolder) return res.status(400).json({ error: "Folder path required" });
 
@@ -1567,7 +1530,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.patch("/api/projects/:pid/files/rename", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { oldPath, newPath } = req.body || {};
     if (!oldPath || !newPath) return res.status(400).json({ error: "oldPath and newPath required" });
 
@@ -1597,7 +1560,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.patch("/api/projects/:pid/folders/rename", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { oldPath, newPath } = req.body || {};
     if (!oldPath || !newPath) return res.status(400).json({ error: "oldPath and newPath required" });
 
@@ -1607,7 +1570,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.delete("/api/projects/:pid/files", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const rawPath = String(req.query.path || req.body?.path || "");
     if (!rawPath) return res.status(400).json({ error: "path required" });
 
@@ -1619,7 +1582,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.delete("/api/projects/:pid/folders", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const rawFolder = String(req.query.folderPath || req.query.path || req.body?.folderPath || req.body?.path || "");
     if (!rawFolder) return res.status(400).json({ error: "folderPath required" });
 
@@ -1631,7 +1594,7 @@ export function registerProjectAndFileRoutes(
 
   
   app.get("/api/projects/:pid/file/raw", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const rawPath = String(req.query.path || "");
     if (!rawPath) return res.status(400).send("Path required");
 
@@ -1694,7 +1657,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/projects/:pid/files/download", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const rawPath = String(req.query.path || "");
     if (!rawPath) return res.status(400).send("Path required");
 
@@ -1720,7 +1683,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/projects/:pid/export-zip", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid) || dbGetProject(pid);
     const projDir = getProjectStorageDir(pid, false);
 
@@ -1746,13 +1709,13 @@ export function registerProjectAndFileRoutes(
   // Knowledge RAG & Search Endpoints
   // -------------------------------------------------------------------------
   app.get("/api/projects/:pid/knowledge", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const chunks = dbListKnowledgeChunks(pid);
     res.json({ chunks, total: chunks.length });
   });
 
   app.post("/api/projects/:pid/knowledge/reindex", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const pFiles = dbListFiles(pid);
     const extracted: ExtractedFile[] = pFiles.map((f) => ({
       path: f.path,
@@ -1770,7 +1733,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.get("/api/projects/:pid/knowledge/search", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const q = String(req.query.q || "");
     const results = searchKnowledge(pid, q);
     res.json({ results });
@@ -1782,29 +1745,36 @@ export function registerProjectAndFileRoutes(
   app.post("/api/projects/:pid/diagnostics", async (req, res) => {
     const { path: filePath, content } = req.body || {};
     try {
-      const result = await analyzeFileDiagnostics(filePath || "file.ts", content || "");
-      res.json(result);
+      const issues = await analyzeFileDiagnostics(filePath || "file.ts", content || "");
+      // The editor's Problems badge reads `{ issues, summary }` (it used to receive a bare array, so every count was zero).
+      const summary = { errors: 0, warnings: 0, suggestions: 0 };
+      for (const i of issues) {
+        if (i.severity === "error") summary.errors++;
+        else if (i.severity === "warning") summary.warnings++;
+        else summary.suggestions++;
+      }
+      res.json({ issues, summary });
     } catch (e: any) {
       res.status(500).json({ error: e.message || "Diagnostics failed" });
     }
   });
 
   app.post("/api/projects/:pid/diagnostics/project", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const pFiles = dbListFiles(pid).filter((f) => !f.is_binary);
     let allIssues: any[] = [];
     let summary = { errors: 0, warnings: 0, suggestions: 0 };
 
     for (const f of pFiles.slice(0, 15)) {
       try {
+        // analyzeFileDiagnostics resolves to an ARRAY of issues. This code used to read `.issues` / `.summary` from it, which are
+        // undefined on an array, so project-wide diagnostics always came back empty.
         const diag = await analyzeFileDiagnostics(f.path, f.content || "");
-        if (diag.issues && diag.issues.length > 0) {
-          allIssues.push(...diag.issues);
-        }
-        if (diag.summary) {
-          summary.errors += diag.summary.errors || 0;
-          summary.warnings += diag.summary.warnings || 0;
-          summary.suggestions += diag.summary.suggestions || 0;
+        for (const issue of diag) {
+          allIssues.push(issue);
+          if (issue.severity === "error") summary.errors++;
+          else if (issue.severity === "warning") summary.warnings++;
+          else summary.suggestions++;
         }
       } catch {}
     }
@@ -1813,7 +1783,7 @@ export function registerProjectAndFileRoutes(
   });
 
   app.post("/api/projects/:pid/diagnostics/ai-fix", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { path: rawPath, issueId, fixAll, issues } = req.body || {};
     if (!rawPath) return res.status(400).json({ error: "File path is required" });
 
@@ -1831,7 +1801,7 @@ export function registerProjectAndFileRoutes(
     let targetIssues = Array.isArray(issues) && issues.length > 0 ? issues : [];
     if (targetIssues.length === 0) {
       const diag = await analyzeFileDiagnostics(cleanPath, currentContent);
-      targetIssues = diag.issues || [];
+      targetIssues = diag; // an array of issues (it has no `.issues`)
     }
 
     if (issueId) {
@@ -1952,7 +1922,7 @@ Strict Requirements:
   });
 
   app.post("/api/projects/:pid/explain-architecture", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const analysis = projectAnalyses.get(pid) || dbGetProjectAnalysis(pid);
     if (!analysis) return res.json({ explanation: "Architecture details are not yet generated for this project." });
 
@@ -1977,7 +1947,7 @@ Strict Requirements:
   });
 
   app.post("/api/projects/:pid/apply-changes", (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const { plan } = req.body || {};
     if (!plan || !plan.files) {
       return res.status(400).json({ error: "Invalid plan specification" });
@@ -2041,14 +2011,14 @@ Strict Requirements:
       };
       if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      const repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers });
+      const repoResp = await fetch(`https://api.github.com/repos/${owner}/${repo}`, { headers, signal: AbortSignal.timeout(20_000) });
       if (!repoResp.ok) {
         const errJson = await repoResp.json().catch(() => ({}));
         throw new Error(errJson.message || `GitHub repo returned status ${repoResp.status}`);
       }
       const repoData = await repoResp.json();
 
-      const branchResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`, { headers });
+      const branchResp = await fetch(`https://api.github.com/repos/${owner}/${repo}/branches?per_page=100`, { headers, signal: AbortSignal.timeout(20_000) });
       const branchData = branchResp.ok ? await branchResp.json() : [];
       const branchNames = Array.isArray(branchData) ? branchData.map((b: any) => b.name) : [repoData.default_branch || "main"];
 
@@ -2097,7 +2067,7 @@ Strict Requirements:
 
       // Download archive
       const zipUrl = `https://api.github.com/repos/${owner}/${repo}/zipball/${encodeURIComponent(branch)}`;
-      const archiveResp = await fetch(zipUrl, { headers });
+      const archiveResp = await fetch(zipUrl, { headers, signal: AbortSignal.timeout(120_000) }); // a repository download may be large, but not unbounded
       if (!archiveResp.ok) {
         throw new Error(`Failed to download repository zipball: HTTP ${archiveResp.status}`);
       }
@@ -2243,7 +2213,7 @@ Strict Requirements:
   });
 
   app.post("/api/projects/:pid/github/sync", async (req, res) => {
-    const pid = req.params.pid;
+    const pid = String(req.params.pid);
     const proj = projects.get(pid);
     if (!proj || !proj.github) {
       return res.status(400).json({ error: "Project is not linked to a GitHub repository" });
@@ -2253,7 +2223,7 @@ Strict Requirements:
       const { owner, repo, branch = "main" } = proj.github;
       const headers: Record<string, string> = { "User-Agent": "Darkness-AI-Assistant" };
       const zipUrl = `https://api.github.com/repos/${owner}/${repo}/zipball/${encodeURIComponent(branch)}`;
-      const archiveResp = await fetch(zipUrl, { headers });
+      const archiveResp = await fetch(zipUrl, { headers, signal: AbortSignal.timeout(120_000) }); // a repository download may be large, but not unbounded
       if (!archiveResp.ok) throw new Error(`HTTP ${archiveResp.status} while fetching repository`);
 
       const arrayBuf = await archiveResp.arrayBuffer();

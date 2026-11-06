@@ -8,11 +8,9 @@
  * - Strictly NO AI-generated decorative assets, cartoon emojis, or decorative clutter
  */
 
-import { rgb, RGB, PDFPage, PDFFont } from "pdf-lib";
+import { rgb, PDFPage, PDFFont } from "pdf-lib";
 import {
   BorderStyle,
-  HeadingLevel,
-  AlignmentType,
   WidthType,
   Paragraph,
   TextRun,

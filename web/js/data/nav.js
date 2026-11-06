@@ -6,20 +6,30 @@ window.Darkness = window.Darkness || {};
  */
 window.Darkness.data = {
   nav: [
-    { id: 'chat', label: 'Chat', href: '#/chat', icon: 'chat' },
-    { id: 'builder', label: 'Project Studio', href: '#/builder', icon: 'sparkles' },
-    { id: 'copilot', label: 'Copilot', href: '/copilot.html', icon: 'zap' },
-    { id: 'home', label: 'Home', href: '#/home', icon: 'house' },
-    { id: 'document-studio', label: 'Word Studio', href: '#/document-studio', icon: 'file-text' },
-    { id: 'presentation-studio', label: 'Slide Studio', href: '#/presentation-studio', icon: 'monitor' },
-    { id: 'knowledge', label: 'My Library', href: '#/knowledge', icon: 'book' },
-    { id: 'project', label: 'Projects', href: '#/project', icon: 'folder' },
-    { id: 'history', label: 'History', href: '#/history', icon: 'clock' },
-    { id: 'agent', label: 'Agent', href: '/agent.html', icon: 'bot' },
-    { id: 'classic', label: 'Classic Darkness', href: '/classic/', icon: 'globe' }
+    { id: 'home', label: 'Overview', href: '#/home', icon: 'house', group: 'Workspace' },
+    { id: 'chat', label: 'Chat', href: '#/chat', icon: 'chat', group: 'Workspace' },
+    { id: 'copilot', label: 'Copilot', href: '/copilot.html', icon: 'zap', group: 'Workspace' },
+    { id: 'history', label: 'History', href: '#/history', icon: 'clock', group: 'Workspace' },
+
+    { id: 'builder', label: 'Project Studio', href: '#/builder', icon: 'sparkles', group: 'Create' },
+    { id: 'document-studio', label: 'Word Studio', href: '#/document-studio', icon: 'file-text', group: 'Create' },
+    { id: 'presentation-studio', label: 'Slide Studio', href: '#/presentation-studio', icon: 'monitor', group: 'Create' },
+    { id: 'agent', label: 'Agent', href: '/agent.html', icon: 'bot', group: 'Create' },
+    { id: 'prompts', label: 'Prompt Studio', href: '#/prompts', icon: 'wand', group: 'Create' },
+    { id: 'agents', label: 'Agent workflow', href: '#/agents', icon: 'network', group: 'Create' },
+
+    { id: 'knowledge', label: 'My Library', href: '#/knowledge', icon: 'book', group: 'Knowledge' },
+    { id: 'project', label: 'Projects', href: '#/project', icon: 'folder', group: 'Knowledge' },
+
+    { id: 'usage', label: 'Usage', href: '#/usage', icon: 'chart', group: 'Manage' },
+    { id: 'memory', label: 'Memory', href: '#/memory', icon: 'brain', group: 'Manage' },
+    { id: 'compare', label: 'Compare models', href: '#/compare', icon: 'columns', group: 'Manage' },
+    { id: 'system', label: 'System status', href: '#/system', icon: 'activity', group: 'Manage' },
+    { id: 'model', label: 'Models', href: '#/model', icon: 'cpu', group: 'Manage' },
+    { id: 'classic', label: 'Classic Darkness', href: '/classic/', icon: 'globe', group: 'Manage' }
   ],
   secondaryNav: [
-    { id: 'model', label: 'Model', href: '#/model', icon: 'cpu' },
+    { id: 'account', label: 'Account', href: '#/account', icon: 'user' },
     { id: 'settings', label: 'Settings', href: '#/settings', icon: 'gear' }
   ]
 };

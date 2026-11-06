@@ -4,7 +4,7 @@ import * as path from "path";
 import * as net from "net";
 import * as http from "http";
 import { v4 as uuidv4 } from "uuid";
-import { resolveProjectWorkspace } from "./project-storage";
+import { resolveProjectWorkspace } from "./project-storage.js";
 
 export { resolveProjectWorkspace };
 
@@ -623,6 +623,10 @@ export async function startTerminalSession(sessionId: string): Promise<TerminalS
     cwd: session.workingDirectory,
     shell: true,
     env: envVars,
+    // On Unix the shell and everything it starts get their own process group, so stopProject can end the whole tree with kill(-pid). Without
+    // this, kill(-pid) always failed (there was no such group), only the shell was signalled, and a dev server started by `npm run dev` kept
+    // running (and holding its port and pipes) after "Stop". Not used on Windows: there it would open a console window; taskkill /T handles trees.
+    detached: process.platform !== "win32",
   });
 
   session.process = proc;
@@ -639,13 +643,17 @@ export async function startTerminalSession(sessionId: string): Promise<TerminalS
   });
 
   proc.on("close", (code) => {
-    session.status = code === 0 ? "completed" : "failed";
+    // A restarted session has a newer process; the old one exiting must not overwrite the new run's state.
+    if (session.process !== proc) return;
+    // Stopped by the user: the process is killed, so its exit code is non-zero, but that is not a failure.
+    const userStopped = session.status === "stopped";
+    session.status = userStopped ? "stopped" : code === 0 ? "completed" : "failed";
     session.exitCode = code;
     session.diagnostics.processRunning = false;
     session.diagnostics.isReady = false;
     session.diagnostics.tcpStatus = "not_listening";
     session.diagnostics.httpStatus = "failed";
-    session.diagnostics.httpReason = `Process exited with code ${code}`;
+    if (!userStopped) session.diagnostics.httpReason = `Process exited with code ${code}`;
     clearSessionTimer(session.id);
     addLog(`\n\x1b[90m[Process exited with code ${code}]\x1b[0m\n`);
   });
@@ -762,6 +770,7 @@ export function stopTerminalSession(sessionId: string): TerminalSession {
           session.process.kill("SIGTERM");
         }
         setTimeout(() => {
+          try { process.kill(-pid, "SIGKILL"); } catch (_) { /* the group is already gone */ }
           try {
             if (session.process && !session.process.killed) session.process.kill("SIGKILL");
           } catch (_) {}
@@ -800,4 +809,40 @@ export function getProjectSessions(projectId: string): TerminalSession[] {
     if (session.projectId === projectId) sessions.push(session);
   }
   return sessions;
+}
+
+/**
+ * The latest run of a project, summarised for the Copilot's context (it explains runtime problems from this): state,
+ * command, exit code, the reason it failed and the log text. `status: "idle"` when nothing has been run.
+ */
+export function getRunStatus(projectId: string): { status: TerminalSession["status"]; command?: string; runtime?: string; exitCode?: number | null; error?: string; logs: string[] } {
+  const sessions = getProjectSessions(projectId);
+  const s = sessions[sessions.length - 1];
+  if (!s) return { status: "idle", logs: [] };
+  const logs = Array.isArray(s.logs) ? s.logs : [];
+  let error: string | undefined;
+  if (s.status === "failed") error = s.diagnostics?.httpReason || s.diagnostics?.tcpReason || logs.slice(-5).join("").trim().slice(0, 500) || "The process failed.";
+  return { status: s.status, command: s.command, runtime: String(s.command || "").trim().split(/\s+/)[0] || undefined, exitCode: s.exitCode, error, logs };
+}
+
+/**
+ * Stop everything that is running for a project (its dev server, test run, terminals). Returns how many processes were
+ * stopped. With `discard`, the project's finished sessions are also forgotten; deleting a project does that, and it must
+ * stop the processes FIRST because a running process holds the project folder open (on Windows that blocks the delete).
+ */
+export function stopProject(projectId: string, opts: { discard?: boolean } = {}): number {
+  let stopped = 0;
+  for (const s of getProjectSessions(projectId)) {
+    if (s.status === "running" || s.status === "starting") {
+      try {
+        stopTerminalSession(s.id);
+        stopped++;
+      } catch { /* already gone */ }
+    }
+    if (opts.discard) {
+      clearSessionTimer(s.id);
+      activeSessions.delete(s.id);
+    }
+  }
+  return stopped;
 }

@@ -12,7 +12,7 @@
  */
 
 import path from "path";
-import { ProjectAnalysis, ExtractedFile, ApiEndpoint, DatabaseModel, DependencyItem } from "./project-analyzer";
+import { ProjectAnalysis, ExtractedFile } from "./project-analyzer.js";
 
 // ============================================================================
 // 1. PROJECT INTENT DEFINITION & CLASSIFICATION
@@ -678,8 +678,8 @@ export class ProjectKnowledgeBuilder {
     // 11. Modules
     const modules = (arch?.nodes || []).slice(0, 10).map(n => ({
       name: n.label,
-      path: n.file,
-      responsibility: n.description || `Module component in ${n.file}`
+      path: n.files?.[0], // ArchitectureNode has `files` (a list); `file` does not exist, so path and the text below were undefined
+      responsibility: n.description || `Module component in ${n.files?.[0] || n.label}`
     }));
 
     // 12. Viva Defense Summary

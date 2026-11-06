@@ -431,14 +431,6 @@
       }
     }
 
-    highlightLine(lineNum) {
-      if (!this.isOpen || !this.panelEl) return;
-      const targetStep = this.steps.findIndex((s) => s.lineNumber === lineNum);
-      if (targetStep >= 0) {
-        this.applyStep(targetStep);
-      }
-    }
-
     _bindResizer() {
       const resizer = document.getElementById("vlResizer");
       if (resizer && this.panelEl) {
@@ -541,7 +533,7 @@
           <div class="vl-panel-title" style="display:flex; align-items:center; gap:8px; font-weight:700; font-size:13px; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:65%;">
             <span style="font-size:16px;">📄</span>
             <span style="overflow:hidden; text-overflow:ellipsis;">${this._escape(filePath)}</span>
-            <span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent); font-weight:600; flex-shrink:0;">${this._escape(lineRangeStr)}</span>
+            <span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent-text, var(--accent)); font-weight:600; flex-shrink:0;">${this._escape(lineRangeStr)}</span>
           </div>
           <div class="vl-panel-actions" style="display:flex; align-items:center; gap:6px;">
             <button class="btn btn--xs btn--outline" id="vlNewChatBtn" title="Start a fresh conversation for this code snippet" type="button" style="font-size:11.5px; padding:4px 9px; display:inline-flex; align-items:center; gap:4px; font-weight:600; cursor:pointer;">
@@ -692,7 +684,7 @@
           return `
             <div class="vl-msg vl-msg--assistant" id="${msg.id}" style="align-self:flex-start; width:100%; background:var(--surface); border:1px solid var(--line); padding:16px; border-radius:12px; font-size:13px; line-height:1.6; color:var(--ink); box-shadow:0 1px 3px rgba(0,0,0,0.04);">
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding-bottom:6px; border-bottom:1px solid var(--line);">
-                <div style="display:flex; align-items:center; gap:6px; font-weight:700; font-size:12px; color:var(--accent);">
+                <div style="display:flex; align-items:center; gap:6px; font-weight:700; font-size:12px; color:var(--accent-text, var(--accent));">
                   <span>🤖 AI Master Code Tutor</span>
                 </div>
                 ${!msg.isStreaming ? `

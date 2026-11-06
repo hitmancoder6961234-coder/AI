@@ -3,9 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0, viewport-fit=cover" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="/vendor/fonts/inter/inter.css" />
     <title>Darkness AI</title>
     <meta name="description" content="A private, multi-model AI workspace: chat, knowledge, projects, documents and a working agent." />
     <meta property="og:title" content="Darkness AI" />
@@ -33,28 +31,16 @@
     <link rel="stylesheet" href="/css/code-viewer.css" />
     <link rel="stylesheet" href="/css/speech-reader.css" />
     <link rel="stylesheet" href="/css/builder.css" />
+    <link rel="stylesheet" href="/css/auth-gate.css" />
+    <link rel="stylesheet" href="/css/manage.css" />
     <link rel="stylesheet" href="/atmosphere/atmosphere.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/mhchem.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+    <link rel="stylesheet" href="/css/pdf-export.css" />
+    <link rel="stylesheet" id="__________cytoscape_stylesheet" href="/cytoscape-container.css" />
+    <script src="/vendor/mermaid/mermaid.min.js" defer></script>
 
 
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script>
-      (function() {
-        try {
-          if (window.innerWidth >= 1024 && localStorage.getItem('darkness_sidebar_rail') === 'true') {
-            document.addEventListener('DOMContentLoaded', function() {
-              var sb = document.getElementById('sidebar');
-              if (sb) sb.classList.add('is-rail');
-            });
-          }
-        } catch(e) {}
-      })();
-    </script>
+    <script src="/boot-sidebar.js"></script>
   </head>
 
   <body>
@@ -112,7 +98,7 @@
             <!-- Authenticated user: profile chip dropdown trigger -->
             <button class="user-chip" id="userMenuBtn" type="button" aria-haspopup="menu" aria-expanded="false" title="Account Details & Sign Out" style="width: 100%; display: flex; align-items: center; gap: 10px; background: transparent; border: 1px solid var(--line); padding: 8px 10px; border-radius: var(--r-md); cursor: pointer; text-align: left; color: var(--ink); transition: background 0.15s ease;">
               <span class="avatar avatar--sm user-chip__avatar" id="userMenuAvatar" aria-hidden="true" style="border-radius: 50%; width: 34px; height: 34px; min-width: 34px; min-height: 34px; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; overflow: hidden; background: var(--accent-soft); border: 1px solid var(--line); flex-shrink: 0;">
-                <img id="userMenuAvatarImg" src="" alt="" style="display:none; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" onerror="if(this.parentElement){this.parentElement.classList.add('avatar--fallback');const ini=this.parentElement.querySelector('.avatar__initials');if(ini)ini.style.display='flex';}" />
+                <img id="userMenuAvatarImg" src="" alt="" style="display:none; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;" />
                 <span class="avatar__initials" id="userMenuInitial" style="font-weight: 700; font-size: 13px; color: var(--accent); display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; border-radius: 50%;"></span>
               </span>
               <div class="sidebar-profile-text" style="display: flex; flex-direction: column; min-width: 0; flex: 1;">

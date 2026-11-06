@@ -1,3 +1,5 @@
+import { uploadZipInChunks } from "../lib/zip-upload.js";
+
 
 function getKnowledgeSourceIcon(ext, name) {
   const cleanExt = (ext || '').toLowerCase().replace('.', '');
@@ -95,7 +97,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
         ${documents.length === 0 ? `
           <!-- EMPTY STATE -->
           <div class="card" style="padding: 56px 24px; text-align: center; border: 1px solid var(--line); background: var(--surface); margin-bottom: 24px;">
-            <div style="width: 56px; height: 56px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
+            <div style="width: 56px; height: 56px; border-radius: 14px; background: var(--accent-soft); color: var(--accent-text, var(--accent)); display: flex; align-items: center; justify-content: center; margin: 0 auto 16px auto;">
               <svg class="icon" viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
             </div>
             <h3 style="font-size: 17px; font-weight: 600; margin-bottom: 6px; color: var(--ink);">No knowledge sources added yet</h3>
@@ -143,7 +145,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
                         <span class="tag tag--sm" style="background: ${doc.status === 'Indexed' ? 'rgba(16,185,129,0.1)' : 'rgba(245,158,11,0.1)'}; color: ${doc.status === 'Indexed' ? '#059669' : '#d97706'}; font-weight: 600;">${window.Darkness.utils.escapeHtml(doc.status)}</span>
                       </td>
                       <td style="padding: 12px 16px; text-align: right;">
-                        <button class="btn btn--ghost btn--sm view-chunks-btn" data-path="${window.Darkness.utils.escapeHtml(doc.path)}" data-name="${window.Darkness.utils.escapeHtml(doc.name)}" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent); padding: 2px 6px;">
+                        <button class="btn btn--ghost btn--sm view-chunks-btn" data-path="${window.Darkness.utils.escapeHtml(doc.path)}" data-name="${window.Darkness.utils.escapeHtml(doc.name)}" style="font-family: var(--font-mono); font-size: 12px; color: var(--accent-text, var(--accent)); padding: 2px 6px;">
                           ${doc.chunksCount} chunks
                         </button>
                       </td>
@@ -278,7 +280,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
         
         const modalBody = `
           <div style="font-size: 13.5px; line-height: 1.5; color: var(--ink);">
-            Are you sure you want to remove <strong style="font-family: var(--font-mono); color: var(--accent);">${window.Darkness.utils.escapeHtml(name)}</strong> from the Knowledge Base?
+            Are you sure you want to remove <strong style="font-family: var(--font-mono); color: var(--accent-text, var(--accent));">${window.Darkness.utils.escapeHtml(name)}</strong> from the Knowledge Base?
             <p style="margin-top: 8px; font-size: 12.5px; color: var(--ink-muted); margin-bottom: 0;">
               This will remove all indexed chunks and embeddings from the retrieval store.
             </p>
@@ -527,7 +529,7 @@ async function renderKnowledgeTab(container, explicitProjectId) {
             Upload project documentation, specifications, Jupyter notebooks, or source files. They are automatically parsed, chunked, and embedded into the vector store.
           </p>
           <div style="border: 2px dashed var(--line); border-radius: var(--r-lg); padding: 36px 20px; text-align: center; background: var(--surface-muted); cursor: pointer; transition: all var(--t-fast) var(--ease);" id="ragDropZone">
-            <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); margin-bottom: 12px; color: var(--accent);">
+            <div style="display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); margin-bottom: 12px; color: var(--accent-text, var(--accent));">
               <svg class="icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
             </div>
             <div style="font-size: 14.5px; font-weight: 600; color: var(--ink); margin-bottom: 6px;">Select files or drag and drop</div>
@@ -945,8 +947,295 @@ const DEFAULT_RAG_SETTINGS = {
   similarityThreshold: 0.70
 };
 
+// Used by both the project list (drop/pick to create) and the Files tab (upload), so it lives at module scope.
+const IGNORED_PATH_SEGMENTS = new Set([
+  "node_modules", ".git", ".svn", ".hg", "__pycache__", ".venv", "venv", "env",
+  ".idea", ".vscode", "dist", "build", "target", ".next", ".nuxt", "coverage", ".pytest_cache",
+  ".turbo", ".cache", ".output", ".gradle", "bin", "obj", "vendor", "bower_components", "pods",
+  "deriveddata", ".yarn", ".pnpm-store", ".parcel-cache"
+]);
+
+function filterProjectFiles(fileList) {
+  return (fileList || []).filter(f => {
+    const rawPath = (f.webkitRelativePath || f.name || "").replace(/\\/g, "/");
+    if (!rawPath) return false;
+    const baseName = rawPath.split("/").pop() || "";
+    if (baseName === ".DS_Store" || baseName.endsWith("Thumbs.db") || baseName === "desktop.ini") {
+      return false;
+    }
+    const segments = rawPath.split("/").filter(Boolean);
+    for (let i = 0; i < segments.length - 1; i++) {
+      if (IGNORED_PATH_SEGMENTS.has(segments[i].toLowerCase())) {
+        return false;
+      }
+    }
+    return true;
+  });
+}
+
+/* ============================================================
+   Modals shared by several tabs. They used to live inside one tab's function, so a button in another tab (the AI
+   assistant's 'Review changes', the architecture graph's 'Repair all') called a function it could not see.
+   ============================================================ */
+// Code Change Diff Modal
+function openCodeChangeModal(plan) {
+  let portal = document.getElementById("fmModalContainer") || document.getElementById("ccModalPortal");
+  if (!portal) {
+    // Opened from a tab that has no modal portal of its own (for example the AI assistant): make one
+    portal = document.createElement("div");
+    portal.id = "ccModalPortal";
+    document.body.appendChild(portal);
+  }
+
+  let tabsHtml = '';
+  let contentHtml = '';
+  
+  plan.files.forEach((f, idx) => {
+    const active = idx === 0 ? 'is-active' : '';
+    const displayStyle = idx === 0 ? 'block' : 'none';
+    tabsHtml += `<button class="project-tab-btn ${active}" data-file-idx="${idx}">${window.Darkness.utils.escapeHtml(f.path)}</button>`;
+    
+    contentHtml += `<div class="diff-file-content" data-content-idx="${idx}" style="display:${displayStyle}; height: 100%; overflow: auto;">
+      <div style="padding: 12px; background: var(--surface); border-bottom: 1px solid var(--line); font-family: monospace; font-size: 13px; font-weight: bold;">
+        📝 Proposed New Content: ${window.Darkness.utils.escapeHtml(f.path)}
+      </div>
+      <pre style="margin: 0; padding: 16px; font-size: 13px; line-height: 1.5; background: var(--surface-hover); color: var(--ink); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px;"><code>${window.Darkness.utils.escapeHtml(f.content)}</code></pre>
+    </div>`;
+  });
+
+  portal.innerHTML = `
+    <div class="fm-modal-backdrop" id="ccModalBackdrop" style="position:fixed; inset:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px;">
+      <div style="background:var(--surface); border:1px solid var(--line); border-radius:12px; width:100%; max-width:900px; height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 40px rgba(0,0,0,0.25); overflow:hidden; animation: fmFadeIn 0.2s ease-out;">
+        
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); background:var(--surface-muted);">
+          <div>
+            <h3 style="margin:0; font-size:16px; font-weight:600; color:var(--ink);">Review Code Changes</h3>
+            <p class="muted" style="margin:4px 0 0 0; font-size:13px;">${window.Darkness.utils.escapeHtml(plan.description || "Review the proposed modifications before applying.")}</p>
+          </div>
+          <button class="btn btn--ghost btn--sm" id="closeCcModalBtn" style="padding:4px 8px; font-size:13px;">✕</button>
+        </div>
+
+        <div style="display:flex; flex:1; overflow:hidden; flex-direction:column;">
+          <div style="display:flex; gap:8px; border-bottom:1px solid var(--line); padding:8px 16px; overflow-x:auto; background:var(--surface-muted);">
+            ${tabsHtml}
+          </div>
+          <div style="flex:1; background:var(--surface); overflow:hidden;">
+            ${contentHtml}
+          </div>
+        </div>
+
+        <div style="padding:16px 20px; border-top:1px solid var(--line); background:var(--surface-muted); display:flex; justify-content:flex-end; gap:12px;">
+          <button class="btn btn--outline btn--sm" id="cancelCcModalBtn">Cancel</button>
+          <button class="btn btn--primary btn--sm" id="applyCcModalBtn">Approve & Apply</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const cleanup = () => { portal.innerHTML = ""; };
+  document.getElementById("closeCcModalBtn")?.addEventListener("click", cleanup);
+  document.getElementById("cancelCcModalBtn")?.addEventListener("click", cleanup);
+  document.getElementById("ccModalBackdrop")?.addEventListener("click", (e) => {
+    if (e.target.id === "ccModalBackdrop") cleanup();
+  });
+
+  const tabBtns = portal.querySelectorAll(".project-tab-btn[data-file-idx]");
+  const contents = portal.querySelectorAll(".diff-file-content");
+
+  tabBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      tabBtns.forEach(b => b.classList.remove("is-active"));
+      btn.classList.add("is-active");
+      const idx = btn.getAttribute("data-file-idx");
+      contents.forEach(c => {
+        if (c && c.style) c.style.display = c.getAttribute("data-content-idx") === idx ? "block" : "none";
+      });
+    });
+  });
+
+  document.getElementById("applyCcModalBtn")?.addEventListener("click", async (e) => {
+    const btn = e.target;
+    try {
+      btn.disabled = true;
+      btn.textContent = "Applying...";
+      const res = await window.Darkness.api.post("/api/projects/" + window.Darkness.currentProjectId + "/apply-changes", { plan });
+      if (res.ok) {
+        window.Darkness.toast.show("Code changes applied successfully.", "success");
+        cleanup();
+        // Force file explorer reload if we are on files tab
+        const chatBtn = document.querySelector('.project-tab-btn[data-tab="files"]');
+        if (chatBtn) chatBtn.click();
+      } else {
+        throw new Error(res.error || "Failed to apply changes");
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = "Approve & Apply";
+      window.Darkness.toast.show(err.message, "danger");
+    }
+  });
+}
+
+function openRepairAllAdvisorModal(issuesToRepair, callback, projectIdHint) {
+  if (!issuesToRepair || issuesToRepair.length === 0) {
+    window.Darkness.toast.show("No active issues to repair.", "info");
+    return;
+  }
+  const portal = document.getElementById("vmaFixModalPortal") || document.getElementById("archFixModalPortal") || document.body;
+  const modalWrapper = document.createElement("div");
+  modalWrapper.id = "vmaBatchRepairModalWrapper";
+
+  const fixCount = issuesToRepair.length;
+  const filesAffected = Array.from(new Set(issuesToRepair.map(i => {
+    const f = (i.fixDiff && i.fixDiff.file) || i.targetFile || i.sourceFile || i.file || "server.ts";
+    return f;
+  })));
+
+  modalWrapper.innerHTML = [
+    '<div class="fm-modal-backdrop" id="vmaBatchRepairBackdrop" style="position:fixed; inset:0; background:rgba(15,23,42,0.7); backdrop-filter:blur(5px); z-index:99999; display:flex; align-items:center; justify-content:center; padding:16px;">',
+    '  <div class="card" style="width:100%; max-width:640px; max-height:90vh; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.35); overflow:hidden;">',
+    '    <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line); background:var(--surface-muted);">',
+    '      <div style="display:flex; align-items:center; gap:10px;">',
+    '        <div style="width:36px; height:36px; border-radius:8px; background:#4f46e5; color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px;">⚡</div>',
+    '        <div>',
+    '          <strong style="font-size:16px; color:var(--ink);">Batch Repair All Architectural Issues</strong>',
+    '          <div class="muted" style="font-size:12px; margin-top:2px;">Automated multi-file architecture integrity repair & AST verification</div>',
+    '        </div>',
+    '      </div>',
+    '      <button class="btn btn--ghost btn--sm" id="closeBatchRepairModalBtn" style="padding:4px 8px; font-size:14px;">✕</button>',
+    '    </div>',
+    '    <div style="padding:22px; overflow-y:auto; display:flex; flex-direction:column; gap:16px;" id="batchRepairModalBody">',
+    '      <div style="background:var(--surface-muted); border:1px solid var(--line); border-radius:10px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;">',
+    '        <div>',
+    '          <div style="font-size:13px; font-weight:700; color:var(--ink);">' + fixCount + ' Actionable Issues Selected</div>',
+    '          <div class="muted" style="font-size:12px; margin-top:2px;">Across ' + filesAffected.length + ' project files (' + filesAffected.slice(0, 3).map(f => window.Darkness.utils.escapeHtml(f)).join(", ") + (filesAffected.length > 3 ? '...' : '') + ')</div>',
+    '        </div>',
+    '        <span class="tag tag--xs" style="background:#e0e7ff; color:#4338ca; font-weight:700; font-size:12px; padding:4px 10px;">Ready to Apply</span>',
+    '      </div>',
+    '      <div style="display:flex; flex-direction:column; gap:8px;">',
+    '        <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--ink-muted); letter-spacing:0.04em;">Issues Scheduled for Repair:</div>',
+    '        <div style="max-height:180px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px 12px; background:var(--surface); display:flex; flex-direction:column; gap:6px;">' +
+    issuesToRepair.map((iss, idx) => {
+      const file = (iss.fixDiff && iss.fixDiff.file) || iss.targetFile || iss.sourceFile || iss.file || "server.ts";
+      return '<div style="display:flex; align-items:center; justify-content:space-between; font-size:12px; padding:4px 0; border-bottom:1px solid var(--line);">' +
+        '<div style="display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:75%;">' +
+        '<span style="color:#10b981; font-weight:700;">#' + (idx + 1) + '</span> ' +
+        '<span style="font-weight:600; color:var(--ink);">' + window.Darkness.utils.escapeHtml(iss.title) + '</span>' +
+        '</div>' +
+        '<span style="font-family:var(--font-mono); color:var(--ink-muted); font-size:11px;">' + window.Darkness.utils.escapeHtml(file) + '</span>' +
+        '</div>';
+    }).join("") +
+    '        </div>',
+    '      </div>',
+    '      <div style="display:flex; align-items:flex-start; gap:10px; padding:12px 14px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; font-size:12px; color:#92400e; line-height:1.5;">',
+    '        <span style="font-size:16px; line-height:1;">🛡️</span>',
+    '        <div><strong>Real Architectural Fixes:</strong> Real AST-verified code modifications will be written to disk, committed to workspace persistence, and static cross-tier invariants re-analyzed to ensure 100% verification.</div>',
+    '      </div>',
+    '      <div id="batchRepairProgressSection" style="display:none; flex-direction:column; gap:8px;">',
+    '        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:var(--ink);">' +
+    '          <span id="batchRepairProgressLabel">Applying real fixes to codebase...</span>' +
+    '          <span id="batchRepairProgressPercent">0%</span>' +
+    '        </div>' +
+    '        <div style="width:100%; height:8px; background:var(--surface-muted); border-radius:4px; overflow:hidden; border:1px solid var(--line);">' +
+    '          <div id="batchRepairProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #4f46e5, #10b981); transition:width 0.3s ease;"></div>' +
+    '        </div>' +
+    '      </div>',
+    '    </div>',
+    '    <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid var(--line); background:var(--surface-muted);" id="batchRepairModalFooter">',
+    '      <button class="btn btn--outline btn--sm" id="cancelBatchRepairBtn">Cancel</button>',
+    '      <button class="btn btn--primary btn--sm" id="confirmBatchRepairBtn" style="gap:6px; font-weight:700; background:linear-gradient(135deg, #4f46e5 0%, #2563eb 100%); padding:7px 16px;"><span>⚡ Confirm & Repair All (' + fixCount + ')</span></button>',
+    '    </div>',
+    '  </div>',
+    '</div>'
+  ].join("");
+
+  if (portal && (portal.id === "vmaFixModalPortal" || portal.id === "archFixModalPortal")) {
+    portal.innerHTML = "";
+    portal.appendChild(modalWrapper);
+  } else {
+    document.body.appendChild(modalWrapper);
+  }
+
+  const cleanup = () => {
+    if (portal && (portal.id === "vmaFixModalPortal" || portal.id === "archFixModalPortal")) {
+      portal.innerHTML = "";
+    } else if (modalWrapper.parentNode) {
+      modalWrapper.parentNode.removeChild(modalWrapper);
+    }
+  };
+
+  document.getElementById("closeBatchRepairModalBtn")?.addEventListener("click", cleanup);
+  document.getElementById("cancelBatchRepairBtn")?.addEventListener("click", cleanup);
+  document.getElementById("vmaBatchRepairBackdrop")?.addEventListener("click", (e) => {
+    if (e.target.id === "vmaBatchRepairBackdrop") cleanup();
+  });
+
+  document.getElementById("confirmBatchRepairBtn")?.addEventListener("click", async () => {
+    const confirmBtn = document.getElementById("confirmBatchRepairBtn");
+    const cancelBtn = document.getElementById("cancelBatchRepairBtn");
+    const progressSection = document.getElementById("batchRepairProgressSection");
+    const progressBar = document.getElementById("batchRepairProgressBar");
+    const progressLabel = document.getElementById("batchRepairProgressLabel");
+    const progressPercent = document.getElementById("batchRepairProgressPercent");
+
+    if (confirmBtn) {
+      confirmBtn.disabled = true;
+      confirmBtn.innerHTML = '<span class="spinner" style="width:14px; height:14px;"></span> Repairing All Issues...';
+    }
+    if (cancelBtn) cancelBtn.disabled = true;
+    if (progressSection) progressSection.style.display = "flex";
+    if (progressBar) progressBar.style.width = "25%";
+    if (progressPercent) progressPercent.textContent = "25%";
+
+    try {
+      const effectivePid = projectIdHint || (window.Darkness.currentProject && window.Darkness.currentProject.id) || window.Darkness.currentProjectId || (window.location.hash.split('/')[2] || '').split('?')[0] || '';
+      
+      const fixesPayload = issuesToRepair.map(iss => {
+        if (iss.fixDiff) return iss.fixDiff;
+        return {
+          file: iss.targetFile || iss.sourceFile || iss.file || "server.ts",
+          before: iss.sourceSnippet || iss.snippet || "",
+          after: iss.suggestedImplementation || iss.suggestedFix || `// Verified architecture connection for ${iss.title}\n`,
+          explanation: iss.explanation || iss.title
+        };
+      });
+
+      if (progressBar) progressBar.style.width = "60%";
+      if (progressPercent) progressPercent.textContent = "60%";
+      if (progressLabel) progressLabel.textContent = "Writing real AST fixes & compiling architecture model...";
+
+      const res = await window.Darkness.api.post("/api/projects/" + effectivePid + "/advisor/apply-all-fixes", {
+        fixes: fixesPayload
+      });
+
+      if (progressBar) progressBar.style.width = "100%";
+      if (progressPercent) progressPercent.textContent = "100%";
+      if (progressLabel) progressLabel.textContent = "✓ All fixes applied successfully!";
+
+      setTimeout(async () => {
+        cleanup();
+        window.Darkness.toast.show("Successfully repaired " + (res.appliedCount || fixesPayload.length) + " architectural issues! Architecture 100% verified.", "success");
+        if (typeof callback === "function") {
+          await callback();
+        }
+      }, 500);
+
+    } catch (err) {
+      console.error("Failed to repair all issues:", err);
+      window.Darkness.toast.show("Failed to repair all issues: " + (err.message || "Unknown error"), "danger");
+      if (confirmBtn) {
+        confirmBtn.disabled = false;
+        confirmBtn.innerHTML = "Retry Repair All";
+      }
+      if (cancelBtn) cancelBtn.disabled = false;
+    }
+  });
+}
+
 window.Darkness = window.Darkness || {};
 window.Darkness.pages = window.Darkness.pages || {};
+// Shared modals, reachable from any tab (and from tests).
+window.Darkness.projectModals = { openCodeChangeModal, openRepairAllAdvisorModal };
 
 window.Darkness.pages.project = async function renderProjectPage(route) {
   const main = document.getElementById("main");
@@ -1056,31 +1345,6 @@ async function renderProjectList(main) {
     });
   }
 
-  const IGNORED_PATH_SEGMENTS = new Set([
-    "node_modules", ".git", ".svn", ".hg", "__pycache__", ".venv", "venv", "env",
-    ".idea", ".vscode", "dist", "build", "target", ".next", ".nuxt", "coverage", ".pytest_cache",
-    ".turbo", ".cache", ".output", ".gradle", "bin", "obj", "vendor", "bower_components", "pods",
-    "deriveddata", ".yarn", ".pnpm-store", ".parcel-cache"
-  ]);
-
-  function filterProjectFiles(fileList) {
-    return (fileList || []).filter(f => {
-      const rawPath = (f.webkitRelativePath || f.name || "").replace(/\\/g, "/");
-      if (!rawPath) return false;
-      const baseName = rawPath.split("/").pop() || "";
-      if (baseName === ".DS_Store" || baseName.endsWith("Thumbs.db") || baseName === "desktop.ini") {
-        return false;
-      }
-      const segments = rawPath.split("/").filter(Boolean);
-      for (let i = 0; i < segments.length - 1; i++) {
-        if (IGNORED_PATH_SEGMENTS.has(segments[i].toLowerCase())) {
-          return false;
-        }
-      }
-      return true;
-    });
-  }
-
   async function handleBatchUpload(rawFiles) {
     const files = filterProjectFiles(Array.from(rawFiles || []));
     if (files.length === 0) {
@@ -1107,7 +1371,7 @@ async function renderProjectList(main) {
         '      <span class="spinner" style="width:15px; height:15px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite;"></span>',
         '      <span>Uploading ' + files.length + ' project files' + filteredMsg + '</span>',
         '    </strong>',
-        '    <span id="batchPercentBadge" class="font-mono" style="font-size:12px; font-weight:700; color:var(--accent);">0%</span>',
+        '    <span id="batchPercentBadge" class="font-mono" style="font-size:12px; font-weight:700; color:var(--accent-text, var(--accent));">0%</span>',
         '  </div>',
         '  <div class="progress" style="height:6px; background:var(--surface-muted); border-radius:999px; overflow:hidden;">',
         '    <div id="batchProgressBar" style="width:5%; height:100%; background:var(--accent); border-radius:999px; transition:width 0.2s ease;"></div>',
@@ -1289,7 +1553,7 @@ function projectCardHtml(p) {
         '<h3 style="font-size:16px; font-weight:600; color:var(--ink); cursor:pointer; word-break:break-word; flex:1; min-width:200px;" data-project-action="open" data-project-id="' + p.id + '">' + window.Darkness.utils.escapeHtml(p.name) + '</h3>' +
         '<div style="display:flex; gap:6px; flex-shrink:0; max-width:100%; flex-wrap:wrap; justify-content:flex-end;">' +
           githubBadge +
-          '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent); font-weight:600; flex-shrink:0;">' + window.Darkness.utils.escapeHtml(lang) + '</span>' +
+          '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent-text, var(--accent)); font-weight:600; flex-shrink:0;">' + window.Darkness.utils.escapeHtml(lang) + '</span>' +
         '</div>' +
       '</div>' +
       '<div class="muted" style="font-size:13px; margin-bottom:12px; line-height:1.4; word-break:break-word;">' + window.Darkness.utils.escapeHtml(p.description || type) + '</div>' +
@@ -1368,7 +1632,7 @@ function openGithubImportModal(mainContainer) {
 
     '<div>',
     '<details style="font-size:12.5px;">',
-    '<summary style="cursor:pointer; color:var(--accent); font-weight:500;">Private repository or rate limit issue? Provide Token</summary>',
+    '<summary style="cursor:pointer; color:var(--accent-text, var(--accent)); font-weight:500;">Private repository or rate limit issue? Provide Token</summary>',
     '<div style="margin-top:8px;">',
     '<input type="password" id="ghToken" class="input" style="width:100%;" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx (GitHub Personal Access Token)">',
     '<p style="font-size:11.5px; color:var(--ink-muted); margin-top:4px;">Token is only used to pull and synchronize code. Never stored insecurely.</p>',
@@ -1376,7 +1640,7 @@ function openGithubImportModal(mainContainer) {
     '</details>',
     '</div>',
 
-    '<div id="ghProgressBox" style="display:none; padding:12px; border-radius:8px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); font-size:13px; color:var(--accent);">',
+    '<div id="ghProgressBox" style="display:none; padding:12px; border-radius:8px; background:rgba(59,130,246,0.08); border:1px solid rgba(59,130,246,0.2); font-size:13px; color:var(--accent-text, var(--accent));">',
     '<div style="display:flex; align-items:center; gap:10px;">',
     '<span class="spinner" style="width:16px; height:16px; border:2px solid currentColor; border-top-color:transparent; border-radius:50%; display:inline-block; animation:spin 1s linear infinite;"></span>',
     '<span id="ghProgressText">Downloading repository archive from GitHub...</span>',
@@ -1494,189 +1758,6 @@ function openGithubImportModal(mainContainer) {
   });
 }
 
-/* ============================================================
-   ZIP Upload Pipeline & Chunked Engine
-   ============================================================ */
-async function uploadZipInChunks(file, projectIdToMerge, onProgress) {
-  const MAX_UPLOAD_SIZE = 104857600; // 100 MB (104,857,600 bytes)
-  if (file && file.size > MAX_UPLOAD_SIZE) {
-    throw new Error(`ZIP file is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed upload size is 100 MB (104,857,600 bytes).`);
-  }
-
-  const startTime = Date.now();
-
-  const formatBytes = (bytes) => {
-    if (bytes <= 0) return "0 Bytes";
-    const k = 1024;
-    const sizes = ["Bytes", "KB", "MB", "GB"];
-    const idx = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, idx)).toFixed(2)) + " " + sizes[idx];
-  };
-
-  const formatSpeed = (bytesPerSec) => {
-    if (bytesPerSec <= 0) return "Calculating...";
-    if (bytesPerSec > 1024 * 1024) {
-      return (bytesPerSec / (1024 * 1024)).toFixed(2) + " MB/s";
-    } else if (bytesPerSec > 1024) {
-      return (bytesPerSec / 1024).toFixed(1) + " KB/s";
-    } else {
-      return Math.round(bytesPerSec) + " B/s";
-    }
-  };
-
-  const formatETA = (seconds) => {
-    if (seconds === undefined || isNaN(seconds) || seconds === Infinity) return "Calculating ETA...";
-    if (seconds <= 0) return "Almost done";
-    if (seconds < 60) return `${seconds}s remaining`;
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}m ${secs}s remaining`;
-  };
-
-  // Direct upload for ZIP files <= 15MB (vast majority of projects) for near-instant transfer
-  if (file.size <= 15 * 1024 * 1024) {
-    return new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      const fd = new FormData();
-      fd.append("file", file, file.name);
-      if (projectIdToMerge) {
-        fd.append("projectId", projectIdToMerge);
-      } else {
-        fd.append("name", file.name.replace(/\.zip$/i, ""));
-      }
-
-      xhr.upload.addEventListener("progress", (e) => {
-        if (e.lengthComputable) {
-          const percent = Math.min(99, Math.round((e.loaded / e.total) * 100));
-          const elapsed = (Date.now() - startTime) / 1000;
-          const speed = elapsed > 0 ? e.loaded / elapsed : 0;
-          const remaining = e.total - e.loaded;
-          const eta = speed > 0 ? Math.ceil(remaining / speed) : undefined;
-          if (onProgress) {
-            onProgress(
-              percent,
-              `Uploading ${file.name}`,
-              `Transferred ${formatBytes(e.loaded)} of ${formatBytes(e.total)} • Speed: ${formatSpeed(speed)} • ETA: ${formatETA(eta)}`
-            );
-          }
-        }
-      });
-
-      xhr.addEventListener("load", () => {
-        if (onProgress) onProgress(100, "Extracting & Analyzing Project...", "Scanning dependencies and building intelligence graphs...");
-        try {
-          const res = JSON.parse(xhr.responseText);
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve(res);
-          } else {
-            reject(new Error(res.error || "Upload failed with status " + xhr.status));
-          }
-        } catch (err) {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            resolve({ success: true, project: {} });
-          } else {
-            reject(new Error("Upload failed: " + xhr.responseText));
-          }
-        }
-      });
-
-      xhr.addEventListener("error", () => reject(new Error("Network transfer error")));
-      xhr.addEventListener("abort", () => reject(new Error("Upload aborted")));
-
-      const uploadUrl = window.Darkness.api ? window.Darkness.api._url("/api/projects/upload-zip") : "/api/projects/upload-zip";
-      const authHeaders = (window.Darkness.api && typeof window.Darkness.api._getAuthHeaders === "function") ? window.Darkness.api._getAuthHeaders() : {};
-      xhr.open("POST", uploadUrl);
-      Object.entries(authHeaders).forEach(([k, v]) => xhr.setRequestHeader(k, v));
-      xhr.withCredentials = true;
-      xhr.send(fd);
-    });
-  }
-
-  // Chunked upload for large archives > 15MB with 8MB chunks
-  const chunkSize = 8 * 1024 * 1024;
-  const totalChunks = Math.ceil(file.size / chunkSize);
-  const uploadId = "up_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
-  let resData = null;
-
-  for (let i = 0; i < totalChunks; i++) {
-    const start = i * chunkSize;
-    const end = Math.min(file.size, start + chunkSize);
-    const chunkBlob = file.slice(start, end);
-
-    const fd = new FormData();
-    fd.append("file", chunkBlob, file.name);
-    fd.append("chunkIndex", i);
-    fd.append("totalChunks", totalChunks);
-    fd.append("uploadId", uploadId);
-    if (projectIdToMerge) {
-      fd.append("projectId", projectIdToMerge);
-    } else {
-      fd.append("name", file.name.replace(/\.zip$/i, ""));
-    }
-
-    const uploadedBefore = i * chunkSize;
-    const percent = Math.min(99, Math.round((uploadedBefore / file.size) * 100));
-    const elapsedMs = Date.now() - startTime;
-    const speed = elapsedMs > 0 ? (uploadedBefore / (elapsedMs / 1000)) : 0;
-    const remainingBytes = file.size - uploadedBefore;
-    const eta = speed > 0 ? Math.ceil(remainingBytes / speed) : undefined;
-
-    const text = `Uploading ${file.name}`;
-    const secondaryText = `Part ${i + 1} of ${totalChunks} • Speed: ${formatSpeed(speed)} • ETA: ${formatETA(eta)} • ${formatBytes(uploadedBefore)} of ${formatBytes(file.size)}`;
-
-    if (onProgress) {
-      onProgress(percent, text, secondaryText);
-    }
-
-    const chunkUrl = window.Darkness.api ? window.Darkness.api._url("/api/projects/upload-zip/chunk") : "/api/projects/upload-zip/chunk";
-    const chunkAuthHeaders = (window.Darkness.api && typeof window.Darkness.api._getAuthHeaders === "function") ? window.Darkness.api._getAuthHeaders() : {};
-
-    let resp = null;
-    let chunkErr = null;
-    for (let cAttempt = 0; cAttempt < 3; cAttempt++) {
-      try {
-        resp = await fetch(chunkUrl, {
-          method: "POST",
-          body: fd,
-          credentials: "include",
-          headers: chunkAuthHeaders,
-        });
-        if (resp) break;
-      } catch (err) {
-        chunkErr = err;
-        if (cAttempt < 2) await new Promise(r => setTimeout(r, 600 * (cAttempt + 1)));
-      }
-    }
-    if (!resp) {
-      throw new Error("Network connection error: " + (chunkErr?.message || "Failed to fetch chunk"));
-    }
-
-    const textRes = await resp.text();
-    try { resData = JSON.parse(textRes); } catch { resData = { error: textRes }; }
-    if (!resp.ok) {
-      throw new Error((resData && resData.error) || "Chunk upload failed");
-    }
-
-    const uploadedAfter = Math.min(file.size, (i + 1) * chunkSize);
-    const percentAfter = Math.min(99, Math.round((uploadedAfter / file.size) * 100));
-    const elapsedMsAfter = Date.now() - startTime;
-    const speedAfter = elapsedMsAfter > 0 ? (uploadedAfter / (elapsedMsAfter / 1000)) : 0;
-    const remainingBytesAfter = file.size - uploadedAfter;
-    const etaAfter = speedAfter > 0 ? Math.ceil(remainingBytesAfter / speedAfter) : undefined;
-
-    const textAfter = i + 1 === totalChunks ? "Extracting & processing on server..." : `Uploading ${file.name}`;
-    const secondaryTextAfter = i + 1 === totalChunks
-      ? "Assembling parts and scanning project files..."
-      : `Part ${i + 1} of ${totalChunks} • Speed: ${formatSpeed(speedAfter)} • ETA: ${formatETA(etaAfter)} • ${formatBytes(uploadedAfter)} of ${formatBytes(file.size)}`;
-
-    if (onProgress) {
-      onProgress(percentAfter, textAfter, secondaryTextAfter);
-    }
-  }
-
-  return resData;
-}
-
 async function handleZipUpload(file) {
   if (!file.name.toLowerCase().endsWith(".zip")) {
     window.Darkness.toast.show("Only .zip files are supported", "danger");
@@ -1697,14 +1778,14 @@ async function handleZipUpload(file) {
       '      <span class="spinner" style="width:16px; height:16px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite;"></span>',
       '      <span style="font-size:14px; font-weight:600; color:var(--ink);">' + window.Darkness.utils.escapeHtml(text) + '</span>',
       '    </div>',
-      '    <span class="font-mono" style="font-size:13px; font-weight:700; color:var(--accent);">' + percent + '%</span>',
+      '    <span class="font-mono" style="font-size:13px; font-weight:700; color:var(--accent-text, var(--accent));">' + percent + '%</span>',
       '  </div>',
       '  <div style="width:100%; height:8px; background:var(--line); border-radius:999px; overflow:hidden;">',
       '    <div style="width:' + percent + '%; height:100%; background:var(--accent); border-radius:999px; transition:width 0.2s ease;"></div>',
       '  </div>',
       '  <div style="display:flex; flex-direction:column; gap:8px; padding:12px; background:var(--surface-muted); border-radius:6px; border:1px solid var(--line);">',
       '    <div class="muted" style="font-size:12px; line-height:1.4; display:flex; align-items:center; gap:6px;">',
-      '      <svg class="icon" style="color:var(--accent); flex-shrink:0;" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
+      '      <svg class="icon" style="color:var(--accent-text, var(--accent)); flex-shrink:0;" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>',
       '      <span>' + window.Darkness.utils.escapeHtml(secondaryText) + '</span>',
       '    </div>',
       '  </div>',
@@ -1783,7 +1864,9 @@ async function renderProjectDetail(main, projectId) {
   if (window.Darkness.currentProjectId !== projectId) {
     activeProjectTab = "overview";
     activeFileNode = null;
+    window.Darkness.activeProjectFile = null; // the open file belongs to the previous project
   }
+  if (window.runPollInterval) { clearInterval(window.runPollInterval); window.runPollInterval = null; }
   let project = null;
   let analysis = null;
   let treeData = null;
@@ -1813,14 +1896,49 @@ async function renderProjectDetail(main, projectId) {
   }
 
   // Render container
+  const escH = window.Darkness.utils.escapeHtml;
+  const tabDefs = [
+    ["overview", "Overview", ""],
+    ["files", "Code Explorer", '<span class="project-badge">' + (treeData.total || 0) + '</span>'],
+    ["architecture", "Architecture Graph", '<span class="project-badge">' + analysis.architecture.nodes.length + '</span>'],
+    ["visual_advisor", "Maps & Advisor", '<span class="project-badge" id="advisorIssueCountBadge" style="display:none;"></span>'],
+    ["dataflow", "Data Flow", ""],
+    ["apis", "APIs", '<span class="project-badge">' + (((analysis.apiIntelligence || {}).endpoints || []).length) + '</span>'],
+    ["database", "Database", ""],
+    ["dependencies", "Dependencies", '<span class="project-badge">' + ((analysis.dependencies || []).length) + '</span>'],
+    ["viva", "Viva Prep", ""],
+    ["artifacts", "Deliverables", '<span class="project-badge" id="artifactsTabBadge">0</span>'],
+    ["run", "Run & Test", ""],
+    ["chat", "Project AI Assistant", ""],
+  ];
+  const pidQ = encodeURIComponent(projectId);
   main.innerHTML = [
     '<div class="page project-page"><div class="page__inner">',
-    // Navigation Tabs
-    '<nav class="project-tabs-bar" id="projectTabsBar">',
-    '<button class="project-tab-btn ' + (activeProjectTab === 'overview' ? 'is-active' : '') + '" data-tab="overview">Overview</button>',
-    '<button class="project-tab-btn ' + (activeProjectTab === 'files' ? 'is-active' : '') + '" data-tab="files">Code Explorer <span class="project-badge">' + (treeData.total || 0) + '</span></button>',
-    '<button class="project-tab-btn ' + (activeProjectTab === 'architecture' ? 'is-active' : '') + '" data-tab="architecture">Architecture Graph <span class="project-badge">' + analysis.architecture.nodes.length + '</span></button>',
-    '<button class="project-tab-btn ' + (activeProjectTab === 'chat' ? 'is-active' : '') + '" data-tab="chat">Project AI Assistant</button>',
+    // Project header: where you are, the way back, and the project-level actions
+    '<header class="pj-head">',
+    '  <button class="btn btn--ghost btn--sm pj-back" id="backBtn" type="button" aria-label="Back to all projects">&larr; Projects</button>',
+    '  <div class="pj-head__main">',
+    '    <h1 class="pj-title" title="' + escH(project.name || "Project") + '">' + escH(project.name || "Project") + '</h1>',
+    '    <p class="pj-meta">' + [analysis.projectType, analysis.primaryLanguage, (treeData.total || 0) + " files"].filter(Boolean).map(escH).join(" &middot; ") + '</p>',
+    '  </div>',
+    '  <div class="pj-head__actions">',
+    '    <button class="btn btn--primary btn--sm" id="openChatTabBtn" type="button">Ask the assistant</button>',
+    '    <div class="pj-menu" id="headerProjectActionsDropdown">',
+    '      <button class="btn btn--outline btn--sm" id="headerProjectActionsBtn" type="button" aria-haspopup="menu" aria-expanded="false">Actions &#9662;</button>',
+    '      <div class="pj-menu__list" id="headerProjectActionsMenu" role="menu" style="display:none;">',
+    '        <button class="pj-menu__item" id="exportReportBtn" type="button" role="menuitem">Open project report</button>',
+    '        <a class="pj-menu__item" id="exportDiagramPngLink" role="menuitem" href="' + window.Darkness.api._url("/api/projects/" + pidQ + "/export/diagram.png") + '" download>Download diagram (PNG)</a>',
+    '        <a class="pj-menu__item" id="exportDiagramJpgLink" role="menuitem" href="' + window.Darkness.api._url("/api/projects/" + pidQ + "/export/diagram.jpg") + '" download>Download diagram (JPG)</a>',
+    '        <button class="pj-menu__item" id="reAnalyzeBtn" type="button" role="menuitem">Re-Analyze Project</button>',
+    '        <button class="pj-menu__item pj-menu__item--danger" id="deleteProjectDetailBtn" type="button" role="menuitem">Delete project&hellip;</button>',
+    '      </div>',
+    '    </div>',
+    '  </div>',
+    '</header>',
+
+    // Navigation Tabs (the bar scrolls sideways when there are more tabs than fit)
+    '<nav class="project-tabs-bar" id="projectTabsBar" aria-label="Project sections">',
+    tabDefs.map(t => '<button class="project-tab-btn ' + (activeProjectTab === t[0] ? 'is-active' : '') + '" data-tab="' + t[0] + '" type="button">' + t[1] + (t[2] ? ' ' + t[2] : '') + '</button>').join(""),
     '</nav>',
 
     // Dynamic Tab Body Container
@@ -1878,17 +1996,24 @@ async function renderProjectDetail(main, projectId) {
 
   const headerProjectActionsBtn = document.getElementById("headerProjectActionsBtn");
   const headerProjectActionsMenu = document.getElementById("headerProjectActionsMenu");
+  const setActionsMenu = (open) => {
+    if (!headerProjectActionsMenu) return;
+    headerProjectActionsMenu.style.display = open ? "flex" : "none";
+    headerProjectActionsBtn?.setAttribute("aria-expanded", String(open));
+  };
   if (headerProjectActionsBtn && headerProjectActionsMenu) {
     headerProjectActionsBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      const isVisible = headerProjectActionsMenu.style.display === "flex";
-      headerProjectActionsMenu.style.display = isVisible ? "none" : "flex";
+      setActionsMenu(headerProjectActionsMenu.style.display !== "flex");
     });
-    document.addEventListener("click", (e) => {
-      if (!e.target.closest("#headerProjectActionsDropdown")) {
-        headerProjectActionsMenu.style.display = "none";
-      }
-    });
+    // Close on an outside click or Escape. The page is re-rendered often, so remove the previous render's listeners first or
+    // they pile up (one more on every render) and keep references to menus that no longer exist.
+    if (window.__pjMenuClose) document.removeEventListener("click", window.__pjMenuClose);
+    if (window.__pjMenuKey) document.removeEventListener("keydown", window.__pjMenuKey);
+    window.__pjMenuClose = (e) => { if (!e.target.closest("#headerProjectActionsDropdown")) setActionsMenu(false); };
+    window.__pjMenuKey = (e) => { if (e.key === "Escape") setActionsMenu(false); };
+    document.addEventListener("click", window.__pjMenuClose);
+    document.addEventListener("keydown", window.__pjMenuKey);
   }
 
   document.getElementById("exportReportBtn")?.addEventListener("click", () => {
@@ -1989,6 +2114,11 @@ async function renderProjectDetail(main, projectId) {
 
   function renderActiveTab() {
     if (!tabContentEl) return;
+    // the terminal polls the server every second; stop as soon as another tab is shown
+    if (activeProjectTab !== "run" && window.runPollInterval) {
+      clearInterval(window.runPollInterval);
+      window.runPollInterval = null;
+    }
     if (activeProjectTab === "knowledge") {
       window.location.hash = "#/knowledge";
       return;
@@ -2006,8 +2136,12 @@ async function renderProjectDetail(main, projectId) {
     else if (activeProjectTab === "dependencies") renderDependenciesTab(tabContentEl, analysis);
     else if (activeProjectTab === "viva") renderVivaTab(tabContentEl, analysis, switchTabToFile);
     else if (activeProjectTab === "artifacts") renderArtifactsTab(tabContentEl, projectId, analysis, switchTab);
+    else if (activeProjectTab === "run") renderRunTestTab(tabContentEl, projectId, analysis);
     else if (activeProjectTab === "chat") renderProjectChatTab(tabContentEl, projectId, analysis);
   }
+
+  // Other tabs (the architecture graph's advisor chip) switch tabs through this; they cannot see this function's scope.
+  window.Darkness.projectNav = { projectId, switchTab, switchTabToFile: (f, l) => switchTabToFile(f, l) };
 
   function switchTabToFile(filePath, lineNumber) {
     activeProjectTab = "files";
@@ -2049,7 +2183,7 @@ function renderOverviewTab(container, analysis, project, switchTab) {
             '<div>' +
               '<div style="font-weight:600; font-size:14px; color:var(--ink); display:flex; align-items:center; gap:8px;">' +
                 '<span>' + window.Darkness.utils.escapeHtml(project.github.owner + '/' + project.github.repo) + '</span>' +
-                '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent); font-weight:600;">' + window.Darkness.utils.escapeHtml(project.github.branch) + '</span>' +
+                '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent-text, var(--accent)); font-weight:600;">' + window.Darkness.utils.escapeHtml(project.github.branch) + '</span>' +
                 '<span class="tag tag--xs" style="' + (project.github.status === 'synced' ? 'background:rgba(16,185,129,0.15); color:#059669;' : 'background:rgba(239,68,68,0.15); color:#dc2626;') + ' font-weight:600;">' + window.Darkness.utils.escapeHtml((project.github.status || 'unknown').toUpperCase()) + '</span>' +
               '</div>' +
               '<div style="font-size:12px; color:var(--ink-muted); margin-top:2px;">' +
@@ -2074,11 +2208,11 @@ function renderOverviewTab(container, analysis, project, switchTab) {
     '<div class="card" style="padding:20px 24px; border:1px solid var(--accent); background:var(--surface); border-radius:12px; margin-bottom:20px;">' +
       '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:12px;">' +
         '<div>' +
-          '<div style="font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Project Intelligence & System Understanding</div>' +
+          '<div style="font-size:12px; font-weight:700; color:var(--accent-text, var(--accent)); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:2px;">Project Intelligence & System Understanding</div>' +
           '<h2 style="font-size:18px; font-weight:700; color:var(--ink); margin:0;">' + window.Darkness.utils.escapeHtml(projectIdentity.title || analysis.projectName || "Project") + '</h2>' +
           '<p style="font-size:13.5px; color:var(--ink-muted); margin:4px 0 0 0;">' + window.Darkness.utils.escapeHtml(projectIdentity.tagline || analysis.summary || "") + '</p>' +
         '</div>' +
-        '<span class="tag tag--sm" style="background:var(--accent-soft); color:var(--accent); font-weight:600; padding:6px 12px;">System-Level Analysis</span>' +
+        '<span class="tag tag--sm" style="background:var(--accent-soft); color:var(--accent-text, var(--accent)); font-weight:600; padding:6px 12px;">System-Level Analysis</span>' +
       '</div>' +
       '<div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:16px; margin-top:16px;">' +
         '<div style="background:var(--surface-muted); padding:14px; border-radius:8px; border-left:3px solid var(--accent);">' +
@@ -2109,7 +2243,7 @@ function renderOverviewTab(container, analysis, project, switchTab) {
               '<span class="severity-pill ' + sevClass + '">' + f.severity + '</span>' +
               '<strong style="font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(f.title) + '</strong>' +
             '</div>' +
-            '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(f.file) + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent); padding:2px 6px;">' + window.Darkness.utils.escapeHtml(f.file) + ':' + f.line + '</button>' +
+            '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(f.file) + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent-text, var(--accent)); padding:2px 6px;">' + window.Darkness.utils.escapeHtml(f.file) + ':' + f.line + '</button>' +
           '</div>' +
           '<p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin-bottom:8px;">' + window.Darkness.utils.escapeHtml(f.description) + '</p>' +
           (f.redactedSnippet ? '<div class="code-evidence-box" style="margin-bottom:8px; background:var(--surface-muted); padding:8px; border-radius:4px; font-family:var(--font-mono); font-size:12px; overflow-x:auto;"><code>' + window.Darkness.utils.escapeHtml(f.redactedSnippet) + '</code></div>' : '') +
@@ -2711,6 +2845,8 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
 
       if (loadToken !== currentLoadFileToken) return; // Stale request
       activeFileRecord = data;
+      // the assistant tab reads this to answer 'explain this file' (it lives in another function, so it cannot see activeFileRecord)
+      window.Darkness.activeProjectFile = { projectId: projectId, path: data.path, name: data.name };
       // Attach the parse error details onto the record so the viewer can display the robust error UI
       if (parseErrorDetails) {
         activeFileRecord.ipynbParseError = parseErrorDetails;
@@ -2759,7 +2895,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
       meta.innerHTML = [
         '<div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">',
         breadcrumbs,
-        '<span class="tag" style="background:var(--accent-soft); color:var(--accent); font-size:11px;">' + window.Darkness.utils.escapeHtml(data.language || ext) + '</span>',
+        '<span class="tag" style="background:var(--accent-soft); color:var(--accent-text, var(--accent)); font-size:11px;">' + window.Darkness.utils.escapeHtml(data.language || ext) + '</span>',
         '<span class="tag" style="background:var(--surface-muted); font-size:11px;">' + window.Darkness.utils.escapeHtml(data.category) + '</span>',
         lines ? '<span class="muted" style="font-size:12px;">' + lines.toLocaleString() + ' lines</span>' : '',
         '<span class="muted" style="font-size:12px;">' + formatSize(data.size) + '</span>',
@@ -3159,7 +3295,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
           '  <div style="background: var(--surface-muted); padding: 12px; border-radius: 6px; text-align: left; margin-bottom: 24px; overflow-x: auto; border: 1px solid var(--line);">',
           '    <code style="color: var(--danger); font-size: 12px; font-family: var(--font-mono);">' + window.Darkness.utils.escapeHtml(e.message || "Invalid JSON") + '</code>',
           '  </div>',
-          '  <button class="btn btn--primary" onclick="window.Darkness.jumpToFile(\'' + window.Darkness.utils.escapeHtml(activeFileRecord.path) + '\')">Retry Loading Now</button>',
+          '  <button class="btn btn--primary" data-act="jump-to-file" data-file="' + window.Darkness.utils.escapeHtml(activeFileRecord.path) + '">Retry Loading Now</button>',
           '</div>'
         ].join("");
         return;
@@ -4302,6 +4438,11 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
   });
 
   document.getElementById("diagnosticsToggleBtn")?.addEventListener("click", () => {
+    if (!document.getElementById("vscodeProblemsPanel")) {
+      // the panel belongs to the code viewer, which only exists once a file is open
+      window.Darkness.toast.show("Open a file to see its problems.", "info");
+      return;
+    }
     isProblemsPanelOpen = !isProblemsPanelOpen;
     const panel = document.getElementById("vscodeProblemsPanel");
     if (panel) panel.style.display = isProblemsPanelOpen ? "flex" : "none";
@@ -4598,7 +4739,7 @@ function renderFilesTab(container, treeData, projectId, initialSelectPath, initi
         '  <span style="font-weight:600; font-size:13px; color:var(--ink); display:flex; align-items:center; gap:8px;">',
         '    <span class="spinner" style="width:13px; height:13px; border:2px solid var(--line); border-top-color:var(--accent); border-radius:50%; animation:spin 1s linear infinite;"></span>',
         '    ' + window.Darkness.utils.escapeHtml(title) + '</span>',
-        '  <span style="font-weight:700; font-size:12px; color:var(--accent); font-family:var(--font-mono);">' + percent + '%</span>',
+        '  <span style="font-weight:700; font-size:12px; color:var(--accent-text, var(--accent)); font-family:var(--font-mono);">' + percent + '%</span>',
         '</div>',
         '<div style="width:100%; height:6px; background:var(--line); border-radius:999px; overflow:hidden;">',
         '  <div style="width:' + percent + '%; height:100%; background:var(--accent); border-radius:999px; transition:width 0.2s ease;"></div>',
@@ -4908,7 +5049,9 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
   const viewModeKey = `darkness_arch_view_mode_${projectId}`;
   const lodKey = `darkness_arch_lod_${projectId}`;
 
-  let currentViewMode = localStorage.getItem(viewModeKey) || initialViewMode || "graph"; // "graph" | "mindmap" | "dataflow" | "advisor"
+  // The view switcher is not part of this toolbar any more (mind map, pipeline and advisor are their own tab), so a view mode
+  // saved by an older version would leave this tab stuck on a view with no way back. Always open on the graph.
+  let currentViewMode = "graph"; // "graph" | "mindmap" | "dataflow" | "advisor"
   let currentLOD = localStorage.getItem(lodKey) || ((currentViewMode === "graph" || currentViewMode === "architecture") ? "high" : "file"); // "high" | "detailed" | "symbol" | "file"
   let selectedCategory = "all";
   let showEdgeLabels = true;
@@ -4932,7 +5075,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
     '<div class="arch-verification-container" id="archVerificationBox" style="margin-bottom:10px;">',
     '  <div class="arch-verification-toggle" id="archVerificationToggleBtn" role="button" tabindex="0" title="Click to open or close System Verification details" style="display:flex; align-items:center; justify-content:space-between; padding:8px 14px; background:var(--surface); border:1px solid var(--line); border-radius:8px; cursor:pointer; user-select:none; transition:all 0.15s ease;">',
     '    <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">',
-    '      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:rgba(37,99,235,0.1); color:var(--accent); font-size:12px; font-weight:700;"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>',
+    '      <span style="display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:6px; background:rgba(37,99,235,0.1); color:var(--accent-text, var(--accent)); font-size:12px; font-weight:700;"><svg class="icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></span>',
     '      <span style="font-weight:700; font-size:12px; color:var(--ink); text-transform:uppercase; letter-spacing:0.04em;">System Verification</span>',
     '      <span id="archVerificationSummaryBadge" class="tag tag--xs tag--info" style="font-size:11px; font-weight:600;">Status & Diagnostics</span>',
     '    </div>',
@@ -5120,7 +5263,8 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
   viewGraphBtn?.addEventListener("click", () => setViewMode("graph"));
   viewFileStructBtn?.addEventListener("click", () => setViewMode("filestructure"));
   advisorHealthChip?.addEventListener("click", () => {
-    if (typeof switchTab === "function") switchTab("visual_advisor", "advisor");
+    // the tab bar lives outside this function; it publishes its navigation on window.Darkness.projectNav
+    if (window.Darkness.projectNav) window.Darkness.projectNav.switchTab("visual_advisor", "advisor");
   });
 
   // Bind Level of Detail Buttons
@@ -5814,7 +5958,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
         tooltipEl.innerHTML = `
           <div style="display:flex; align-items:center; justify-space-between; margin-bottom:6px; gap:8px;">
             <span style="font-weight:700; font-size:13px; color:var(--ink);">${window.Darkness.utils.escapeHtml(d.label || '')}</span>
-            <span style="font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; background:rgba(99,102,241,0.15); color:var(--accent);">${window.Darkness.utils.escapeHtml(typeLabel)}</span>
+            <span style="font-size:10px; font-weight:800; padding:2px 6px; border-radius:4px; background:rgba(99,102,241,0.15); color:var(--accent-text, var(--accent));">${window.Darkness.utils.escapeHtml(typeLabel)}</span>
           </div>
           <div style="font-size:11px; font-family:var(--font-mono); color:var(--ink-muted); margin-bottom:8px; word-break:break-all; background:var(--surface-muted); padding:4px 8px; border-radius:6px; border:1px solid var(--line);">
             📄 ${window.Darkness.utils.escapeHtml(relPath)}
@@ -6350,8 +6494,8 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
     const endpointsHtml = (nodeData.endpoints && nodeData.endpoints.length > 0)
       ? nodeData.endpoints.map(ep => {
           return '<div style="display:flex; align-items:center; justify-content:space-between; padding:6px 8px; background:var(--surface-muted); border-radius:6px; font-size:12px; font-family:var(--font-mono);">' +
-            '<div><span style="font-weight:700; color:var(--accent);">' + window.Darkness.utils.escapeHtml(ep.method) + '</span> ' + window.Darkness.utils.escapeHtml(ep.path) + '</div>' +
-            (ep.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(ep.file) + '" data-jump-line="' + (ep.line || 1) + '" style="padding:1px 6px; font-size:11px; color:var(--accent);">Line ' + (ep.line || 1) + '</button>' : '') +
+            '<div><span style="font-weight:700; color:var(--accent-text, var(--accent));">' + window.Darkness.utils.escapeHtml(ep.method) + '</span> ' + window.Darkness.utils.escapeHtml(ep.path) + '</div>' +
+            (ep.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(ep.file) + '" data-jump-line="' + (ep.line || 1) + '" style="padding:1px 6px; font-size:11px; color:var(--accent-text, var(--accent));">Line ' + (ep.line || 1) + '</button>' : '') +
             '</div>';
         }).join("")
       : '';
@@ -6361,7 +6505,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       ? nodeData.models.map(m => {
           return '<div style="padding:6px 8px; background:var(--surface-muted); border-radius:6px; font-size:12px;">' +
             '<div style="font-weight:600; color:var(--ink); font-family:var(--font-mono);">Table/Model: ' + window.Darkness.utils.escapeHtml(m.name) + '</div>' +
-            (m.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(m.file) + '" style="padding:0; font-size:11px; color:var(--accent); font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(m.file) + '</button>' : '') +
+            (m.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(m.file) + '" style="padding:0; font-size:11px; color:var(--accent-text, var(--accent)); font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(m.file) + '</button>' : '') +
             '</div>';
         }).join("")
       : '';
@@ -6519,7 +6663,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       evidenceHtml = edgeData.evidence.map(ev => {
         return '<div style="display:flex; flex-direction:column; gap:6px; padding:10px; background:var(--surface-muted); border-radius:6px; border:1px solid var(--line);">' +
           '<div style="display:flex; align-items:center; justify-content:space-between;">' +
-          '  <button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(ev.file) + '" data-jump-line="' + (ev.line || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent); font-weight:600;">' +
+          '  <button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(ev.file) + '" data-jump-line="' + (ev.line || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent-text, var(--accent)); font-weight:600;">' +
           '    ' + window.Darkness.utils.escapeHtml(ev.file) + ':' + (ev.line || 1) +
           '  </button>' +
           '  <span class="muted" style="font-size:11px;">Jump to Line →</span>' +
@@ -6625,7 +6769,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           return '<div class="arch-mindmap-child-node">' +
             '<div style="font-weight:600; font-size:12px; color:var(--ink); font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(sub.title) + '</div>' +
             (sub.detail ? '<div class="muted" style="font-size:11.5px;">' + window.Darkness.utils.escapeHtml(sub.detail) + '</div>' : '') +
-            (sub.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(sub.file) + '" data-jump-line="' + (sub.line || 1) + '" style="padding:0; font-size:11px; color:var(--accent); text-align:left;">Jump to code →</button>' : '') +
+            (sub.file ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(sub.file) + '" data-jump-line="' + (sub.line || 1) + '" style="padding:0; font-size:11px; color:var(--accent-text, var(--accent)); text-align:left;">Jump to code →</button>' : '') +
             '</div>';
         }).join("");
 
@@ -6651,6 +6795,33 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
   }
 
   // 8. Pipeline Data Flow View
+  /** Highlight one data flow in the graph: the nodes its steps pass through and the edges between them. */
+  function activateFlow(flowId) {
+    if (!cyInstance) return;
+    const flow = (arch.flows || []).find(f => f.id === flowId);
+    if (!flow) return;
+    const labels = new Set();
+    const files = new Set();
+    (flow.steps || []).forEach(st => {
+      if (st.nodeLabel) labels.add(String(st.nodeLabel).toLowerCase());
+      if (st.evidence && st.evidence.file) files.add(String(st.evidence.file).toLowerCase());
+    });
+    const hit = cyInstance.nodes('[!isParent]').filter(n => {
+      const d = n.data();
+      if (labels.has(String(d.label || "").toLowerCase())) return true;
+      return (d.files || []).some(f => files.has(String(f).toLowerCase()));
+    });
+    if (hit.length === 0) {
+      window.Darkness.toast.show("None of this flow's steps match a node in the graph.", "info");
+      return;
+    }
+    cyInstance.elements().removeClass('is-highlighted is-dimmed');
+    cyInstance.elements('[!isParent], edge').addClass('is-dimmed');
+    hit.removeClass('is-dimmed').addClass('is-highlighted');
+    hit.edgesWith(hit).removeClass('is-dimmed').addClass('is-highlighted');
+    cyInstance.fit(hit, 60);
+  }
+
   function renderDataFlowView() {
     const cont = document.getElementById("archDataflowContainer");
     if (!cont) return;
@@ -6694,11 +6865,11 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           '          <img src="' + iconSrc + '" style="width:100%; height:100%; object-fit:contain;" />',
           '        </div>',
           '        <div>',
-          '          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--accent); letter-spacing:0.04em;">Step ' + step.step + '</span>',
+          '          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--accent-text, var(--accent)); letter-spacing:0.04em;">Step ' + step.step + '</span>',
           '          <h4 style="font-size:14px; font-weight:700; color:var(--ink); margin:0;">' + window.Darkness.utils.escapeHtml(step.action) + '</h4>',
           '        </div>',
           '      </div>',
-          '      <span class="tag tag--xs" style="' + (step.isReturnPath ? 'background:#f3e8ff; color:#7e22ce;' : 'background:var(--accent-soft); color:var(--accent);') + ' font-size:10px;">',
+          '      <span class="tag tag--xs" style="' + (step.isReturnPath ? 'background:#f3e8ff; color:#7e22ce;' : 'background:var(--accent-soft); color:var(--accent-text, var(--accent));') + ' font-size:10px;">',
           step.isReturnPath ? '↩ Response Path' : window.Darkness.utils.escapeHtml(step.nodeLabel || 'Stage Node'),
           '      </span>',
           '    </div>',
@@ -6707,7 +6878,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           '  </div>',
           !isLast ? [
             '  <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 6px;">',
-            '    <div style="font-size:11px; font-weight:700; font-family:var(--font-mono); color:var(--accent); text-align:center; margin-bottom:2px;">' + (step.isReturnPath ? 'Return Data' : 'Execute') + '</div>',
+            '    <div style="font-size:11px; font-weight:700; font-family:var(--font-mono); color:var(--accent-text, var(--accent)); text-align:center; margin-bottom:2px;">' + (step.isReturnPath ? 'Return Data' : 'Execute') + '</div>',
             '    <svg width="32" height="24" viewBox="0 0 32 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h22M20 5l7 7-7 7"/></svg>',
             '  </div>'
           ].join("") : '',
@@ -6768,7 +6939,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           '          <img src="' + iconSrc + '" style="width:100%; height:100%; object-fit:contain;" />',
           '        </div>',
           '        <div>',
-          '          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--accent); letter-spacing:0.04em;">Step ' + step.step + '</span>',
+          '          <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--accent-text, var(--accent)); letter-spacing:0.04em;">Step ' + step.step + '</span>',
           '          <h4 style="font-size:14px; font-weight:700; color:var(--ink); margin:0;">' + window.Darkness.utils.escapeHtml(step.title) + '</h4>',
           '        </div>',
           '      </div>',
@@ -7158,7 +7329,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           </div>
 
           <!-- Flow Arrow to API Cloud -->
-          <div style="display: flex; flex-direction: column; align-items: center; color: var(--accent); font-size: 11px; font-weight: 700;">
+          <div style="display: flex; flex-direction: column; align-items: center; color: var(--accent-text, var(--accent)); font-size: 11px; font-weight: 700;">
             <span>Dail Code ➔</span>
           </div>
 
@@ -7297,100 +7468,6 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
     });
   }
 
-
-  // Code Change Diff Modal
-  function openCodeChangeModal(plan) {
-    const portal = document.getElementById("fmModalContainer");
-    if (!portal) return;
-
-    let tabsHtml = '';
-    let contentHtml = '';
-    
-    plan.files.forEach((f, idx) => {
-      const active = idx === 0 ? 'is-active' : '';
-      const displayStyle = idx === 0 ? 'block' : 'none';
-      tabsHtml += `<button class="project-tab-btn ${active}" data-file-idx="${idx}">${window.Darkness.utils.escapeHtml(f.path)}</button>`;
-      
-      contentHtml += `<div class="diff-file-content" data-content-idx="${idx}" style="display:${displayStyle}; height: 100%; overflow: auto;">
-        <div style="padding: 12px; background: var(--surface); border-bottom: 1px solid var(--line); font-family: monospace; font-size: 13px; font-weight: bold;">
-          📝 Proposed New Content: ${window.Darkness.utils.escapeHtml(f.path)}
-        </div>
-        <pre style="margin: 0; padding: 16px; font-size: 13px; line-height: 1.5; background: var(--surface-hover); color: var(--ink); border-bottom-left-radius: 6px; border-bottom-right-radius: 6px;"><code>${window.Darkness.utils.escapeHtml(f.content)}</code></pre>
-      </div>`;
-    });
-
-    portal.innerHTML = `
-      <div class="fm-modal-backdrop" id="ccModalBackdrop" style="position:fixed; inset:0; background:rgba(15,23,42,0.65); backdrop-filter:blur(4px); z-index:9999; display:flex; align-items:center; justify-content:center; padding:16px;">
-        <div style="background:var(--surface); border:1px solid var(--line); border-radius:12px; width:100%; max-width:900px; height:85vh; display:flex; flex-direction:column; box-shadow:0 20px 40px rgba(0,0,0,0.25); overflow:hidden; animation: fmFadeIn 0.2s ease-out;">
-          
-          <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--line); background:var(--surface-muted);">
-            <div>
-              <h3 style="margin:0; font-size:16px; font-weight:600; color:var(--ink);">Review Code Changes</h3>
-              <p class="muted" style="margin:4px 0 0 0; font-size:13px;">${window.Darkness.utils.escapeHtml(plan.description || "Review the proposed modifications before applying.")}</p>
-            </div>
-            <button class="btn btn--ghost btn--sm" id="closeCcModalBtn" style="padding:4px 8px; font-size:13px;">✕</button>
-          </div>
-
-          <div style="display:flex; flex:1; overflow:hidden; flex-direction:column;">
-            <div style="display:flex; gap:8px; border-bottom:1px solid var(--line); padding:8px 16px; overflow-x:auto; background:var(--surface-muted);">
-              ${tabsHtml}
-            </div>
-            <div style="flex:1; background:var(--surface); overflow:hidden;">
-              ${contentHtml}
-            </div>
-          </div>
-
-          <div style="padding:16px 20px; border-top:1px solid var(--line); background:var(--surface-muted); display:flex; justify-content:flex-end; gap:12px;">
-            <button class="btn btn--outline btn--sm" id="cancelCcModalBtn">Cancel</button>
-            <button class="btn btn--primary btn--sm" id="applyCcModalBtn">Approve & Apply</button>
-          </div>
-        </div>
-      </div>
-    `;
-
-    const cleanup = () => { portal.innerHTML = ""; };
-    document.getElementById("closeCcModalBtn")?.addEventListener("click", cleanup);
-    document.getElementById("cancelCcModalBtn")?.addEventListener("click", cleanup);
-    document.getElementById("ccModalBackdrop")?.addEventListener("click", (e) => {
-      if (e.target.id === "ccModalBackdrop") cleanup();
-    });
-
-    const tabBtns = portal.querySelectorAll(".project-tab-btn[data-file-idx]");
-    const contents = portal.querySelectorAll(".diff-file-content");
-
-    tabBtns.forEach(btn => {
-      btn.addEventListener("click", () => {
-        tabBtns.forEach(b => b.classList.remove("is-active"));
-        btn.classList.add("is-active");
-        const idx = btn.getAttribute("data-file-idx");
-        contents.forEach(c => {
-          if (c && c.style) c.style.display = c.getAttribute("data-content-idx") === idx ? "block" : "none";
-        });
-      });
-    });
-
-    document.getElementById("applyCcModalBtn")?.addEventListener("click", async (e) => {
-      const btn = e.target;
-      try {
-        btn.disabled = true;
-        btn.textContent = "Applying...";
-        const res = await window.Darkness.api.post("/api/projects/" + window.Darkness.currentProjectId + "/apply-changes", { plan });
-        if (res.ok) {
-          window.Darkness.toast.show("Code changes applied successfully.", "success");
-          cleanup();
-          // Force file explorer reload if we are on files tab
-          const chatBtn = document.querySelector('.project-tab-btn[data-tab="files"]');
-          if (chatBtn) chatBtn.click();
-        } else {
-          throw new Error(res.error || "Failed to apply changes");
-        }
-      } catch (err) {
-        btn.disabled = false;
-        btn.textContent = "Approve & Apply";
-        window.Darkness.toast.show(err.message, "danger");
-      }
-    });
-  }
 
   // 11. Architecture Advisor Fix Modal
   function openAdvisorFixModal(issue) {
@@ -7564,14 +7641,14 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
             '      <span class="tag tag--xs" style="font-weight:700; font-family:var(--font-mono); background:' + (r.method === 'GET' ? '#dbeafe; color:#1d4ed8;' : (r.method === 'POST' ? '#dcfce7; color:#15803d;' : '#fef3c7; color:#b45309;')) + '">' + window.Darkness.utils.escapeHtml(r.method) + '</span>',
             '      <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">' + window.Darkness.utils.escapeHtml(r.path) + '</span>',
             '    </div>',
-            r.clientFile ? '    <div style="margin-top:4px;"><button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(r.clientFile) + '" data-jump-line="' + (r.clientLine || 1) + '" style="padding:0; font-size:11px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(r.clientFile) + ':' + (r.clientLine || 1) + '</button></div>' : '',
+            r.clientFile ? '    <div style="margin-top:4px;"><button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(r.clientFile) + '" data-jump-line="' + (r.clientLine || 1) + '" style="padding:0; font-size:11px; font-family:var(--font-mono); color:var(--accent-text, var(--accent));">' + window.Darkness.utils.escapeHtml(r.clientFile) + ':' + (r.clientLine || 1) + '</button></div>' : '',
             '  </td>',
             '  <td style="padding:10px 12px;">',
             '    <span class="arch-health-chip ' + badgeClass + '" style="font-size:11px; padding:2px 8px;">' + badgeIcon + ' ' + r.status + '</span>',
             '  </td>',
             '  <td style="padding:10px 12px; font-family:var(--font-mono); font-size:12px;">',
             r.serverFile
-              ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(r.serverFile) + '" data-jump-line="' + (r.serverLine || 1) + '" style="padding:0; font-size:11.5px; font-family:var(--font-mono); color:var(--accent); font-weight:600;">' + window.Darkness.utils.escapeHtml(r.serverFile) + ':' + (r.serverLine || 1) + '</button>'
+              ? '<button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(r.serverFile) + '" data-jump-line="' + (r.serverLine || 1) + '" style="padding:0; font-size:11.5px; font-family:var(--font-mono); color:var(--accent-text, var(--accent)); font-weight:600;">' + window.Darkness.utils.escapeHtml(r.serverFile) + ':' + (r.serverLine || 1) + '</button>'
               : '<span style="color:#ef4444; font-weight:600;">⚠ No Route Handler Declared</span>',
             '  </td>',
             '  <td style="padding:10px 12px; color:var(--ink-muted); font-size:12.5px; line-height:1.4;">' + window.Darkness.utils.escapeHtml(r.detail || "Direct HTTP API dispatch.") + '</td>',
@@ -7609,10 +7686,10 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
           '        <span class="tag tag--xs" style="text-transform:uppercase; font-size:10px; letter-spacing:0.04em;">' + window.Darkness.utils.escapeHtml(iss.category) + '</span>',
           '        <h4 style="font-size:15px; font-weight:600; color:var(--ink); margin:0;">' + window.Darkness.utils.escapeHtml(iss.title) + '</h4>',
           '      </div>',
-          iss.file ? '      <button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(iss.file) + '" data-jump-line="' + (iss.line || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent); font-weight:600;">' + window.Darkness.utils.escapeHtml(iss.file) + ':' + (iss.line || 1) + ' <span class="muted" style="font-weight:normal;">(Jump to code →)</span></button>' : '',
+          iss.file ? '      <button class="btn btn--ghost btn--sm" data-jump-file="' + window.Darkness.utils.escapeHtml(iss.file) + '" data-jump-line="' + (iss.line || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent-text, var(--accent)); font-weight:600;">' + window.Darkness.utils.escapeHtml(iss.file) + ':' + (iss.line || 1) + ' <span class="muted" style="font-weight:normal;">(Jump to code →)</span></button>' : '',
           '    </div>',
           '    <div style="display:flex; align-items:center; gap:8px;">',
-          '      <button class="btn btn--outline btn--sm issue-verify-ai-btn" data-issue-id="' + window.Darkness.utils.escapeHtml(iss.id || iss.title) + '" data-issue-file="' + window.Darkness.utils.escapeHtml(iss.file || '') + '" data-issue-desc="' + window.Darkness.utils.escapeHtml(iss.title) + '" style="gap:5px; font-weight:600; padding:5px 12px; border-color:var(--accent); color:var(--accent);"><span>Verify with AI</span></button>',
+          '      <button class="btn btn--outline btn--sm issue-verify-ai-btn" data-issue-id="' + window.Darkness.utils.escapeHtml(iss.id || iss.title) + '" data-issue-file="' + window.Darkness.utils.escapeHtml(iss.file || '') + '" data-issue-desc="' + window.Darkness.utils.escapeHtml(iss.title) + '" style="gap:5px; font-weight:600; padding:5px 12px; border-color:var(--accent); color:var(--accent-text, var(--accent));"><span>Verify with AI</span></button>',
           iss.fixDiff ? '      <button class="btn btn--primary btn--sm" data-open-fix-issue="' + window.Darkness.utils.escapeHtml(iss.id) + '" style="gap:5px; font-weight:600; padding:5px 12px;"><span>Review Diff & Apply Fix</span></button>' : '',
           '    </div>',
           '  </div>',
@@ -7755,7 +7832,7 @@ function renderArchitectureTab(container, analysis, switchTabToFile, projectId, 
       openRepairAllAdvisorModal(issues, async () => {
         await loadAdvisorReport();
         renderAdvisorView();
-      });
+      }, projectId);
     });
 
     // Wire Copy Snippet Buttons
@@ -7860,7 +7937,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
     '  <div class="card" style="padding:16px 20px; border:1px solid var(--line); background:var(--surface); border-radius:10px; box-shadow:0 1px 3px rgba(0,0,0,0.03);">',
     '    <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">',
     '      <div style="display:flex; align-items:center; gap:12px;">',
-    '        <div style="width:38px; height:38px; border-radius:8px; background:var(--accent-soft, #eef2ff); display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--accent);">🗺️</div>',
+    '        <div style="width:38px; height:38px; border-radius:8px; background:var(--accent-soft, #eef2ff); display:flex; align-items:center; justify-content:center; font-size:18px; color:var(--accent-text, var(--accent));">🗺️</div>',
     '        <div>',
     '          <h2 style="font-size:16px; font-weight:700; color:var(--ink); margin:0;">Visual Maps & Architecture Advisor</h2>',
     '          <p class="muted" style="font-size:12.5px; margin:2px 0 0;">Interactive system mind maps, runtime pipeline flows, and automated architecture repairs.</p>',
@@ -8024,7 +8101,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
               '    <div style="display:flex; flex-direction:column; gap:4px;">',
               '      <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted);">Linked Source Files:</span>',
               '      <div style="display:flex; flex-wrap:wrap; gap:4px;">',
-              files.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface-muted); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>').join(""),
+              files.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface-muted); color:var(--accent-text, var(--accent)); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>').join(""),
               '      </div>',
               '    </div>'
             ].join("") : '',
@@ -8077,7 +8154,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
                 '  <div style="display:flex; flex-direction:column; gap:4px; margin-top:2px;">',
                 '    <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--ink-muted);">Key Source Files:</span>',
                 '    <div style="display:flex; flex-wrap:wrap; gap:4px;">',
-                files.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11.5px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface-muted); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>').join(""),
+                files.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11.5px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface-muted); color:var(--accent-text, var(--accent)); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>').join(""),
                 '    </div>',
                 '  </div>'
               ].join("") : '',
@@ -8225,7 +8302,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
         '    <div style="display:flex; align-items:center; gap:6px;">',
         '      <span class="muted">Target File:</span>',
         (activeStepData.file || (activeStepData.files && activeStepData.files[0])) ? [
-          '      <button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(activeStepData.file || activeStepData.files[0]) + '" style="font-size:11.5px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(activeStepData.file || activeStepData.files[0]) + '</button>'
+          '      <button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(activeStepData.file || activeStepData.files[0]) + '" style="font-size:11.5px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface); color:var(--accent-text, var(--accent)); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(activeStepData.file || activeStepData.files[0]) + '</button>'
         ].join("") : '<span class="muted">System Core</span>',
         '    </div>',
         '    <div style="display:flex; align-items:center; gap:8px;">',
@@ -8255,7 +8332,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
           st.detail || st.description ? '      <div style="font-size:12.5px; color:var(--ink-muted); margin-top:4px; line-height:1.45;">' + window.Darkness.utils.escapeHtml(st.detail || st.description) + '</div>' : '',
           stepFiles.length > 0 ? [
             '      <div style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;">',
-            stepFiles.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface); color:var(--accent); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>').join(""),
+            stepFiles.map(f => '<button class="arch-file-tag vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(f) + '" style="font-size:11px; padding:2px 8px; border-radius:4px; border:1px solid var(--line); background:var(--surface); color:var(--accent-text, var(--accent)); font-family:var(--font-mono); cursor:pointer;">📄 ' + window.Darkness.utils.escapeHtml(f) + '</button>').join(""),
             '      </div>'
           ].join("") : '',
           '    </div>',
@@ -8492,161 +8569,7 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
     });
   }
 
-  function openRepairAllAdvisorModal(issuesToRepair, callback) {
-    if (!issuesToRepair || issuesToRepair.length === 0) {
-      window.Darkness.toast.show("No active issues to repair.", "info");
-      return;
-    }
-    const portal = document.getElementById("vmaFixModalPortal") || document.getElementById("archFixModalPortal") || document.body;
-    const modalWrapper = document.createElement("div");
-    modalWrapper.id = "vmaBatchRepairModalWrapper";
 
-    const fixCount = issuesToRepair.length;
-    const filesAffected = Array.from(new Set(issuesToRepair.map(i => {
-      const f = (i.fixDiff && i.fixDiff.file) || i.targetFile || i.sourceFile || i.file || "server.ts";
-      return f;
-    })));
-
-    modalWrapper.innerHTML = [
-      '<div class="fm-modal-backdrop" id="vmaBatchRepairBackdrop" style="position:fixed; inset:0; background:rgba(15,23,42,0.7); backdrop-filter:blur(5px); z-index:99999; display:flex; align-items:center; justify-content:center; padding:16px;">',
-      '  <div class="card" style="width:100%; max-width:640px; max-height:90vh; display:flex; flex-direction:column; background:var(--surface); border:1px solid var(--line); border-radius:14px; box-shadow:0 25px 50px -12px rgba(0,0,0,0.35); overflow:hidden;">',
-      '    <div style="display:flex; align-items:center; justify-content:space-between; padding:18px 22px; border-bottom:1px solid var(--line); background:var(--surface-muted);">',
-      '      <div style="display:flex; align-items:center; gap:10px;">',
-      '        <div style="width:36px; height:36px; border-radius:8px; background:#4f46e5; color:#fff; display:flex; align-items:center; justify-content:center; font-size:18px;">⚡</div>',
-      '        <div>',
-      '          <strong style="font-size:16px; color:var(--ink);">Batch Repair All Architectural Issues</strong>',
-      '          <div class="muted" style="font-size:12px; margin-top:2px;">Automated multi-file architecture integrity repair & AST verification</div>',
-      '        </div>',
-      '      </div>',
-      '      <button class="btn btn--ghost btn--sm" id="closeBatchRepairModalBtn" style="padding:4px 8px; font-size:14px;">✕</button>',
-      '    </div>',
-      '    <div style="padding:22px; overflow-y:auto; display:flex; flex-direction:column; gap:16px;" id="batchRepairModalBody">',
-      '      <div style="background:var(--surface-muted); border:1px solid var(--line); border-radius:10px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;">',
-      '        <div>',
-      '          <div style="font-size:13px; font-weight:700; color:var(--ink);">' + fixCount + ' Actionable Issues Selected</div>',
-      '          <div class="muted" style="font-size:12px; margin-top:2px;">Across ' + filesAffected.length + ' project files (' + filesAffected.slice(0, 3).map(f => window.Darkness.utils.escapeHtml(f)).join(", ") + (filesAffected.length > 3 ? '...' : '') + ')</div>',
-      '        </div>',
-      '        <span class="tag tag--xs" style="background:#e0e7ff; color:#4338ca; font-weight:700; font-size:12px; padding:4px 10px;">Ready to Apply</span>',
-      '      </div>',
-      '      <div style="display:flex; flex-direction:column; gap:8px;">',
-      '        <div style="font-size:12px; font-weight:700; text-transform:uppercase; color:var(--ink-muted); letter-spacing:0.04em;">Issues Scheduled for Repair:</div>',
-      '        <div style="max-height:180px; overflow-y:auto; border:1px solid var(--line); border-radius:8px; padding:8px 12px; background:var(--surface); display:flex; flex-direction:column; gap:6px;">' +
-      issuesToRepair.map((iss, idx) => {
-        const file = (iss.fixDiff && iss.fixDiff.file) || iss.targetFile || iss.sourceFile || iss.file || "server.ts";
-        return '<div style="display:flex; align-items:center; justify-content:space-between; font-size:12px; padding:4px 0; border-bottom:1px solid var(--line);">' +
-          '<div style="display:flex; align-items:center; gap:6px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:75%;">' +
-          '<span style="color:#10b981; font-weight:700;">#' + (idx + 1) + '</span> ' +
-          '<span style="font-weight:600; color:var(--ink);">' + window.Darkness.utils.escapeHtml(iss.title) + '</span>' +
-          '</div>' +
-          '<span style="font-family:var(--font-mono); color:var(--ink-muted); font-size:11px;">' + window.Darkness.utils.escapeHtml(file) + '</span>' +
-          '</div>';
-      }).join("") +
-      '        </div>',
-      '      </div>',
-      '      <div style="display:flex; align-items:flex-start; gap:10px; padding:12px 14px; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; font-size:12px; color:#92400e; line-height:1.5;">',
-      '        <span style="font-size:16px; line-height:1;">🛡️</span>',
-      '        <div><strong>Real Architectural Fixes:</strong> Real AST-verified code modifications will be written to disk, committed to workspace persistence, and static cross-tier invariants re-analyzed to ensure 100% verification.</div>',
-      '      </div>',
-      '      <div id="batchRepairProgressSection" style="display:none; flex-direction:column; gap:8px;">',
-      '        <div style="display:flex; justify-content:space-between; font-size:12px; font-weight:600; color:var(--ink);">' +
-      '          <span id="batchRepairProgressLabel">Applying real fixes to codebase...</span>' +
-      '          <span id="batchRepairProgressPercent">0%</span>' +
-      '        </div>' +
-      '        <div style="width:100%; height:8px; background:var(--surface-muted); border-radius:4px; overflow:hidden; border:1px solid var(--line);">' +
-      '          <div id="batchRepairProgressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #4f46e5, #10b981); transition:width 0.3s ease;"></div>' +
-      '        </div>' +
-      '      </div>',
-      '    </div>',
-      '    <div style="display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:16px 22px; border-top:1px solid var(--line); background:var(--surface-muted);" id="batchRepairModalFooter">',
-      '      <button class="btn btn--outline btn--sm" id="cancelBatchRepairBtn">Cancel</button>',
-      '      <button class="btn btn--primary btn--sm" id="confirmBatchRepairBtn" style="gap:6px; font-weight:700; background:linear-gradient(135deg, #4f46e5 0%, #2563eb 100%); padding:7px 16px;"><span>⚡ Confirm & Repair All (' + fixCount + ')</span></button>',
-      '    </div>',
-      '  </div>',
-      '</div>'
-    ].join("");
-
-    if (portal && (portal.id === "vmaFixModalPortal" || portal.id === "archFixModalPortal")) {
-      portal.innerHTML = "";
-      portal.appendChild(modalWrapper);
-    } else {
-      document.body.appendChild(modalWrapper);
-    }
-
-    const cleanup = () => {
-      if (portal && (portal.id === "vmaFixModalPortal" || portal.id === "archFixModalPortal")) {
-        portal.innerHTML = "";
-      } else if (modalWrapper.parentNode) {
-        modalWrapper.parentNode.removeChild(modalWrapper);
-      }
-    };
-
-    document.getElementById("closeBatchRepairModalBtn")?.addEventListener("click", cleanup);
-    document.getElementById("cancelBatchRepairBtn")?.addEventListener("click", cleanup);
-    document.getElementById("vmaBatchRepairBackdrop")?.addEventListener("click", (e) => {
-      if (e.target.id === "vmaBatchRepairBackdrop") cleanup();
-    });
-
-    document.getElementById("confirmBatchRepairBtn")?.addEventListener("click", async () => {
-      const confirmBtn = document.getElementById("confirmBatchRepairBtn");
-      const cancelBtn = document.getElementById("cancelBatchRepairBtn");
-      const progressSection = document.getElementById("batchRepairProgressSection");
-      const progressBar = document.getElementById("batchRepairProgressBar");
-      const progressLabel = document.getElementById("batchRepairProgressLabel");
-      const progressPercent = document.getElementById("batchRepairProgressPercent");
-
-      if (confirmBtn) {
-        confirmBtn.disabled = true;
-        confirmBtn.innerHTML = '<span class="spinner" style="width:14px; height:14px;"></span> Repairing All Issues...';
-      }
-      if (cancelBtn) cancelBtn.disabled = true;
-      if (progressSection) progressSection.style.display = "flex";
-      if (progressBar) progressBar.style.width = "25%";
-      if (progressPercent) progressPercent.textContent = "25%";
-
-      try {
-        const effectivePid = targetProjectId || (analysis && (analysis.id || analysis.projectId)) || (window.Darkness.currentProject && window.Darkness.currentProject.id) || window.Darkness.currentProjectId || (window.location.hash.split('/')[2] || '').split('?')[0] || '';
-        
-        const fixesPayload = issuesToRepair.map(iss => {
-          if (iss.fixDiff) return iss.fixDiff;
-          return {
-            file: iss.targetFile || iss.sourceFile || iss.file || "server.ts",
-            before: iss.sourceSnippet || iss.snippet || "",
-            after: iss.suggestedImplementation || iss.suggestedFix || `// Verified architecture connection for ${iss.title}\n`,
-            explanation: iss.explanation || iss.title
-          };
-        });
-
-        if (progressBar) progressBar.style.width = "60%";
-        if (progressPercent) progressPercent.textContent = "60%";
-        if (progressLabel) progressLabel.textContent = "Writing real AST fixes & compiling architecture model...";
-
-        const res = await window.Darkness.api.post("/api/projects/" + effectivePid + "/advisor/apply-all-fixes", {
-          fixes: fixesPayload
-        });
-
-        if (progressBar) progressBar.style.width = "100%";
-        if (progressPercent) progressPercent.textContent = "100%";
-        if (progressLabel) progressLabel.textContent = "✓ All fixes applied successfully!";
-
-        setTimeout(async () => {
-          cleanup();
-          window.Darkness.toast.show("Successfully repaired " + (res.appliedCount || fixesPayload.length) + " architectural issues! Architecture 100% verified.", "success");
-          if (typeof callback === "function") {
-            await callback();
-          }
-        }, 500);
-
-      } catch (err) {
-        console.error("Failed to repair all issues:", err);
-        window.Darkness.toast.show("Failed to repair all issues: " + (err.message || "Unknown error"), "danger");
-        if (confirmBtn) {
-          confirmBtn.disabled = false;
-          confirmBtn.innerHTML = "Retry Repair All";
-        }
-        if (cancelBtn) cancelBtn.disabled = false;
-      }
-    });
-  }
 
   function renderAdvisorView() {
     if (!advisorSection) return;
@@ -8695,14 +8618,14 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
             '      <span class="tag tag--xs" style="font-weight:700; font-family:var(--font-mono); background:' + (r.method === 'GET' ? '#dbeafe; color:#1d4ed8;' : (r.method === 'POST' ? '#dcfce7; color:#15803d;' : '#fef3c7; color:#b45309;')) + '">' + window.Darkness.utils.escapeHtml(r.method) + '</span>',
             '      <span style="font-family:var(--font-mono); font-weight:600; color:var(--ink);">' + window.Darkness.utils.escapeHtml(r.path) + '</span>',
             '    </div>',
-            r.clientFile ? '    <div style="margin-top:4px;"><button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(r.clientFile) + '" data-line="' + (r.clientLine || 1) + '" style="padding:0; font-size:11px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(r.clientFile) + ':' + (r.clientLine || 1) + '</button></div>' : '',
+            r.clientFile ? '    <div style="margin-top:4px;"><button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(r.clientFile) + '" data-line="' + (r.clientLine || 1) + '" style="padding:0; font-size:11px; font-family:var(--font-mono); color:var(--accent-text, var(--accent));">' + window.Darkness.utils.escapeHtml(r.clientFile) + ':' + (r.clientLine || 1) + '</button></div>' : '',
             '  </td>',
             '  <td style="padding:10px 12px;">',
             '    <span class="arch-health-chip ' + badgeClass + '" style="font-size:11px; padding:2px 8px;">' + badgeIcon + ' ' + r.status + '</span>',
             '  </td>',
             '  <td style="padding:10px 12px; font-family:var(--font-mono); font-size:12px;">',
             r.serverFile
-              ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(r.serverFile) + '" data-line="' + (r.serverLine || 1) + '" style="padding:0; font-size:11.5px; font-family:var(--font-mono); color:var(--accent); font-weight:600;">' + window.Darkness.utils.escapeHtml(r.serverFile) + ':' + (r.serverLine || 1) + '</button>'
+              ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(r.serverFile) + '" data-line="' + (r.serverLine || 1) + '" style="padding:0; font-size:11.5px; font-family:var(--font-mono); color:var(--accent-text, var(--accent)); font-weight:600;">' + window.Darkness.utils.escapeHtml(r.serverFile) + ':' + (r.serverLine || 1) + '</button>'
               : '<span style="color:#ef4444; font-weight:600;">⚠ No Route Handler Declared</span>',
             '  </td>',
             '  <td style="padding:10px 12px; color:var(--ink-muted); font-size:12.5px; line-height:1.4;">' + window.Darkness.utils.escapeHtml(r.detail || "Direct HTTP API dispatch.") + '</td>',
@@ -8787,9 +8710,9 @@ function renderVisualAdvisorTab(container, analysis, switchTabToFile, projectId,
               (issue.sourceFile || issue.targetFile) ? [
                 '  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:12px; margin-top:2px;">',
                 '    <span class="muted">Evidence:</span>',
-                issue.sourceFile ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(issue.sourceFile) + '" data-line="' + (issue.sourceLine || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:11.5px; color:var(--accent);">📄 ' + window.Darkness.utils.escapeHtml(issue.sourceFile) + (issue.sourceLine ? ':' + issue.sourceLine : '') + '</button>' : '',
+                issue.sourceFile ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(issue.sourceFile) + '" data-line="' + (issue.sourceLine || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:11.5px; color:var(--accent-text, var(--accent));">📄 ' + window.Darkness.utils.escapeHtml(issue.sourceFile) + (issue.sourceLine ? ':' + issue.sourceLine : '') + '</button>' : '',
                 (issue.sourceFile && issue.targetFile) ? '<span class="muted">→</span>' : '',
-                issue.targetFile ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(issue.targetFile) + '" data-line="' + (issue.targetLine || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:11.5px; color:var(--accent);">📄 ' + window.Darkness.utils.escapeHtml(issue.targetFile) + (issue.targetLine ? ':' + issue.targetLine : '') + '</button>' : '',
+                issue.targetFile ? '<button class="btn btn--ghost btn--sm vma-jump-file-btn" data-file="' + window.Darkness.utils.escapeHtml(issue.targetFile) + '" data-line="' + (issue.targetLine || 1) + '" style="padding:0; font-family:var(--font-mono); font-size:11.5px; color:var(--accent-text, var(--accent));">📄 ' + window.Darkness.utils.escapeHtml(issue.targetFile) + (issue.targetLine ? ':' + issue.targetLine : '') + '</button>' : '',
                 '  </div>'
               ].join("") : '',
               '</div>'
@@ -8934,7 +8857,7 @@ function renderApisTab(container, analysis, switchTabToFile) {
       return '<div class="api-row">' +
         '<div><span class="api-badge ' + methodClass + '">' + method + '</span></div>' +
         '<div><strong style="font-family:var(--font-mono); font-size:13.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(ep.path || "/") + '</strong></div>' +
-        '<div><button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(ep.file || "") + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent);">' + window.Darkness.utils.escapeHtml(ep.file || "") + ':' + (ep.line || 1) + '</button></div>' +
+        '<div><button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(ep.file || "") + '" style="padding:0; font-family:var(--font-mono); font-size:12px; color:var(--accent-text, var(--accent));">' + window.Darkness.utils.escapeHtml(ep.file || "") + ':' + (ep.line || 1) + '</button></div>' +
         '<div>' + (ep.authRequired ? '<span class="tag tag--xs" style="background:rgba(239,68,68,0.12); color:#dc2626;">Auth Protected</span>' : '<span class="muted" style="font-size:12px;">Public</span>') + '</div>' +
       '</div>';
     }).join(""),
@@ -8981,7 +8904,7 @@ function renderDatabaseTab(container, analysis, switchTabToFile) {
       return '<div class="card" style="padding:16px; border:1px solid var(--line); background:var(--surface);">' +
         '<div class="hstack" style="justify-content:space-between; margin-bottom:8px;">' +
           '<strong style="font-size:15px; color:var(--ink); font-family:var(--font-mono);">' + window.Darkness.utils.escapeHtml(m.name || "Model") + '</strong>' +
-          '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(m.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(m.file || "") + '</button>' +
+          '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(m.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent-text, var(--accent));">' + window.Darkness.utils.escapeHtml(m.file || "") + '</button>' +
         '</div>' +
         '<div class="muted" style="font-size:12.5px;">Model definition verified in source repository.</div>' +
       '</div>';
@@ -9032,10 +8955,10 @@ function renderDependenciesTab(container, analysis) {
         return '<div class="security-finding-card" style="margin-bottom:12px; padding:16px; border:1px solid var(--line); border-radius:8px; background:var(--surface);">' +
           '<div class="hstack" style="justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:8px;">' +
             '<strong style="font-size:14px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(iss.title || "Code issue") + '</strong>' +
-            '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(iss.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent); padding:2px 6px;">' + window.Darkness.utils.escapeHtml(iss.file || "") + (iss.line ? ':' + iss.line : '') + '</button>' +
+            '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(iss.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent-text, var(--accent)); padding:2px 6px;">' + window.Darkness.utils.escapeHtml(iss.file || "") + (iss.line ? ':' + iss.line : '') + '</button>' +
           '</div>' +
           '<p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin-bottom:8px;">' + window.Darkness.utils.escapeHtml(iss.whyItMatters || "") + '</p>' +
-          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink);"><strong style="color:var(--accent);">Fix:</strong> <span>' + window.Darkness.utils.escapeHtml(iss.suggestedFix || "") + '</span></div>' +
+          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink);"><strong style="color:var(--accent-text, var(--accent));">Fix:</strong> <span>' + window.Darkness.utils.escapeHtml(iss.suggestedFix || "") + '</span></div>' +
         '</div>';
       }).join("");
 
@@ -9049,7 +8972,7 @@ function renderDependenciesTab(container, analysis) {
     '<div style="font-size:22px; font-weight:800; color:' + (cq.score >= 80 ? 'var(--success)' : 'var(--warning)') + ';">Score: ' + cq.score + '/100</div>',
     '</div>',
     '<div style="margin-bottom:16px;">',
-    '  <button class="btn btn--outline btn--sm cq-verify-ai-btn" style="gap:5px; font-weight:600; padding:5px 12px; border-color:var(--accent); color:var(--accent);"><span>Suggest improvements with AI</span></button>',
+    '  <button class="btn btn--outline btn--sm cq-verify-ai-btn" style="gap:5px; font-weight:600; padding:5px 12px; border-color:var(--accent); color:var(--accent-text, var(--accent));"><span>Suggest improvements with AI</span></button>',
     '</div>',
     '<div>' + cqIssuesHtml + '</div>',
     '</div>'
@@ -9114,7 +9037,7 @@ function renderSecurityTab(container, analysis, switchTabToFile) {
                 '<span class="severity-pill ' + sevClass + '">' + f.severity + '</span>' +
                 '<strong style="font-size:14.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(f.title || "Security note") + '</strong>' +
               '</div>' +
-              '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(f.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(f.file || "") + ':' + (f.line || 1) + '</button>' +
+              '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(f.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent-text, var(--accent));">' + window.Darkness.utils.escapeHtml(f.file || "") + ':' + (f.line || 1) + '</button>' +
             '</div>' +
             '<p style="font-size:13.5px; color:var(--ink-muted); line-height:1.5;">' + window.Darkness.utils.escapeHtml(f.description || "") + '</p>' +
             (f.redactedSnippet ? '<div class="code-evidence-box"><code>' + window.Darkness.utils.escapeHtml(f.redactedSnippet) + '</code></div>' : '') +
@@ -9180,12 +9103,12 @@ function renderQualityTab(container, analysis, switchTabToFile) {
               '<strong style="font-size:14.5px; color:var(--ink);">' + window.Darkness.utils.escapeHtml(iss.title || "Code issue") + '</strong>' +
             '</div>' +
             '<div style="display:flex; align-items:center; gap:8px;">' +
-              '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(iss.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent);">' + window.Darkness.utils.escapeHtml(iss.file || "") + (iss.line ? ':' + iss.line : '') + '</button>' +
+              '<button class="btn btn--ghost btn--sm" data-nav-file="' + window.Darkness.utils.escapeHtml(iss.file || "") + '" style="font-size:12px; font-family:var(--font-mono); color:var(--accent-text, var(--accent));">' + window.Darkness.utils.escapeHtml(iss.file || "") + (iss.line ? ':' + iss.line : '') + '</button>' +
               '<button class="btn btn--primary btn--sm auto-fix-single-quality-btn" data-issue-idx="' + idx + '" style="font-size:12px; font-weight:600; padding:3px 10px; background:var(--accent); color:#fff; border-radius:4px; display:inline-flex; align-items:center; gap:4px; cursor:pointer;">⚡ Auto-Fix with AI</button>' +
             '</div>' +
           '</div>' +
           '<p style="font-size:13px; color:var(--ink-muted); line-height:1.5; margin-bottom:8px;"><strong>Why it affects quality:</strong> ' + window.Darkness.utils.escapeHtml(iss.whyItMatters || "") + '</p>' +
-          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink); background:var(--bg); padding:8px 12px; border-radius:6px; border:1px solid var(--line);"><strong style="color:var(--accent);">Suggested Fix:</strong> <span>' + window.Darkness.utils.escapeHtml(iss.suggestedFix || "") + '</span></div>' +
+          '<div class="hstack" style="font-size:12.5px; gap:6px; color:var(--ink); background:var(--bg); padding:8px 12px; border-radius:6px; border:1px solid var(--line);"><strong style="color:var(--accent-text, var(--accent));">Suggested Fix:</strong> <span>' + window.Darkness.utils.escapeHtml(iss.suggestedFix || "") + '</span></div>' +
         '</div>';
       }).join("");
 
@@ -9263,7 +9186,7 @@ function renderVivaTab(container, analysis, switchTabToFile) {
     '<div class="card" style="padding:22px; border:1px solid var(--accent); background:var(--surface); border-radius:12px; margin-bottom:20px;">',
     '  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:12px;">',
     '    <div>',
-    '      <span style="font-size:12px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.5px;">Hackathon Presentation Pitch</span>',
+    '      <span style="font-size:12px; font-weight:700; color:var(--accent-text, var(--accent)); text-transform:uppercase; letter-spacing:0.5px;">Hackathon Presentation Pitch</span>',
     '      <h3 style="font-size:18px; font-weight:700; color:var(--ink); margin:2px 0 0 0;">30–60 Second Project Pitch</h3>',
     '    </div>',
     '    <button class="btn btn--sm btn--primary" id="copyHackathonPitchBtn" style="display:flex; align-items:center; gap:6px;">',
@@ -9685,7 +9608,7 @@ function renderProjectChatTab(container, projectId, analysis) {
     '<div><strong style="font-size:14px; color:var(--ink);">AI Assistant — ' + window.Darkness.utils.escapeHtml(analysis.projectName) + '</strong><span class="muted" style="font-size:12px; margin-left:8px;">Grounded exclusively in this codebase</span></div>',
     '</div>',
     '<div style="display:flex; align-items:center; gap:10px;">',
-    '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent); font-weight:600;">Isolated Context</span>',
+    '<span class="tag tag--xs" style="background:var(--accent-soft); color:var(--accent-text, var(--accent)); font-weight:600;">Isolated Context</span>',
     '<button class="btn btn--xs btn--outline" id="openFullChatBtn" type="button" style="display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:4px 10px; border-radius:6px; background:var(--surface); border:1px solid var(--line-strong); color:var(--ink); cursor:pointer;" title="Open Chat in Full Screen mode">',
     '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>',
     '<span id="openFullChatTxt">Open Chat</span>',
@@ -10394,7 +10317,10 @@ function renderProjectChatTab(container, projectId, analysis) {
           file_ids: attachmentsToSend.map(a => a.id || a.file_id).filter(Boolean),
           attachments: attachmentsToSend,
           selectedCodeContext: codeContextToSend || undefined,
-          targetFile: (typeof activeFileRecord !== "undefined" && activeFileRecord?.path && /(?:this|current|opened|active|selected)\s*(?:file|code|function|line|snippet)/i.test(userText)) ? activeFileRecord.path : undefined
+          targetFile: (() => {
+            const af = window.Darkness.activeProjectFile;
+            return (af && af.projectId === projectId && af.path && /(?:this|current|opened|active|selected)\s*(?:file|code|function|line|snippet)/i.test(userText)) ? af.path : undefined;
+          })()
         }),
       });
 
@@ -10454,7 +10380,7 @@ function renderProjectChatTab(container, projectId, analysis) {
               
               let linkedRender = rendered.replace(/📄\s*([a-zA-Z0-9_\-\.\/]+)(?::(\d+))?/g, (match, path, line) => {
                 const lineStr = line ? `, ${line}` : '';
-                return `<a href="#" class="file-jump-link" onclick="window.Darkness.jumpToFile('${path}'${lineStr}); return false;" style="color:var(--accent); text-decoration:underline;">${match}</a>`;
+                return `<a href="#" class="file-jump-link" data-act="jump-to-file" data-file="${path}" data-line="${line || ''}" style="color:var(--accent-text, var(--accent)); text-decoration:underline;">${match}</a>`;
               });
 
               // Post-process for Code Change plans
@@ -10467,7 +10393,7 @@ function renderProjectChatTab(container, projectId, analysis) {
                     let ui = `<div class="code-change-proposal" style="margin-top: 10px; border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--surface-hover);">
                        <h4 style="margin:0 0 8px 0; color:var(--ink);">Proposed Code Changes</h4>`;
                     changePlan.files.forEach((f) => {
-                       ui += `<div><span style="font-family:monospace; font-size:12px;"><a href="#" onclick="window.Darkness.jumpToFile('${f.path}'); return false;">${window.Darkness.utils.escapeHtml(f.path)}</a></span></div>`;
+                       ui += `<div><span style="font-family:monospace; font-size:12px;"><a href="#" data-act="jump-to-file" data-file="${window.Darkness.utils.escapeHtml(f.path)}">${window.Darkness.utils.escapeHtml(f.path)}</a></span></div>`;
                     });
                     ui += `<div style="margin-top: 12px; display: flex; gap: 8px;">
                        <button class="btn btn--sm btn--primary review-changes-btn" data-plan='${window.Darkness.utils.escapeHtml(JSON.stringify(changePlan))}'>Review & Apply Changes</button>
@@ -10579,7 +10505,7 @@ function renderProjectChatTab(container, projectId, analysis) {
                       <div class="modal-dialog" style="max-width: 900px; width: 90%; max-height: 90vh; display: flex; flex-direction: column;">
                         <div class="modal-header">
                           <h2 class="modal-title">Code Diff Review</h2>
-                          <button class="modal-close" onclick="this.closest('.modal').remove()">✕</button>
+                          <button class="modal-close" data-act="close-modal">✕</button>
                         </div>
                         <div class="modal-body" style="flex: 1; overflow: auto; background: #1e1e1e; color: #d4d4d4; padding: 16px;">`;
                         
@@ -10602,9 +10528,7 @@ function renderProjectChatTab(container, projectId, analysis) {
                  changesReviewBtn.addEventListener("click", () => {
                     try {
                        const plan = JSON.parse(changesReviewBtn.getAttribute("data-plan"));
-                       if (typeof openCodeChangeModal === 'function') {
-                         openCodeChangeModal(plan);
-                       }
+                       openCodeChangeModal(plan);
                     } catch(err) { console.error(err); }
                  });
               }
@@ -10834,7 +10758,37 @@ function formatSize(bytes) {
 // RUN & TEST ENGINE UI
 // -----------------------------------------------------------------------------
 let runPollInterval = null;
+/** Run & Test: ask the server whether running code is enabled here, then show the terminal or say why it is off. */
 function renderRunTestTab(container, projectId, analysis) {
+  if (window.runPollInterval) {
+    clearInterval(window.runPollInterval);
+    window.runPollInterval = null;
+  }
+  if (!projectId) { renderRunTestTabInner(container, projectId, analysis); return; }
+  container.innerHTML = '<div style="padding:48px; text-align:center; color:var(--ink-muted);">Checking whether running code is available…</div>';
+  window.Darkness.api.get('/api/projects/' + projectId + '/run/status').then(
+    () => { if (container.isConnected) renderRunTestTabInner(container, projectId, analysis); },
+    (err) => {
+      if (!container.isConnected) return;
+      const code = err && err.data && err.data.code;
+      if (code === "RUN_ENGINE_DISABLED" || (err && err.status === 403)) {
+        const esc = window.Darkness.utils.escapeHtml;
+        container.innerHTML = [
+          '<div class="card" id="runEngineOff" style="max-width:640px; margin:32px auto; padding:28px; text-align:center; border:1px solid var(--line); border-radius:12px; background:var(--surface);">',
+          '  <div style="font-size:30px; margin-bottom:8px;">🔒</div>',
+          '  <h2 style="font-size:17px; font-weight:700; margin:0 0 8px; color:var(--ink);">Running code is turned off on this server</h2>',
+          '  <p class="muted" style="font-size:13.5px; line-height:1.6; margin:0 0 6px;">' + esc((err.data && err.data.error) || "Code execution is disabled on this deployment for security.") + '</p>',
+          '  <p class="muted" style="font-size:12.5px; line-height:1.6; margin:0;">' + esc((err.data && err.data.hint) || "The server operator can enable it on a private, single-user instance.") + '</p>',
+          '</div>'
+        ].join("");
+        return;
+      }
+      renderRunTestTabInner(container, projectId, analysis); // any other failure: show the normal tab, which reports its own errors
+    }
+  );
+}
+
+function renderRunTestTabInner(container, projectId, analysis) {
   if (window.runPollInterval) {
     clearInterval(window.runPollInterval);
     window.runPollInterval = null;
@@ -11173,7 +11127,7 @@ function renderRunTestTab(container, projectId, analysis) {
           renderActiveSession();
           startPolling();
       } catch(e) {
-          window.Darkness.toast.show(e.message || "Failed to launch terminal", "error");
+          window.Darkness.toast.show(e.message || "Failed to launch terminal", "danger");
       }
   }
 

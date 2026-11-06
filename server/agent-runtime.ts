@@ -16,13 +16,16 @@ import {
   resolveSupportedGeminiModel,
   getEffectiveGeminiApiKey,
 } from "./gemini-resilience.js";
-import { UniversalVisualIntentRouter } from "./visual-intent-router.js";
+import { UniversalVisualIntentRouter, type VisualIntentClassification } from "./visual-intent-router.js";
 import { analyzeProject, ExtractedFile } from "./project-analyzer.js";
 import { searchKnowledge, assembleContext } from "./knowledge-engine.js";
 import { searchUserMultiDocumentRag, buildMultiDocumentKnowledgePrompt } from "./rag-engine.js";
 import { ProjectIntentClassifier, ProjectUnderstandingEngine } from "./project-understanding-engine.js";
 import { AnswerEngine, UnifiedIntent } from "../web/src/answer-engine.js";
-import { UniversalExplanationEngine } from "./study-learning-engine.js";
+import { UniversalExplanationEngine, UniversalMathSolver } from "./study-learning-engine.js";
+// These were used below without being imported, so every document / image step threw a ReferenceError inside its try block.
+import { generateDocxReport, generateExcelWorkbook, generatePowerPointPresentation, generatePdfReport, type GeneratedArtifact } from "./file-generator.js";
+import { generateProjectImage } from "./image-service.js";
 import {
   generateProfessionalMermaidDiagram,
   renderProfessionalWorkflowSvg,
@@ -32,7 +35,9 @@ import {
   buildFormattedGeminiHistory,
   buildFormattedOpenAiHistory,
 } from "./model-registry-engine.js";
-import { saveMessage, getProjectAnalysis } from "./db.js";
+import { saveMessage, getProjectAnalysis, getWorkspaceFile } from "./db.js";
+import { fileOwnership, projectOwnership } from "./ownership.js";
+import { fetchWithPolicy, iterateWithIdleTimeout } from "./provider-http.js";
 import { isSupabaseConfigured, syncMessageToSupabase } from "./supabase.js";
 
 
@@ -54,6 +59,10 @@ export interface AgentContextParams {
   modelId?: string;
   selectedCodeContext?: any;
   professorMode?: string;
+  history?: any[];
+  targetFile?: string;
+  generationMode?: string;
+  knowledgeContextId?: string;
   user?: any;
   sendSSE: (data: any) => void;
   signal?: AbortSignal;
@@ -63,9 +72,11 @@ export interface AgentContextParams {
   files?: Map<string, any>;
   projectAnalyses?: Map<string, any>;
   projectArtifacts?: Map<string, any>;
-  dbCreateArtifact?: (artifact: any) => Promise<any>;
-  resolveModelConfig?: (modelId?: string) => any;
+  dbCreateArtifact?: (artifact: any) => any; // may be synchronous (the server passes the SQLite helper)
+  resolveModelConfig?: (modelId?: string, userId?: string) => any;
   getWorkspaceFile?: (fileId: string) => any;
+  /** The user's relevant memory notes, already formatted and bounded (server/memory.ts); appended to the system instruction as quoted data. */
+  memoryBlock?: string;
 }
 
 export class AgentRuntime {
@@ -101,6 +112,8 @@ export class AgentRuntime {
     let attachedDocsContext = "";
     if (Array.isArray(fileIds)) {
       for (const fid of fileIds) {
+        // an attached file must belong to the caller (a foreign id is skipped, like an unknown one)
+        if (fileOwnership(fid, userId, files) !== "owned") continue;
         const fileObj = files.get(fid) || getWorkspaceFile(fid);
         if (fileObj && fileObj.content) {
           attachedDocsContext += `\n\n=== ATTACHED DOCUMENT "${fileObj.filename}": ===\n${fileObj.content.substring(0, 30000)}\n=== END OF ATTACHED DOCUMENT ===\n`;
@@ -144,7 +157,9 @@ export class AgentRuntime {
     const activeModelId = modelConfig.modelName || modelConfig.id;
 
     // 3. Classify Intent
-    const projectId = rawProjectId || undefined;
+    // A project id from the client is honoured only for the caller's own projects: another user's id is treated as "no project", so its files,
+    // analysis and knowledge never reach the model prompt.
+    const projectId = typeof rawProjectId === "string" && rawProjectId && projectOwnership(rawProjectId, userId, projects) !== "foreign" ? rawProjectId : undefined;
     const visualClass = UniversalVisualIntentRouter.classify(textMsg, projectId);
 
     // 4. Handle Rich Artifact / Visual Generation (PPT, DOCX, PDF, XLSX, Images, Diagrams)
@@ -175,8 +190,10 @@ export class AgentRuntime {
                            textMsg.match(/(?:[0-9]+\s*[xX]\s*\^2|[0-9]+\s*[xX]\s*[+\-]|T\(n\)\s*=)/i);
     if (mathSolveMatch && !projectId) {
       try {
-        const solvedResult = UniversalMathSolver.solve(textMsg);
-        if (solvedResult.success && solvedResult.canonicalMarkdown) {
+        // solveProblem returns the structured result (solve() returns only its markdown string, which has no `.success`, so this
+        // branch could never run). Only answer deterministically when the solver verified its own answer; otherwise ask the model.
+        const solvedResult = UniversalMathSolver.solveProblem(textMsg);
+        if (solvedResult && solvedResult.overallVerified && solvedResult.canonicalMarkdown) {
           sendSSE({ content: solvedResult.canonicalMarkdown });
           sendSSE({ done: true });
           
@@ -517,6 +534,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
 
     // 7. Streaming Model Generation
     // Prepend/Append planning protocols & formatting rules to system instruction
+    if (params.memoryBlock) systemInstruction += params.memoryBlock; // the user's own notes, quoted as data (server/memory.ts)
     systemInstruction += "\n" + CORE_PLANNING_SYSTEM_INSTRUCTION + "\n" + CORE_RESPONSE_CONSTRAINTS;
 
     let assistantResponse = "";
@@ -526,6 +544,7 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
       sendSSE({ content: text });
     });
 
+    let viaCompatibleProvider = false;
     try {
       if (modelConfig.provider && modelConfig.provider !== "gemini" && modelConfig.baseUrl) {
         // OpenAI-compatible endpoint
@@ -533,69 +552,63 @@ Focus directly on explaining the snippet, its variables, parameters, logic, fail
         const headers: Record<string, string> = { "Content-Type": "application/json" };
         if (modelConfig.apiKey) headers["Authorization"] = `Bearer ${modelConfig.apiKey}`;
 
-        const fetchRes = await fetch(`${baseUrl}/chat/completions`, {
-          method: "POST",
-          headers,
-          body: JSON.stringify({
-            model: activeModelId,
-            messages: [
-              { role: "system", content: systemInstruction },
-              ...buildFormattedOpenAiHistory(effectiveHistory),
-              { role: "user", content: promptText },
-            ],
-            max_tokens: modelConfig.maxOutputTokens || 8192,
-            temperature: modelConfig.defaultTemperature ?? 0.3,
-            stream: true,
-          }),
-          signal: signal || AbortSignal.timeout(60000),
-        });
+        // The old call used `signal || AbortSignal.timeout(60000)`: when the caller supplied a signal there was NO timeout at all.
+        // Now: time-to-first-byte timeout, retries for transient failures before any text, an idle timeout, and cancellation.
+        // A failure is reported to the user with the provider's own message. It used to be swallowed and the question was then
+        // silently sent to Gemini with the server's key: the user saw an unrelated Google error, and their prompt had gone to a
+        // different provider than the one they chose.
+        viaCompatibleProvider = true;
+        let fetchRes: Response | null = null;
+        try {
+          fetchRes = await fetchWithPolicy(`${baseUrl}/chat/completions`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              model: activeModelId,
+              messages: [
+                { role: "system", content: systemInstruction },
+                ...buildFormattedOpenAiHistory(effectiveHistory),
+                { role: "user", content: promptText },
+              ],
+              max_tokens: modelConfig.maxOutputTokens || 8192,
+              temperature: modelConfig.defaultTemperature ?? 0.3,
+              stream: true,
+            }),
+          }, { label: "model provider", stream: true, signal });
+        } catch (provErr: any) {
+          console.warn(`[Agent] provider request failed (${provErr?.kind || "error"}): ${String(provErr?.message || provErr).slice(0, 200)}`);
+          throw provErr;
+        }
 
-        if (fetchRes.ok && fetchRes.body) {
-          const reader = fetchRes.body.getReader();
+        if (fetchRes && fetchRes.body) {
           const decoder = new TextDecoder();
           let sseBuffer = "";
-          while (true) {
-            const { done, value } = await reader.read();
-            if (value) {
-              sseBuffer += decoder.decode(value, { stream: true });
-              const lines = sseBuffer.split("\n");
-              sseBuffer = lines.pop() || "";
-              for (const rawLine of lines) {
-                const line = rawLine.trim();
-                if (!line || line === "data:" || line === "data: [DONE]") continue;
-                if (line.startsWith("data:")) {
-                  try {
-                    const data = JSON.parse(line.slice(5).trim());
-                    const text = data.choices?.[0]?.delta?.content;
-                    if (text) {
-                      assistantResponse += text;
-                      filter.push(text);
-                    }
-                  } catch (e) {}
+          const consume = (rawLine: string) => {
+            const line = rawLine.trim();
+            if (!line || line === "data:" || line === "data: [DONE]") return;
+            if (line.startsWith("data:")) {
+              try {
+                const data = JSON.parse(line.slice(5).trim());
+                const text = data.choices?.[0]?.delta?.content;
+                if (text) {
+                  assistantResponse += text;
+                  filter.push(text);
                 }
-              }
+              } catch (e) {}
             }
-            if (done) {
-              if (sseBuffer) {
-                const line = sseBuffer.trim();
-                if (line.startsWith("data:") && line !== "data: [DONE]") {
-                  try {
-                    const data = JSON.parse(line.slice(5).trim());
-                    const text = data.choices?.[0]?.delta?.content;
-                    if (text) {
-                      assistantResponse += text;
-                      filter.push(text);
-                    }
-                  } catch (e) {}
-                }
-              }
-              break;
-            }
+          };
+          for await (const value of iterateWithIdleTimeout(fetchRes.body, { signal, label: "model provider" })) {
+            sseBuffer += decoder.decode(value, { stream: true });
+            const lines = sseBuffer.split("\n");
+            sseBuffer = lines.pop() || "";
+            for (const rawLine of lines) consume(rawLine);
           }
+          if (sseBuffer) consume(sseBuffer);
         }
+        if (!assistantResponse) throw new Error("The model provider returned an empty answer.");
       }
 
-      if (!assistantResponse) {
+      if (!assistantResponse && !viaCompatibleProvider) {
         // Strict alternating history resolution for conversational follow-ups
         let geminiContents: any = promptText;
         if (effectiveHistory && effectiveHistory.length > 0) {

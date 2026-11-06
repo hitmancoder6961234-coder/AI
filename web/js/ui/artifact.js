@@ -207,7 +207,7 @@
                   <span>Open File</span>
                 </button>
 
-                <button type="button" class="btn btn--sm btn--ghost art-apply-btn" data-art-id="${art.id}" style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--accent);" title="Apply file changes to project files">
+                <button type="button" class="btn btn--sm btn--ghost art-apply-btn" data-art-id="${art.id}" style="display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: var(--accent-text, var(--accent));" title="Apply file changes to project files">
                   <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                   ${hasApplied ? 'Applied' : 'Apply to Workspace'}
                 </button>

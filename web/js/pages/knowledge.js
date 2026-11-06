@@ -209,7 +209,7 @@ window.Darkness.pages = window.Darkness.pages || {};
               </button>
               <input type="file" id="knowledgeChatFileInput" hidden multiple accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.csv,.json,.xml,.yaml,.yml,.js,.jsx,.ts,.tsx,.py,.java,.c,.cpp,.cs,.go,.rs,.php,.rb,.sql,.html,.css,.scss,.sh,.zip,.png,.jpg,.jpeg,.webp,.gif" />
               <div class="rag-search-wrapper" style="flex: 1; position: relative;">
-                <textarea id="knowledgeChatInput" class="input" placeholder="Ask anything about your library documents..." style="padding-left: 12px; padding-right: 60px; min-height: 40px; max-height: 120px; font-size: 13.5px; border-radius: 8px; width: 100%; resize: none; overflow-y: auto; padding-top: 10px; font-family: inherit; line-height: 1.4;" rows="1" autocomplete="off"></textarea>
+                <textarea id="knowledgeChatInput" class="input" aria-label="Ask a question about your library documents" placeholder="Ask anything about your library documents..." style="padding-left: 12px; padding-right: 60px; min-height: 40px; max-height: 120px; font-size: 13.5px; border-radius: 8px; width: 100%; resize: none; overflow-y: auto; padding-top: 10px; font-family: inherit; line-height: 1.4;" rows="1" autocomplete="off"></textarea>
                 <span style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 10px; font-weight: 500; color: var(--ink-muted); background: var(--bg); padding: 2px 4px; border-radius: 4px; border: 1px solid var(--line);">
                   ↵
                 </span>

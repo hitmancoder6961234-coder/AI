@@ -376,7 +376,7 @@ window.Darkness.uiChat = {
       try {
         await new Promise((resolve, reject) => {
           const s = document.createElement("script");
-          s.src = "https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js";
+          s.src = "/vendor/html2pdf/html2pdf.bundle.min.js"; // self-hosted (no CDN)
           s.onload = resolve;
           s.onerror = reject;
           document.head.appendChild(s);
@@ -423,437 +423,7 @@ window.Darkness.uiChat = {
     host.style.cssText = "position:fixed !important; top:0 !important; left:-9999px !important; width:794px !important; min-width:794px !important; max-width:794px !important; margin:0 !important; padding:0 !important; background:#ffffff !important; z-index:100001 !important; box-sizing:border-box !important; overflow:visible !important; pointer-events:none !important;";
 
     // High-fidelity print styles that strictly match the Chat UI presentation
-    const styleTag = document.createElement("style");
-    styleTag.textContent = `
-      #darkness-pdf-export-host, #darkness-pdf-export-host * {
-        box-sizing: border-box !important;
-      }
-      #darkness-pdf-export-host {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
-        font-size: 13.5px !important;
-        line-height: 1.65 !important;
-      }
-      #darkness-pdf-export-host .pdf-page {
-        box-sizing: border-box !important;
-        background-color: #ffffff !important;
-      }
-      
-      /* Chat Message Structure */
-      #darkness-pdf-export-host .message {
-        width: 100% !important;
-        display: flex !important;
-        flex-direction: column !important;
-        margin-bottom: 14px !important;
-        page-break-inside: auto !important;
-        break-inside: auto !important;
-      }
-      #darkness-pdf-export-host .message--user {
-        align-items: flex-end !important;
-      }
-      #darkness-pdf-export-host .message--assistant {
-        align-items: flex-start !important;
-      }
-      #darkness-pdf-export-host .message__row {
-        display: flex !important;
-        width: 100% !important;
-      }
-      #darkness-pdf-export-host .message--user .message__row {
-        justify-content: flex-end !important;
-      }
-      #darkness-pdf-export-host .message__body {
-        display: flex !important;
-        flex-direction: column !important;
-        min-width: 0 !important;
-        width: 100% !important;
-      }
-      #darkness-pdf-export-host .message--user .message__body {
-        align-items: flex-end !important;
-        max-width: 88% !important;
-      }
-      #darkness-pdf-export-host .message--assistant .message__body {
-        align-items: flex-start !important;
-        max-width: 100% !important;
-      }
-      
-      /* Message Author Header */
-      #darkness-pdf-export-host .message__author-tag {
-        display: inline-flex !important;
-        align-items: center !important;
-        gap: 6px !important;
-        font-size: 11px !important;
-        font-weight: 700 !important;
-        text-transform: uppercase !important;
-        letter-spacing: 0.04em !important;
-        margin-bottom: 5px !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-      }
-      #darkness-pdf-export-host .message--user .message__author-tag {
-        color: #475569 !important;
-        justify-content: flex-end !important;
-      }
-      #darkness-pdf-export-host .message--assistant .message__author-tag {
-        color: #4f46e5 !important;
-        justify-content: flex-start !important;
-      }
-      #darkness-pdf-export-host .message__author-dot {
-        width: 6px !important;
-        height: 6px !important;
-        border-radius: 50% !important;
-        display: inline-block !important;
-      }
-      #darkness-pdf-export-host .message--user .message__author-dot {
-        background-color: #64748b !important;
-      }
-      #darkness-pdf-export-host .message--assistant .message__author-dot {
-        background-color: #4f46e5 !important;
-      }
-
-      /* Chat Bubbles */
-      #darkness-pdf-export-host .message__bubble {
-        border-radius: 12px !important;
-        padding: 14px 18px !important;
-        line-height: 1.65 !important;
-        font-size: 13.5px !important;
-        word-break: break-word !important;
-        box-sizing: border-box !important;
-        page-break-inside: auto !important;
-        break-inside: auto !important;
-      }
-      #darkness-pdf-export-host .message--user .message__bubble {
-        background-color: #eef2ff !important;
-        color: #1e1b4b !important;
-        border: 1px solid #c7d2fe !important;
-        border-bottom-right-radius: 4px !important;
-        display: inline-block !important;
-        max-width: 100% !important;
-      }
-      #darkness-pdf-export-host .message--assistant .message__bubble {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
-        border: 1px solid #e2e8f0 !important;
-        border-bottom-left-radius: 4px !important;
-        width: 100% !important;
-      }
-
-      /* Markdown & Chat Typography Hierarchy */
-      #darkness-pdf-export-host .message__content {
-        color: inherit !important;
-        font-size: 13.5px !important;
-        line-height: 1.65 !important;
-        word-break: break-word !important;
-      }
-      #darkness-pdf-export-host .message--user .message__content {
-        white-space: pre-wrap !important;
-        color: #1e1b4b !important;
-      }
-      #darkness-pdf-export-host .message__content h1,
-      #darkness-pdf-export-host .message__content h2,
-      #darkness-pdf-export-host .message__content h3,
-      #darkness-pdf-export-host .message__content h4,
-      #darkness-pdf-export-host .message__content h5,
-      #darkness-pdf-export-host .message__content h6 {
-        margin: 14px 0 8px !important;
-        font-weight: 600 !important;
-        color: #0f172a !important;
-        letter-spacing: -0.01em !important;
-        line-height: 1.3 !important;
-        page-break-after: avoid !important;
-        break-after: avoid !important;
-      }
-      #darkness-pdf-export-host .message__content h1:first-child,
-      #darkness-pdf-export-host .message__content h2:first-child,
-      #darkness-pdf-export-host .message__content h3:first-child {
-        margin-top: 0 !important;
-      }
-      #darkness-pdf-export-host .message__content h1 { font-size: 18px !important; font-weight: 700 !important; }
-      #darkness-pdf-export-host .message__content h2 { font-size: 15.5px !important; font-weight: 700 !important; }
-      #darkness-pdf-export-host .message__content h3 { font-size: 14px !important; font-weight: 600 !important; }
-      #darkness-pdf-export-host .message__content h4 { font-size: 13px !important; font-weight: 600 !important; }
-      #darkness-pdf-export-host .message__content h5 { font-size: 12px !important; font-weight: 600 !important; }
-      #darkness-pdf-export-host .message__content h6 { font-size: 11.5px !important; color: #64748b !important; }
-      
-      #darkness-pdf-export-host .message__content p {
-        margin: 8px 0 !important;
-        color: #1e293b !important;
-        line-height: 1.65 !important;
-      }
-      #darkness-pdf-export-host .message__content p:first-child { margin-top: 0 !important; }
-      #darkness-pdf-export-host .message__content p:last-child { margin-bottom: 0 !important; }
-      
-      #darkness-pdf-export-host .message__content ul,
-      #darkness-pdf-export-host .message__content ol {
-        margin: 8px 0 8px 24px !important;
-        padding: 0 !important;
-        color: #1e293b !important;
-        line-height: 1.65 !important;
-      }
-      #darkness-pdf-export-host .message__content li {
-        margin: 3px 0 !important;
-      }
-      #darkness-pdf-export-host .message__content strong {
-        font-weight: 700 !important;
-        color: #0f172a !important;
-      }
-      #darkness-pdf-export-host .message__content em {
-        font-style: italic !important;
-      }
-      #darkness-pdf-export-host .message__content blockquote {
-        margin: 10px 0 !important;
-        padding: 8px 14px !important;
-        border-left: 3px solid #6366f1 !important;
-        background: #f8fafc !important;
-        border-radius: 0 6px 6px 0 !important;
-        color: #334155 !important;
-        font-style: normal !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      #darkness-pdf-export-host .message__content a {
-        color: #2563eb !important;
-        text-decoration: underline !important;
-      }
-      
-      /* Tables */
-      #darkness-pdf-export-host .table-wrapper {
-        margin: 12px 0 !important;
-        border-radius: 6px !important;
-        border: 1px solid #cbd5e1 !important;
-        overflow: hidden !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      #darkness-pdf-export-host table {
-        width: 100% !important;
-        border-collapse: collapse !important;
-        font-size: 12px !important;
-      }
-      #darkness-pdf-export-host th,
-      #darkness-pdf-export-host td {
-        border: 1px solid #cbd5e1 !important;
-        padding: 7px 12px !important;
-        text-align: left !important;
-      }
-      #darkness-pdf-export-host th {
-        background: #f1f5f9 !important;
-        font-weight: 600 !important;
-        color: #0f172a !important;
-      }
-      #darkness-pdf-export-host td {
-        color: #334155 !important;
-        background: #ffffff !important;
-      }
-      #darkness-pdf-export-host tr:nth-child(even) td {
-        background: #f8fafc !important;
-      }
-
-      /* Inline Code */
-      #darkness-pdf-export-host code:not(.pdf-code-content) {
-        display: inline !important;
-        padding: 2px 6px !important;
-        background: #f1f5f9 !important;
-        border-radius: 4px !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-        font-size: 11.5px !important;
-        color: #be185d !important;
-        border: 1px solid #e2e8f0 !important;
-      }
-
-      /* Code Blocks */
-      #darkness-pdf-export-host .pdf-code-block {
-        margin: 12px 0 !important;
-        border-radius: 8px !important;
-        background: #f8fafc !important;
-        border: 1px solid #e2e8f0 !important;
-        overflow: hidden !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        page-break-inside: auto !important;
-        break-inside: auto !important;
-      }
-      #darkness-pdf-export-host .pdf-code-header {
-        display: flex !important;
-        justify-content: space-between !important;
-        align-items: center !important;
-        padding: 6px 12px !important;
-        background: #f1f5f9 !important;
-        border-bottom: 1px solid #e2e8f0 !important;
-        font-size: 11px !important;
-        font-weight: 600 !important;
-        color: #475569 !important;
-      }
-      #darkness-pdf-export-host .pdf-code-badge {
-        background: #e2e8f0 !important;
-        color: #0f172a !important;
-        padding: 2px 6px !important;
-        border-radius: 4px !important;
-        font-size: 10px !important;
-        text-transform: uppercase !important;
-        font-family: ui-monospace, monospace !important;
-        font-weight: 700 !important;
-      }
-      #darkness-pdf-export-host .pdf-code-body {
-        padding: 6px 0 !important;
-        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-        font-size: 11.5px !important;
-        line-height: 1.55 !important;
-        color: #0f172a !important;
-        background: #f8fafc !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-      }
-      #darkness-pdf-export-host .pdf-code-line {
-        display: flex !important;
-        width: 100% !important;
-        box-sizing: border-box !important;
-        padding: 0 10px !important;
-        line-height: 1.55 !important;
-      }
-      #darkness-pdf-export-host .pdf-code-num {
-        width: 32px !important;
-        min-width: 32px !important;
-        text-align: right !important;
-        padding-right: 12px !important;
-        color: #94a3b8 !important;
-        user-select: none !important;
-        box-sizing: border-box !important;
-        font-size: 10.5px !important;
-      }
-      #darkness-pdf-export-host .pdf-code-content {
-        flex: 1 !important;
-        white-space: pre-wrap !important;
-        word-break: break-all !important;
-        color: #0f172a !important;
-      }
-
-      /* Syntax Tokens */
-      #darkness-pdf-export-host .tk-comment { color: #64748b !important; font-style: italic !important; }
-      #darkness-pdf-export-host .tk-string { color: #059669 !important; }
-      #darkness-pdf-export-host .tk-keyword { color: #7c3aed !important; font-weight: 600 !important; }
-      #darkness-pdf-export-host .tk-function { color: #2563eb !important; font-weight: 600 !important; }
-      #darkness-pdf-export-host .tk-number { color: #d97706 !important; }
-      #darkness-pdf-export-host .tk-operator { color: #0284c7 !important; }
-
-      /* Images & Diagrams */
-      #darkness-pdf-export-host .pdf-image-block {
-        width: 100% !important;
-        margin: 12px 0 !important;
-        text-align: center !important;
-        box-sizing: border-box !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      #darkness-pdf-export-host .pdf-image-block img {
-        max-width: 100% !important;
-        height: auto !important;
-        object-fit: contain !important;
-        display: block !important;
-        margin: 0 auto !important;
-        border-radius: 8px !important;
-        border: 1px solid #e2e8f0 !important;
-      }
-      #darkness-pdf-export-host .pdf-diagram-block {
-        width: 100% !important;
-        margin: 12px 0 !important;
-        text-align: center !important;
-        box-sizing: border-box !important;
-        background: #ffffff !important;
-        border-radius: 8px !important;
-        border: 1px solid #e2e8f0 !important;
-        padding: 8px !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      #darkness-pdf-export-host .pdf-diagram-block img {
-        max-width: 100% !important;
-        height: auto !important;
-        object-fit: contain !important;
-        display: block !important;
-        margin: 0 auto !important;
-      }
-
-      /* Semantic Callout Boxes in PDF */
-      #darkness-pdf-export-host .answer-callout {
-        margin: 12px 0 !important;
-        padding: 10px 14px !important;
-        border-radius: 8px !important;
-        border: 1px solid #e2e8f0 !important;
-        border-left: 4px solid #6366f1 !important;
-        background: #f8fafc !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      #darkness-pdf-export-host .answer-callout__header {
-        display: flex !important;
-        align-items: center !important;
-        gap: 6px !important;
-        font-weight: 700 !important;
-        font-size: 12px !important;
-        margin-bottom: 4px !important;
-      }
-      #darkness-pdf-export-host .answer-callout__body {
-        font-size: 12.5px !important;
-        line-height: 1.55 !important;
-        color: #1e293b !important;
-      }
-      #darkness-pdf-export-host .answer-callout--tip {
-        border-left-color: #d97706 !important;
-        background: #fffbeb !important;
-        border-color: #fde68a !important;
-      }
-      #darkness-pdf-export-host .answer-callout--tip .answer-callout__header { color: #b45309 !important; }
-      #darkness-pdf-export-host .answer-callout--warning {
-        border-left-color: #dc2626 !important;
-        background: #fef2f2 !important;
-        border-color: #fecaca !important;
-      }
-      #darkness-pdf-export-host .answer-callout--warning .answer-callout__header { color: #b91c1c !important; }
-      #darkness-pdf-export-host .answer-callout--success {
-        border-left-color: #16a34a !important;
-        background: #f0fdf4 !important;
-        border-color: #bbf7d0 !important;
-      }
-      #darkness-pdf-export-host .answer-callout--success .answer-callout__header { color: #15803d !important; }
-      #darkness-pdf-export-host .answer-callout--important {
-        border-left-color: #0284c7 !important;
-        background: #f0f9ff !important;
-        border-color: #bae6fd !important;
-      }
-      #darkness-pdf-export-host .answer-callout--important .answer-callout__header { color: #0369a1 !important; }
-      #darkness-pdf-export-host .answer-callout--example {
-        border-left-color: #4f46e5 !important;
-        background: #eef2ff !important;
-        border-color: #c7d2fe !important;
-      }
-      #darkness-pdf-export-host .answer-callout--example .answer-callout__header { color: #3730a3 !important; }
-      #darkness-pdf-export-host .answer-callout--formula {
-        border-left-color: #7c3aed !important;
-        background: #f5f3ff !important;
-        border-color: #ddd6fe !important;
-      }
-      #darkness-pdf-export-host .answer-callout--formula .answer-callout__header { color: #6d28d9 !important; }
-
-      /* Math & KaTeX rendering in PDF */
-      #darkness-pdf-export-host .katex-display,
-      #darkness-pdf-export-host .math-display {
-        margin: 10px 0 !important;
-        padding: 6px 10px !important;
-        background: #f8fafc !important;
-        border: 1px solid #e2e8f0 !important;
-        border-radius: 6px !important;
-        text-align: center !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-      }
-      #darkness-pdf-export-host .math-inline {
-        padding: 1px 3px !important;
-        background: #f8fafc !important;
-        border-radius: 3px !important;
-      }
-    `;
-    host.appendChild(styleTag);
+    // (the print stylesheet is /css/pdf-export.css, loaded with the page)
 
     const measurer = document.createElement("div");
     measurer.id = "darkness-pdf-measurer";
@@ -1864,6 +1434,7 @@ window.Darkness.uiChat = {
       </div>
     `);
 
+    if (!isEmpty) parts.push('<h1 class="sr-only">Conversation</h1>'); // the empty state has its own visible h1
     parts.push('<div class="conversation' + (isEmpty ? ' conversation--empty' : '') + '" id="conversationList">');
     if (isEmpty) {
       parts.push(this._renderEmptyState());
@@ -1903,7 +1474,7 @@ window.Darkness.uiChat = {
                 if (analysis.architecture && analysis.architecture.length > 0) hasArch = true;
                 if (analysis.viva && analysis.viva.length > 0) hasViva = true;
                 if (analysis.security && analysis.security.issues) hasSecurity = true;
-                if (analysis.ragStatus === "indexed" || true) hasRag = true; // Assume RAG might be available or check actual status if known
+                hasRag = true; // Assume RAG might be available or check actual status if known
             }
         }
     }
@@ -2148,7 +1719,7 @@ window.Darkness.uiChat = {
               Download All (.zip)
             </button>
             ${hasCode ? `
-              <button type="button" class="btn btn--sm btn--ghost apply-all-artifacts-btn" data-art-ids="${artIds}" style="font-size: 12px; display: inline-flex; align-items: center; gap: 5px; color: var(--accent);">
+              <button type="button" class="btn btn--sm btn--ghost apply-all-artifacts-btn" data-art-ids="${artIds}" style="font-size: 12px; display: inline-flex; align-items: center; gap: 5px; color: var(--accent-text, var(--accent));">
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
                 Apply All to Workspace
               </button>
@@ -2212,9 +1783,17 @@ window.Darkness.uiChat = {
             ${actionsHtml}
           </div>
           ${controls}
+          ${this._memoryUsedHtml(msg.memoryUsed || (this._memoryUsedByMsg || {})[msg.id])}
         </div>
       </div>
     </div>`;
+  },
+
+  /** "Used N memories" under a reply; part of the message markup so it survives the re-render that follows a finished stream. */
+  _memoryUsedHtml(notes) {
+    if (!Array.isArray(notes) || !notes.length) return "";
+    const esc = window.Darkness.utils.escapeHtml;
+    return `<details class="memory-used"><summary>Used ${notes.length} memor${notes.length === 1 ? "y" : "ies"}</summary><ul>${notes.slice(0, 6).map((n) => `<li>${esc(String(n.content || "").slice(0, 200))}</li>`).join("")}</ul><a href="#/memory">Manage memory</a></details>`;
   },
 
   _renderAssistantControls(msg, isStreaming, isError) {
@@ -2244,6 +1823,7 @@ window.Darkness.uiChat = {
       `<button class="message-control message-control--icon" data-action="regenerate" type="button" title="Regenerate response" aria-label="Regenerate response">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
       </button>`,
+      this._branchButtonHtml(msg),
     ];
     const playerBar = window.Darkness?.narrationSync
       ? window.Darkness.narrationSync.renderPlayerBarHtml(msg.id || "", "en")
@@ -2289,11 +1869,85 @@ window.Darkness.uiChat = {
       `<button class="message-control message-control--icon" data-action="edit" type="button" title="Edit message" aria-label="Edit message">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
       </button>`,
+      `<button class="message-control message-control--icon" data-action="remember" type="button" title="Remember this" aria-label="Remember this message in your memory">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>
+      </button>`,
       `<button class="message-control message-control--icon" data-action="copy" type="button" title="Copy message" aria-label="Copy message">
         <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
       </button>`,
+      this._branchButtonHtml(msg),
     ];
     return `<div class="message__controls">${buttons.join("")}</div>`;
+  },
+
+  /** "Branch from here": start a new conversation holding everything up to this message. Hidden until the message has a saved id. */
+  _branchButtonHtml(msg) {
+    if (!msg || !msg.id || msg.streaming) return "";
+    return `<button class="message-control message-control--icon" data-action="branch" type="button" title="Branch from here" aria-label="Branch conversation from this message">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="9" r="2"/><path d="M6 7v10"/><path d="M18 11c0 4-6 3-12 6"/></svg>
+      </button>`;
+  },
+
+  /** Under the reply: which of the user's memory notes were sent with the question (transparent, collapsible, links to the Memory page). */
+  _noteMemoryUsed(msgId, notes) {
+    this._memoryUsedByMsg = this._memoryUsedByMsg || {};
+    if (Array.isArray(notes) && notes.length) this._memoryUsedByMsg[msgId] = notes;
+    const el = document.querySelector(`[data-msg-id="${msgId}"]`);
+    if (!el || !Array.isArray(notes) || !notes.length || el.querySelector(".memory-used")) return;
+    const esc = window.Darkness.utils.escapeHtml;
+    const box = document.createElement("details");
+    box.className = "memory-used";
+    box.innerHTML = `<summary>Used ${notes.length} memor${notes.length === 1 ? "y" : "ies"}</summary><ul>${notes.slice(0, 6).map((n) => `<li>${esc(String(n.content || "").slice(0, 200))}</li>`).join("")}</ul><a href="#/memory">Manage memory</a>`;
+    el.appendChild(box);
+  },
+
+  /** "Remember this": nothing is saved until the user confirms; the text is editable and the server refuses duplicates and anything that looks like a secret. */
+  _openRememberDialog(text) {
+    const D = window.Darkness, esc = D.utils.escapeHtml;
+    const seed = String(text || "").replace(/\s+/g, " ").trim().slice(0, 500);
+    const body = `<div class="stack" style="gap:12px;"><div><label for="remText" class="label">What should Darkness remember?</label><textarea id="remText" class="input" rows="4" maxlength="500" aria-describedby="remHelp">${esc(seed)}</textarea><p class="muted" id="remHelp">Keep it to one short fact or preference. Do not include passwords, keys or contact details. You can edit or delete it any time in Memory.</p></div>` +
+      `<div><label for="remCat" class="label">Category</label><select id="remCat" class="input"><option value="preference">Preference</option><option value="fact">Fact about me</option><option value="project">Project</option><option value="style">Writing style</option><option value="other" selected>Other</option></select></div><p class="history-form-error" id="remError" role="alert" hidden></p></div>`;
+    D.modal.open("Remember this", body, '<button class="btn btn--outline" type="button" data-modal-close="true">Cancel</button><button class="btn btn--primary" id="remSave" type="button">Save to memory</button>');
+    document.getElementById("remSave")?.addEventListener("click", async () => {
+      const err = document.getElementById("remError"), btn = document.getElementById("remSave");
+      err.hidden = true;
+      btn.disabled = true;
+      try {
+        await D.api.post("/api/memory", { content: document.getElementById("remText").value, category: document.getElementById("remCat").value, source: "chat" });
+        D.modal.close();
+        D.toast.show("Saved to memory", "success");
+      } catch (e) {
+        err.textContent = (e && e.message) || "Could not save";
+        err.hidden = false;
+        btn.disabled = false;
+      }
+    });
+    setTimeout(() => { const t = document.getElementById("remText"); if (t) { t.focus(); t.setSelectionRange(t.value.length, t.value.length); } }, 30);
+  },
+
+  async _branchFrom(msgId) {
+    const cid = this._activeConversation;
+    const D = window.Darkness;
+    if (!cid) return;
+    try {
+      // Streamed messages may carry a client-side id until the conversation is reloaded: resolve to the saved id by id, then by position.
+      const data = await D.api.get(`/api/conversations/${cid}`);
+      const saved = Array.isArray(data.messages) ? data.messages : [];
+      const dom = this._getMessagesFromDom();
+      const at = dom.findIndex((m) => m.id === msgId);
+      let target = saved.find((m) => m.id === msgId);
+      if (!target && at >= 0 && saved[at] && saved[at].role === dom[at].role) target = saved[at];
+      if (!target) {
+        D.toast.show("This message is not saved yet. Wait for the reply to finish and try again.", "warning");
+        return;
+      }
+      const out = await D.api.post(`/api/conversations/${cid}/branch`, { fromMessageId: target.id });
+      if (D.uiSidebar && D.uiSidebar.refresh) D.uiSidebar.refresh();
+      D.toast.show(`Branched into a new conversation (${out.copied} message${out.copied === 1 ? "" : "s"} copied)`, "success");
+      window.location.hash = `#/chat/${out.id}`;
+    } catch (err) {
+      D.toast.show("Could not branch: " + ((err && err.message) || "unknown error"), "danger");
+    }
   },
 
   _controlBtn(action, label, icon) {
@@ -2728,6 +2382,7 @@ window.Darkness.uiChat = {
             if (!jsonStr || jsonStr === "[DONE]") continue;
             try {
               const event = JSON.parse(jsonStr);
+              if (event.memoryUsed) { this._noteMemoryUsed(botMsg.id, event.memoryUsed); continue; }
               if (event.error && event.error.type === "empty_response") {
                 this._updateBotMessage(botMsg.id, "", false);
                 this._isStreaming = false;
@@ -2826,6 +2481,7 @@ window.Darkness.uiChat = {
           if (!jsonStr || jsonStr === "[DONE]") continue;
           try {
             const event = JSON.parse(jsonStr);
+            if (event.memoryUsed) { this._noteMemoryUsed(botMsg.id, event.memoryUsed); continue; }
             if (event.error && event.error.type === "empty_response") {
               this._updateBotMessage(botMsg.id, "", false);
               this._isStreaming = false;
@@ -3114,6 +2770,12 @@ window.Darkness.uiChat = {
       case "retry":
         await this._retry(msgId);
         break;
+      case "branch":
+        await this._branchFrom(msgId);
+        break;
+      case "remember":
+        this._openRememberDialog(msg.content);
+        break;
       case "change-model":
         window.location.hash = "#/model";
         break;
@@ -3232,6 +2894,7 @@ window.Darkness.uiChat = {
             if (!jsonStr || jsonStr === "[DONE]") continue;
             try {
               const event = JSON.parse(jsonStr);
+              if (event.memoryUsed) { this._noteMemoryUsed(botMsg.id, event.memoryUsed); continue; }
               if (event.error && event.error.type === "empty_response") {
                 this._updateBotMessage(botMsg.id, "", false);
                 this._isStreaming = false;
@@ -3283,6 +2946,7 @@ window.Darkness.uiChat = {
           if (!jsonStr || jsonStr === "[DONE]") continue;
           try {
             const event = JSON.parse(jsonStr);
+            if (event.memoryUsed) { this._noteMemoryUsed(botMsg.id, event.memoryUsed); continue; }
             if (event.error && event.error.type === "empty_response") {
               this._updateBotMessage(botMsg.id, "", false);
               this._isStreaming = false;
@@ -3557,6 +3221,7 @@ window.Darkness.uiChat = {
           if (!jsonStr || jsonStr === "[DONE]") continue;
           try {
             const event = JSON.parse(jsonStr);
+            if (event.memoryUsed) { this._noteMemoryUsed(botMsg.id, event.memoryUsed); continue; }
             if (event.error && event.error.type === "empty_response") {
               this._updateBotMessage(botMsg.id, "", false);
               this._isStreaming = false;
@@ -3615,6 +3280,7 @@ window.Darkness.uiChat = {
         if (!jsonStr || jsonStr === "[DONE]") continue;
         try {
           const event = JSON.parse(jsonStr);
+          if (event.memoryUsed) { this._noteMemoryUsed(botMsg.id, event.memoryUsed); continue; }
           if (event.error && event.error.type === "empty_response") {
             this._updateBotMessage(botMsg.id, "", false);
             this._isStreaming = false;
@@ -3953,10 +3619,8 @@ window.Darkness.uiChat = {
 
     const clearActiveState = (e) => {
       if (!e.target.closest(".message") || e.target.closest(".composer")) {
-        if (activeMessage) {
-          activeMessage.classList.remove("message--active");
-          activeMessage = null;
-        }
+        // (the old code used an undeclared `activeMessage` variable and threw on every outside tap)
+        convEl.querySelectorAll(".message--active").forEach((el) => el.classList.remove("message--active"));
       }
     };
     document.removeEventListener("touchstart", clearActiveState);

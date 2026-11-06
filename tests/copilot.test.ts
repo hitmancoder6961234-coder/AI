@@ -57,7 +57,7 @@ before(async () => {
 });
 after(() => server.close());
 
-const collect = async (llm: LLM, msgs = [{ role: "user" as const, content: "hi" }]) => {
+const collect = async (llm: LLM, msgs: Array<{ role: "system" | "user" | "assistant"; content: string }> = [{ role: "user", content: "hi" }]) => {
   const out: string[] = [];
   for await (const t of streamText(llm, msgs)) out.push(t);
   return out;
