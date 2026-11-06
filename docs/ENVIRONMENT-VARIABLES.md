@@ -87,6 +87,10 @@ Columns: **Req** = R required in production, O optional, D development / test on
 | `LOCKFILE` | lockfile path for `scripts/lockfile-platforms.mjs` | Tools | N | tests only |
 | `SMOKE_LOG_LEVELS`, `SMOKE_LOG_SUMMARY` | print server log lines / a summary from the smoke run | Tools | N | development only |
 | `MY_SECRET` | appears only inside a sample message in `project-analyzer.ts`; not read by the app | - | - | not a real variable |
+| `AUTHZ_PORT` | port the authorization audit (`npm run authz`) starts its throw-away server on (default 3866) | Tools | N | tests only |
+| `ROUTE_DUMP` | file the route-list hook (`scripts/route-dump-hook.mjs`) writes the registered routes to | Tools | N | used by the authorization audit only |
+| `VITE_API_URL` | **browser-side** override of the API base URL, read as `window.env.VITE_API_URL` (or `window.__DARKNESS_API_BASE__`) in `web/js/services/api.js`; empty = same origin. Only relevant to a split-origin setup without the Vercel proxy (then also set `CORS_ORIGINS` and `COOKIE_SAMESITE=none`) | Build / browser | N | found by the Phase 1 audit (6 Nov 2026); not used by any documented deployment path |
+| `ASSETS` | not an environment variable: `server/server.ts` has a Cloudflare-Workers-style `env.ASSETS` fallback object that is never used by the Node server | - | - | dead branch, ignore |
 
 ## Checks
 

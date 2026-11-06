@@ -234,9 +234,10 @@ Password recovery is where an attacker who does not know a password tries to get
 ## Known limitations
 
 * Comparison rate limits (and the other in-memory limits) assume one server instance. Search is a substring scan of the caller's messages, newest first, stopping at 800 matching rows (no full-text index: SQLite FTS5 is available but a derived index would hold a second copy of every message, which the privacy export and erase paths would then have to cover).
-* The CI workflow was validated structurally (a unit test) and every command in it was run locally on Node 22 and 24, but it has
-  not been executed by GitHub Actions (no repository access here). Windows and macOS jobs in particular are untested on the
-  hosted runners; the Windows install path was verified locally.
+* The CI workflow first ran on GitHub on 6 November 2026 (pull request #1, run 42118240655): Linux (Node 22 and 24), Windows, macOS and
+  the dependency-audit / secret-scan job all passed after two real findings were fixed (three fake test keys flagged by gitleaks; a
+  Linux-only test hang caused by project processes without their own process group). It has not run on `main`, and whether its jobs
+  are required checks (branch protection) has not been inspected.
 * `tsconfig.json` is deliberately non-strict (`strict: false`): "0 errors" means the code type-checks under that setting, not
   that it is strictly typed. A few values are typed `any` or cast where the shape is not known.
 * The optional Supabase mirror (`server/rag-routes.ts` -> `syncRagChunkToSupabase`) is passed knowledge-chunk-shaped objects by

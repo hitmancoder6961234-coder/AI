@@ -19,7 +19,7 @@ So: deploy to a **staging** environment, work through [OPERATIONS-VERIFICATION.m
 
 | Not verified | Why it matters |
 |---|---|
-| The CI workflow has never run on GitHub (Windows/macOS jobs, secret scan, audit job) | it was validated structurally and every command in it was run locally on Node 22 and 24 |
+| ~~The CI workflow has never run on GitHub~~ **Updated 6 Nov 2026**: it has now run once on the pull request (run 42118240655): all five jobs passed. It first failed on two real findings (three fake keys flagged by gitleaks; a Linux-only test hang), both fixed in `0babe13` and `9607514`. It has not run on `main` and its jobs are not yet configured as required checks | the run is on the PR only; branch protection was not inspected or changed |
 | Nothing has been deployed: Vercel front door, Render service, Docker image, Caddy | behaviour was verified through the real `api/proxy.js` in front of the real build, not on the providers' platforms |
 | No real third-party model provider was called (Gemini, OpenAI, ...) | provider handling was tested against local stand-in providers that misbehave on purpose |
 | No external penetration test, no fuzzing campaign | the audit below is a white-box review plus automated probes written by the same team that wrote the code |

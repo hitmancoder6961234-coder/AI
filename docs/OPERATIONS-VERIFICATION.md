@@ -268,7 +268,7 @@ The data lives in the `darkness-data` volume and is untouched by a rebuild or a 
 - Any real AI provider: key handling, streaming, timeouts and rate-limit behaviour against live APIs; token and cost figures.
 - A backup and restore on the real disk or volume (the local drill passed; see section 4).
 - TLS, DNS, cookies and CSP on your real domain in real browsers.
-- The GitHub Actions workflow on GitHub's runners (every command in it was run locally).
+- Whether the CI jobs are *required* checks on `main` (branch protection was not inspected). The workflow itself has run: GitHub Actions ran for the first time on 6 November 2026 (PR #1, run 42118240655, head 9607514): all five jobs passed (Linux Node 22 and 24, Windows, macOS, dependency audit and secret scan). It found two real problems that local runs had not: three fake test keys that the secret scan flagged, and a Linux-only hang in `tests/run-engine.test.ts` (project processes were not given their own process group, so `stopProject` could not end the tree); both are fixed.
 - Load, memory and concurrency under real traffic, and behaviour with more than one instance (unsupported, section 5).
 
 The honest status is in [RELEASE-READINESS.md](RELEASE-READINESS.md): the code is tested locally; production readiness is *not* declared until the unchecked boxes above are checked on the real deployment.
