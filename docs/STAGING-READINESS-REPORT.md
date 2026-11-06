@@ -2,6 +2,8 @@
 
 Prepared 6 November 2026 on branch `release-hardening`. **Nothing was deployed, merged or changed on any external service in this phase** (this report and the other Phase 1 documents were committed afterwards, as `a088815`; the P1-03 fix followed as `81216aa`). Sections marked *verified* were checked against the repository, the GitHub API or a local run on that date; anything about a real platform is marked *not verified*.
 
+> **Phase 1 is CLOSED (6 November 2026).** The closure, with the split between work that is tested locally and in CI, work that is only documented, and the decisions that belong to Phase 2, is recorded in [PHASE-STATUS-REGISTER.md](PHASE-STATUS-REGISTER.md). P1-13 stays open (LOW). Closing Phase 1 does not authorise Phase 2.
+
 Companion documents: [STAGING-ENVIRONMENT-INVENTORY.md](STAGING-ENVIRONMENT-INVENTORY.md) · [STAGING-DEPLOYMENT-PLAN.md](STAGING-DEPLOYMENT-PLAN.md) · [STAGING-VERIFICATION-CHECKLIST.md](STAGING-VERIFICATION-CHECKLIST.md) · [STAGING-ROLLBACK-PLAN.md](STAGING-ROLLBACK-PLAN.md). Existing documents these build on (not duplicated): [../DEPLOY.md](../DEPLOY.md), [OPERATIONS-VERIFICATION.md](OPERATIONS-VERIFICATION.md), [ENVIRONMENT-VARIABLES.md](ENVIRONMENT-VARIABLES.md), [ARCHITECTURE.md](ARCHITECTURE.md), [AUTHORIZATION-AUDIT.md](AUTHORIZATION-AUDIT.md), [RELEASE-READINESS.md](RELEASE-READINESS.md).
 
 ## 1. Repository and release state (verified 6 Nov 2026)
